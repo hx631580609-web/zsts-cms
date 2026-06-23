@@ -1,0 +1,162 @@
+{
+  "coreService": {
+    "card1": {
+      "cta": {
+        "en": "",
+        "zh": ""
+      },
+      "desc": {
+        "en": "",
+        "zh": ""
+      },
+      "title": {
+        "en": "",
+        "zh": ""
+      },
+      "url": ""
+    },
+    "card2": {
+      "cta": {
+        "en": "",
+        "zh": ""
+      },
+      "desc": {
+        "en": "",
+        "zh": ""
+      },
+      "title": {
+        "en": "",
+        "zh": ""
+      },
+      "url": ""
+    },
+    "card3": {
+      "cta": {
+        "en": "",
+        "zh": ""
+      },
+      "desc": {
+        "en": "",
+        "zh": ""
+      },
+      "title": {
+        "en": "",
+        "zh": ""
+      },
+      "url": ""
+    },
+    "card4": {
+      "cta": {
+        "en": "",
+        "zh": ""
+      },
+      "desc": {
+        "en": "",
+        "zh": ""
+      },
+      "title": {
+        "en": "",
+        "zh": ""
+      },
+      "url": ""
+    },
+    "card5": {
+      "cta": {
+        "en": "",
+        "zh": ""
+      },
+      "desc": {
+        "en": "",
+        "zh": ""
+      },
+      "title": {
+        "en": "",
+        "zh": ""
+      },
+      "url": ""
+    },
+    "subtitle": {
+      "en": "",
+      "zh": ""
+    },
+    "tag": {
+      "en": "",
+      "zh": ""
+    },
+    "title": {
+      "en": "",
+      "zh": ""
+    }
+  },
+  "hero": {
+    "bgImage": "",
+    "cta1": {
+      "en": "",
+      "zh": ""
+    },
+    "cta1_url": "",
+    "cta2": {
+      "en": "",
+      "zh": ""
+    },
+    "cta2_url": "",
+    "services": {
+      "en": "",
+      "zh": ""
+    },
+    "subtitle": {
+      "en": "",
+      "zh": ""
+    },
+    "title1": {
+      "en": "",
+      "zh": "沙特商务签证"
+    },
+    "title2": {
+      "en": "",
+      "zh": ""
+    }
+  },
+  "stats": {
+    "clients": {
+      "unit": {
+        "en": "",
+        "zh": ""
+      },
+      "value": {
+        "en": "",
+        "zh": ""
+      }
+    },
+    "countries": {
+      "unit": {
+        "en": "",
+        "zh": ""
+      },
+      "value": {
+        "en": "",
+        "zh": ""
+      }
+    },
+    "experience": {
+      "unit": {
+        "en": "",
+        "zh": ""
+      },
+      "value": {
+        "en": "",
+        "zh": ""
+      }
+    },
+    "rate": {
+      "unit": {
+        "en": "",
+        "zh": ""
+      },
+      "value": {
+        "en": "",
+        "zh": ""
+      }
+    }
+  }
+}

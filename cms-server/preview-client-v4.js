@@ -319,4 +319,21 @@
   } else {
     main();
   }
+
+  // ── 实时预览：监听来自后台编辑器的消息 ──────────
+  window.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'cms-live-preview') {
+      const data = event.data.content;
+      if (data) {
+        console.log('[CMS Live] 收到实时预览数据');
+        window.CMS_PAGE_DATA = data;
+        applyPageContent(data);
+        if (typeof window.onCmsPageData === 'function') window.onCmsPageData(data);
+        // 通知编辑器：预览已就绪
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: 'cms-preview-ack' }, '*');
+        }
+      }
+    }
+  });
 })();

@@ -1029,28 +1029,42 @@ async function renderPageEditor(container, pageKey) {
   }).join('');
 
   container.innerHTML = `
-    <div class="max-w-5xl mx-auto editor-panel">
-      <div class="mb-6 flex items-end justify-between flex-wrap gap-3">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900">页面内容 — ${getPageLabel(pageKey)}</h1>
-          <p class="text-gray-500 text-sm mt-1">按模块分组展示，方便定位要编辑的字段。编辑完成后点击右下角保存。</p>
-        </div>
-        <div class="flex gap-2 text-xs">
-          <button type="button" onclick="document.querySelectorAll('.module-group').forEach(g=>g.classList.remove('collapsed'))" class="px-3 py-1.5 bg-white border border-gray-200 rounded-md hover:bg-gray-50">全部展开</button>
-          <button type="button" onclick="document.querySelectorAll('.module-group').forEach(g=>g.classList.add('collapsed'))" class="px-3 py-1.5 bg-white border border-gray-200 rounded-md hover:bg-gray-50">全部折叠</button>
+    <div id="lpWrapper" style="display:flex;gap:20px;align-items:flex-start;">
+      <div id="editorSide" style="flex:1;min-width:0;transition:all .3s;">
+        <div class="max-w-5xl mx-auto editor-panel">
+          <div class="mb-6 flex items-end justify-between flex-wrap gap-3">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900">页面内容 — ${getPageLabel(pageKey)}</h1>
+              <p class="text-gray-500 text-sm mt-1">按模块分组展示，方便定位要编辑的字段。编辑完成后点击右下角保存。</p>
+            </div>
+            <div class="flex gap-2 text-xs">
+              <button type="button" onclick="document.querySelectorAll('.module-group').forEach(g=>g.classList.remove('collapsed'))" class="px-3 py-1.5 bg-white border border-gray-200 rounded-md hover:bg-gray-50">全部展开</button>
+              <button type="button" onclick="document.querySelectorAll('.module-group').forEach(g=>g.classList.add('collapsed'))" class="px-3 py-1.5 bg-white border border-gray-200 rounded-md hover:bg-gray-50">全部折叠</button>
+              <button type="button" onclick="toggleLivePreview('${pageKey}')" id="livePreviewBtn" data-page-key="${pageKey}" style="padding:6px 14px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;cursor:pointer;transition:all .2s;" onmouseover="if(!this.dataset.active)this.style.background='#f0f0f0'" onmouseout="if(!this.dataset.active)this.style.background='#f9fafb'">📱 实时预览</button>
+            </div>
+          </div>
+          <div class="space-y-4">
+            ${groupsHTML || '<p class="text-gray-400 py-8 text-center bg-white rounded-xl border">该页面暂未配置可编辑字段。</p>'}
+          </div>
+          ${fields.length ? `
+          <div class="save-bar">
+            <span class="save-hint">编辑完成后点击保存</span>
+            <div class="flex gap-2">
+              <button onclick="openPreview('${pageKey}')" class="btn-reset">👁 预览前台</button>
+              <button onclick="savePageContent('${pageKey}')" class="btn-save">💾 保存页面内容</button>
+            </div>
+          </div>` : ''}
         </div>
       </div>
-      <div class="space-y-4">
-        ${groupsHTML || '<p class="text-gray-400 py-8 text-center bg-white rounded-xl border">该页面暂未配置可编辑字段。</p>'}
-      </div>
-      ${fields.length ? `
-      <div class="save-bar">
-        <span class="save-hint">编辑完成后点击保存</span>
-        <div class="flex gap-2">
-          <button onclick="openPreview('${pageKey}')" class="btn-reset">👁 预览前台</button>
-          <button onclick="savePageContent('${pageKey}')" class="btn-save">💾 保存页面内容</button>
+      <div id="previewSide" style="flex:1;min-width:0;display:none;position:sticky;top:80px;">
+        <div style="background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;">
+          <div style="padding:10px 16px;background:#f9fafb;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:13px;font-weight:600;color:#555;">📱 实时预览</span>
+            <span id="previewStatus" style="font-size:11px;color:#aaa;">等待加载...</span>
+          </div>
+          <iframe id="livePreviewFrame" src="" style="width:100%;height:calc(100vh - 160px);border:none;"></iframe>
         </div>
-      </div>` : ''}
+      </div>
     </div>`;
 
   // 初始化 json 类型字段（调用 json-editor.js）
@@ -1068,8 +1082,36 @@ async function renderPageEditor(container, pageKey) {
         } else {
           window.JsonEditor.setValueByPath(window._jsonFieldStore[f.key], path, val);
         }
+        // 实时预览：json 字段变化时同步
+        const lpBtn = document.getElementById('livePreviewBtn');
+        if (lpBtn && lpBtn.dataset.active) {
+          clearTimeout(window._lpDebounce);
+          window._lpDebounce = setTimeout(function() { sendLiveDraft(pageKey); }, 300);
+        }
       });
     }
+  });
+
+  // ── 实时预览：直接给每个输入框绑定 blur + input 事件 ────────
+  // 不依赖事件冒泡，确保失焦必定触发同步
+  window._lpDebounce = null;
+  function _lpSync() {
+    const lpBtn = document.getElementById('livePreviewBtn');
+    if (!lpBtn || !lpBtn.dataset.active) return;
+    clearTimeout(window._lpDebounce);
+    window._lpDebounce = setTimeout(function() {
+      const key = lpBtn.dataset.pageKey;
+      if (key) sendLiveDraft(key);
+    }, 100);
+  }
+  // 选中所有 field 输入框和文本域，逐个绑定 blur
+  container.querySelectorAll('input[id^="field-"], textarea[id^="field-"]').forEach(function(el) {
+    el.addEventListener('blur', _lpSync);
+    el.addEventListener('input', _lpSync);
+  });
+  // select / checkbox 等用 change
+  container.querySelectorAll('select[id^="field-"], input[type="checkbox"][id^="field-"]').forEach(function(el) {
+    el.addEventListener('change', _lpSync);
   });
 }
 
@@ -1145,6 +1187,79 @@ window.openPreview = function(pageKey) {
   const htmlFile = pageMap[pageKey] || `${pageKey}.html`;
   const previewUrl = `/preview/${htmlFile}?preview=1&t=${Date.now()}`;
   window.open(previewUrl, '_blank', 'width=1280,height=900');
+};
+
+// ── 实时预览功能 ──────────────────────────────
+function collectDraftContent(pageKey) {
+  const fields = getPageFields(pageKey);
+  const payload = {};
+  fields.forEach(f => {
+    const keys = f.key.split('.');
+    let cur = payload;
+    for (let i = 0; i < keys.length; i++) {
+      if (i === keys.length - 1) {
+        if (f.type === 'image' || f.type === 'url') {
+          cur[keys[i]] = document.getElementById(`field-${f.key}`)?.value || '';
+        } else if (f.type === 'json' || f.type === 'repeater') {
+          const stored = (window._jsonFieldStore && window._jsonFieldStore[f.key]) || { zh: [], en: [] };
+          cur[keys[i]] = stored;
+        } else {
+          cur[keys[i]] = { zh: document.getElementById(`field-${f.key}`)?.value || '', en: '' };
+        }
+      } else {
+        cur[keys[i]] = cur[keys[i]] || {};
+        cur = cur[keys[i]];
+      }
+    }
+  });
+  return payload;
+}
+
+function sendLiveDraft(pageKey) {
+  const frame = document.getElementById('livePreviewFrame');
+  if (!frame || !frame.contentWindow) return;
+  const draft = collectDraftContent(pageKey);
+  frame.contentWindow.postMessage({ type: 'cms-live-preview', content: draft }, '*');
+  const status = document.getElementById('previewStatus');
+  if (status) {
+    status.textContent = '已同步';
+    status.style.color = '#006341';
+    setTimeout(function() { status.textContent = '等待编辑...'; status.style.color = '#aaa'; }, 2000);
+  }
+}
+
+window.toggleLivePreview = function(pageKey) {
+  const previewSide = document.getElementById('previewSide');
+  const btn = document.getElementById('livePreviewBtn');
+  const frame = document.getElementById('livePreviewFrame');
+  const status = document.getElementById('previewStatus');
+  if (!previewSide || !btn || !frame) return;
+
+  const isActive = previewSide.style.display !== 'none';
+  if (isActive) {
+    // 关闭预览
+    previewSide.style.display = 'none';
+    btn.dataset.active = '';
+    btn.style.background = '#f9fafb';
+    btn.style.color = ''; btn.style.borderColor = '#e5e7eb';
+    btn.textContent = '📱 实时预览';
+    frame.src = '';
+  } else {
+    // 开启预览
+    previewSide.style.display = 'block';
+    btn.dataset.active = '1';
+    btn.style.background = '#006341'; btn.style.color = '#fff'; btn.style.borderColor = '#006341';
+    btn.textContent = '✕ 关闭预览';
+    const pageMap = { 'home':'index.html','about':'about.html','visa':'visa.html','saudi-visa':'saudi-visa.html','enterprise':'enterprise.html','transport':'transport.html','insurance':'insurance.html','inspection':'inspection.html' };
+    const htmlFile = pageMap[pageKey] || pageKey + '.html';
+    if (status) { status.textContent = '加载中...'; status.style.color = '#f59e0b'; }
+    frame.src = '/preview/' + htmlFile + '?live=1&t=' + Date.now();
+    frame.onload = function() {
+      // 等待 preview-client 初始化完毕后发送草稿
+      setTimeout(function() { sendLiveDraft(pageKey); }, 1200);
+      if (status) { status.textContent = '已连接'; status.style.color = '#006341'; }
+    };
+  }
 };
 
 // ── 快速预览（从顶部按钮调用）───────────────────────

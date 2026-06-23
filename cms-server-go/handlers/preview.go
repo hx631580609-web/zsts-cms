@@ -32,7 +32,11 @@ func InitPreview(baseDir string) {
 // PreviewClientJS 返回预览客户端 JS（禁用缓存）
 func PreviewClientJS(version string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		jsPath := filepath.Join(projectRoot, "cms-server", "preview-client.js")
+		fileName := "preview-client.js"
+		if version != "" {
+			fileName = "preview-client-" + version + ".js"
+		}
+		jsPath := filepath.Join(projectRoot, "cms-server", fileName)
 		data, err := os.ReadFile(jsPath)
 		if err != nil {
 			c.String(http.StatusNotFound, "// not found")

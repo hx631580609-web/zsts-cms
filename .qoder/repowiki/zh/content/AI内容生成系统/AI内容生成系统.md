@@ -14,6 +14,10 @@
 - [token-persister.tsx](file://ai-content-project/src/components/token-persister.tsx)
 - [data.ts](file://ai-content-project/src/lib/data.ts)
 - [route.ts](file://ai-content-project/src/app/api/fetch/route.ts)
+- [route.ts](file://ai-content-project/src/app/api/image/route.ts)
+- [button.tsx](file://ai-content-project/src/components/ui/button.tsx)
+- [input.tsx](file://ai-content-project/src/components/ui/input.tsx)
+- [use-mobile.ts](file://ai-content-project/src/hooks/use-mobile.ts)
 - [app.js](file://cms-server/app.js)
 - [auth.js](file://cms-server/middleware/auth.js)
 - [ai-channels.js](file://cms-server/routes/ai-channels.js)
@@ -21,13 +25,13 @@
 
 ## 更新摘要
 **所做更改**
-- 新增AI内容生成系统架构分析
-- 更新前端组件设计模式说明
-- 完善AI功能模块详细分析
-- 增强代理服务配置说明
-- 补充数据模型设计文档
-- 更新性能优化策略
-- 新增故障排除指南
+- 新增AI内容生成系统完整架构分析
+- 更新前端组件设计模式和UI组件库说明
+- 完善AI功能模块详细实现分析
+- 增强代理服务配置和认证机制说明
+- 补充数据模型和API路由设计文档
+- 更新性能优化策略和视频处理系统
+- 新增故障排除指南和开发脚本说明
 
 ## 目录
 1. [简介](#简介)
@@ -540,6 +544,32 @@ CONTENT_ITEM ||--|| LOG_ENTRY : "产生"
 **章节来源**
 - [data.ts:1-218](file://ai-content-project/src/lib/data.ts#L1-L218)
 
+### API路由设计
+
+#### 内容抓取API
+
+系统提供了专门的API路由来处理内容抓取和图片生成：
+
+```mermaid
+flowchart TD
+A[POST /api/fetch] --> B[Coze SDK客户端]
+B --> C[远程URL抓取]
+C --> D[内容提取]
+D --> E[响应返回]
+F[POST /api/image] --> G[Coze SDK图片生成]
+G --> H[Prompt验证]
+H --> I[图片生成]
+I --> J[URL返回]
+```
+
+**图表来源**
+- [route.ts:1-25](file://ai-content-project/src/app/api/fetch/route.ts#L1-L25)
+- [route.ts:1-36](file://ai-content-project/src/app/api/image/route.ts#L1-L36)
+
+**章节来源**
+- [route.ts:1-25](file://ai-content-project/src/app/api/fetch/route.ts#L1-L25)
+- [route.ts:1-36](file://ai-content-project/src/app/api/image/route.ts#L1-L36)
+
 ## 依赖关系分析
 
 ### 前端依赖关系
@@ -636,6 +666,9 @@ F --> K[用户体验提升]
 - **内存管理**: 实现高效的内存回收机制
 - **并发处理**: 支持多任务并发处理
 
+**章节来源**
+- [poster/page.tsx:271-292](file://ai-content-project/src/app/poster/page.tsx#L271-L292)
+
 ## 故障排除指南
 
 ### 常见问题诊断
@@ -677,6 +710,19 @@ F --> K[用户体验提升]
 2. **日志系统**: 实现详细的错误日志记录
 3. **性能分析**: 使用React DevTools分析组件性能
 4. **网络监控**: 监控AI服务的响应时间和成功率
+
+### 开发脚本说明
+
+系统提供了完整的开发脚本支持：
+
+- **build.sh**: 生产环境构建脚本
+- **dev.sh**: 开发环境启动脚本
+- **start.sh**: 应用启动脚本
+- **validate.sh**: 代码验证脚本
+- **prepare.sh**: 项目准备脚本
+
+**章节来源**
+- [package.json:5-13](file://ai-content-project/package.json#L5-L13)
 
 ## 结论
 
