@@ -1164,7 +1164,115 @@ async function renderAiChannelsPageOld(container) {
 }
 
 async function renderLogsPage(container) {
-  container.innerHTML = `<div class="max-w-5xl mx-auto"><div class="bg-white rounded-xl p-10 text-center text-gray-400">📋 操作日志查看（后续补充表格界面）</div></div>`;
+  const API = window.API || '/api';
+  const token = localStorage.getItem('cms_token');
+  const headers = { 'Authorization': 'Bearer ' + token };
+  let currentPage = 1;
+  const pageSize = 20;
+
+  async function loadLogs(page) {
+    const params = new URLSearchParams({ page, limit: pageSize });
+    const action = document.getElementById('logFilterAction')?.value || '';
+    const username = document.getElementById('logFilterUser')?.value || '';
+    const startDate = document.getElementById('logFilterStart')?.value || '';
+    const endDate = document.getElementById('logFilterEnd')?.value || '';
+    if (action) params.set('action', action);
+    if (username) params.set('username', username);
+    if (startDate) params.set('start_date', startDate);
+    if (endDate) params.set('end_date', endDate);
+    const r = await fetch(API + '/logs?' + params, { headers });
+    if (!r.ok) throw new Error('加载失败');
+    return await r.json();
+  }
+
+  async function clearAllLogs() {
+    if (!confirm('确定清空所有操作日志？此操作不可恢复！')) return;
+    const r = await fetch(API + '/logs', { method: 'DELETE', headers });
+    if (!r.ok) { const err = await r.json().catch(()=>({})); alert(err.error || '清空失败'); return; }
+    showToast('日志已清空');
+    renderList(1);
+  }
+
+  function actionLabel(action) {
+    const map = {
+      'login': '登录', 'create_user': '创建用户', 'update_permissions': '更新权限',
+      'reset_password': '重置密码', 'delete_user': '删除用户', 'update_content': '更新内容',
+      'create_channel': '创建渠道', 'update_channel': '更新渠道', 'delete_channel': '删除渠道',
+      'set_default_channel': '设置默认渠道', 'upload_image': '上传图片', 'clear_logs': '清空日志'
+    };
+    return map[action] || action;
+  }
+
+  function formatTime(ts) {
+    if (!ts) return '-';
+    const d = new Date(ts);
+    const pad = n => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+  }
+
+  async function renderList(page) {
+    currentPage = page || currentPage;
+    let data;
+    try { data = await loadLogs(currentPage); } catch(e) { container.innerHTML = '<div style="background:#fef2f2;padding:16px;border-radius:8px;color:#dc2626;">加载失败：' + e.message + '</div>'; return; }
+    const rows = data.rows || [];
+    const totalPages = Math.ceil(data.total / pageSize) || 1;
+
+    let html = '<div class="max-w-5xl mx-auto">' +
+      '<div class="flex items-center justify-between mb-6">' +
+        '<h2 class="text-2xl font-bold text-gray-900">📋 操作日志</h2>' +
+        '<button onclick="window._clearLogs()" style="padding:8px 16px;background:#fff;color:#dc2626;border:1px solid #fca5a5;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;" onmouseover="this.style.background=\'#fef2f2\'" onmouseout="this.style.background=\'#fff\'">清空日志</button>' +
+      '</div>' +
+      '<div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">' +
+      '<div style="padding:16px 24px;border-bottom:1px solid #f3f4f6;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">' +
+        '<input id="logFilterUser" type="text" placeholder="用户名" style="padding:6px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;width:120px;outline:none;">' +
+        '<input id="logFilterAction" type="text" placeholder="操作类型" style="padding:6px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;width:120px;outline:none;">' +
+        '<input id="logFilterStart" type="date" style="padding:6px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;outline:none;">' +
+        '<span style="color:#9ca3af;font-size:13px;">至</span>' +
+        '<input id="logFilterEnd" type="date" style="padding:6px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;outline:none;">' +
+        '<button onclick="window._searchLogs()" style="padding:6px 16px;background:#006341;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;" onmouseover="this.style.background=\'#004d33\'" onmouseout="this.style.background=\'#006341\'">查询</button>' +
+        '<button onclick="window._resetLogFilter()" style="padding:6px 16px;background:#f3f4f6;color:#374151;border:none;border-radius:6px;cursor:pointer;font-size:13px;">重置</button>' +
+      '</div>';
+
+    if (rows.length === 0) {
+      html += '<div class="p-12 text-center text-gray-400">暂无日志记录</div>';
+    } else {
+      html += '<table class="w-full text-sm"><thead class="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"><tr>' +
+        '<th class="px-6 py-4">时间</th><th class="px-6 py-4">用户</th><th class="px-6 py-4">操作</th><th class="px-6 py-4">目标</th><th class="px-6 py-4">详情</th>' +
+        '</tr></thead><tbody class="divide-y divide-gray-100">';
+      for (const row of rows) {
+        html += '<tr class="hover:bg-gray-50/50">' +
+          '<td class="px-6 py-3 text-gray-500 text-xs whitespace-nowrap">' + formatTime(row.timestamp) + '</td>' +
+          '<td class="px-6 py-3 font-medium text-gray-900">' + esc(row.username) + '</td>' +
+          '<td class="px-6 py-3"><span style="display:inline-block;padding:2px 10px;border-radius:9999px;font-size:12px;font-weight:500;background:#e6f4ec;color:#006341;">' + esc(actionLabel(row.action)) + '</span></td>' +
+          '<td class="px-6 py-3 text-gray-600 text-xs">' + esc(row.target || '-') + '</td>' +
+          '<td class="px-6 py-3 text-gray-400 text-xs max-w-xs truncate">' + esc(row.detail || '-') + '</td>' +
+        '</tr>';
+      }
+      html += '</tbody></table>';
+    }
+
+    // 分页
+    html += '<div style="padding:12px 24px;border-top:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;">' +
+      '<span style="font-size:13px;color:#9ca3af;">共 ' + data.total + ' 条</span>' +
+      '<div style="display:flex;gap:6px;align-items:center;">' +
+        '<button onclick="window._goLogPage(' + (currentPage - 1) + ')" ' + (currentPage <= 1 ? 'disabled' : '') + ' style="padding:4px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;cursor:' + (currentPage <= 1 ? 'not-allowed' : 'pointer') + ';background:#fff;color:' + (currentPage <= 1 ? '#d1d5db' : '#374151') + ';">上一页</button>' +
+        '<span style="font-size:13px;color:#6b7280;">' + currentPage + ' / ' + totalPages + '</span>' +
+        '<button onclick="window._goLogPage(' + (currentPage + 1) + ')" ' + (currentPage >= totalPages ? 'disabled' : '') + ' style="padding:4px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;cursor:' + (currentPage >= totalPages ? 'not-allowed' : 'pointer') + ';background:#fff;color:' + (currentPage >= totalPages ? '#d1d5db' : '#374151') + ';">下一页</button>' +
+      '</div></div>';
+
+    html += '</div></div>';
+    container.innerHTML = html;
+  }
+
+  await renderList(1);
+  window._goLogPage = (p) => { if (p >= 1) renderList(p); };
+  window._searchLogs = () => renderList(1);
+  window._resetLogFilter = () => {
+    const ids = ['logFilterUser','logFilterAction','logFilterStart','logFilterEnd'];
+    ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    renderList(1);
+  };
+  window._clearLogs = clearAllLogs;
 }
 
 // ── AI 渠道配置页面 ─────────────────────────────
@@ -1214,7 +1322,7 @@ async function renderAiChannelsPage(container) {
     let html = '<div class="max-w-5xl mx-auto">' +
       '<div class="flex items-center justify-between mb-6">' +
         '<h2 class="text-2xl font-bold text-gray-900">🤖 AI 渠道配置</h2>' +
-        '<button onclick="window._aiChAdd()" class="px-5 py-2.5 bg-zsts-green text-white rounded-xl hover:bg-green-700 text-sm font-semibold shadow-sm">+ 添加渠道</button>' +
+        '<button onclick="window._aiChAdd()" style="padding:10px 22px;background:#006341;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;box-shadow:0 2px 8px rgba(0,99,65,.2);" onmouseover="this.style.background=\'#004d33\'" onmouseout="this.style.background=\'#006341\'">+ 添加渠道</button>' +
       '</div>' +
       '<div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">';
 

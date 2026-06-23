@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "key": "home",
+      "label_zh": "首页",
+      "url": "index.html"
+    },
+    {
+      "key": "saudiVisa",
+      "label_zh": "沙特签证",
+      "url": "saudi-visa.html"
+    },
+    {
+      "key": "visa",
+      "label_zh": "全球签证",
+      "url": "visa.html"
+    },
+    {
+      "key": "transport",
+      "label_zh": "境外交通住宿",
+      "url": "transport.html"
+    },
+    {
+      "key": "insurance",
+      "label_zh": "境外保险",
+      "url": "insurance.html"
+    },
+    {
+      "key": "enterprise",
+      "label_zh": "企业出海",
+      "url": "enterprise.html"
+    },
+    {
+      "key": "inspection",
+      "label_zh": "企业考察",
+      "url": "inspection.html"
+    },
+    {
+      "key": "about",
+      "label_zh": "关于我们",
+      "url": "about.html"
+    }
+  ]
+}

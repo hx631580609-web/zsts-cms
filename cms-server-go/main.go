@@ -134,8 +134,21 @@ func corsMiddleware() gin.HandlerFunc {
 
 // setupAIProxy 设置 AI 内容生成反向代理
 func setupAIProxy(r *gin.Engine) {
-	target, _ := url.Parse("http://localhost:3000")
+	target, err := url.Parse(config.AppConfig.AIContentURL)
+	if err != nil {
+		log.Printf("⚠️  AI_CONTENT_URL 配置错误: %v", err)
+		return
+	}
+
 	proxy := httputil.NewSingleHostReverseProxy(target)
+
+	// 自定义错误处理：目标不可达时返回友好提示而非 502
+	proxy.ErrorHandler = func(w http.ResponseWriter, req *http.Request, err error) {
+		log.Printf("AI 内容生成服务代理失败: %v", err)
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusBadGateway)
+		w.Write([]byte(`{"error":"AI 内容生成服务未启动，请先启动 ai-content-project 服务（` + target.String() + `）"}`))
+	}
 
 	// 修改请求，注入用户信息
 	defaultDirector := proxy.Director

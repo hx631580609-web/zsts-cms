@@ -12,13 +12,14 @@ var AppConfig *Config
 
 // Config 应用配置结构
 type Config struct {
-	Port       string
-	JWTSecret  string
-	DBHost     string
-	DBPort     string
-	DBUser     string
-	DBPassword string
-	DBName     string
+	Port         string
+	JWTSecret    string
+	DBHost       string
+	DBPort       string
+	DBUser       string
+	DBPassword   string
+	DBName       string
+	AIContentURL string
 }
 
 // Load 加载 .env 并初始化配置
@@ -27,13 +28,14 @@ func Load() {
 	_ = godotenv.Load()
 
 	AppConfig = &Config{
-		Port:       getEnv("PORT", "3001"),
-		JWTSecret:  getEnv("JWT_SECRET", "zsts-cms-secret-change-in-production"),
-		DBHost:     getEnv("DB_HOST", "127.0.0.1"),
-		DBPort:     getEnv("DB_PORT", "3306"),
-		DBUser:     getEnv("DB_USER", "root"),
-		DBPassword: getEnv("DB_PASSWORD", "root"),
-		DBName:     getEnv("DB_NAME", "zsts_cms"),
+		Port:         getEnv("PORT", "3001"),
+		JWTSecret:    getEnv("JWT_SECRET", "zsts-cms-secret-change-in-production"),
+		DBHost:       getEnv("DB_HOST", "127.0.0.1"),
+		DBPort:       getEnv("DB_PORT", "3306"),
+		DBUser:       getEnv("DB_USER", "root"),
+		DBPassword:   getEnv("DB_PASSWORD", "root"),
+		DBName:       getEnv("DB_NAME", "zsts_cms"),
+		AIContentURL: getEnv("AI_CONTENT_URL", "http://localhost:5000"),
 	}
 }
 
