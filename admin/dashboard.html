@@ -25,18 +25,39 @@
   <style>
     * { box-sizing: border-box; margin:0; padding:0; }
     body { font-family: -apple-system, 'Noto Sans SC', sans-serif; display:flex; height:100vh; background:#f0f2f5; }
-    .sidebar { width: 240px; background: #001529; color:#fff; display:flex; flex-direction:column; }
-    .sidebar .logo { height: 64px; display:flex; align-items:center; padding:0 24px; font-size:18px; font-weight:700; color:#fff; border-bottom:1px solid rgba(255,255,255,.1); }
-    .sidebar nav { flex:1; padding:8px 0; overflow-y:auto; }
-    .sidebar nav .group-title { padding:16px 24px 4px; font-size:11px; color:rgba(255,255,255,.35); text-transform:uppercase; letter-spacing:1px; }
-    .sidebar nav a { display:flex; align-items:center; gap:10px; padding:10px 24px; color:rgba(255,255,255,.65); text-decoration:none; font-size:14px; transition: all .15s; cursor:pointer; }
+    .sidebar { width: 240px; background: #001529; color:#fff; display:flex; flex-direction:column; transition: width .25s ease; }
+    .sidebar.collapsed { width: 64px; }
+    .sidebar.collapsed .logo span { display:none; }
+    .sidebar.collapsed nav .group-header span { display:none; }
+    .sidebar.collapsed nav .group-header .arrow { display:none; }
+    .sidebar.collapsed nav a .nav-label { display:none; }
+    .sidebar.collapsed nav a { justify-content:center; padding:10px 0; }
+    .sidebar.collapsed nav .group-header { justify-content:center; padding:10px 0; }
+    .sidebar.collapsed .user-bar > div { display:none; }
+    .sidebar.collapsed .user-bar button { margin-top:0; font-size:16px; padding:4px 8px; }
+    .sidebar .logo { height: 64px; display:flex; align-items:center; padding:0 20px; font-size:18px; font-weight:700; color:#fff; border-bottom:1px solid rgba(255,255,255,.1); white-space:nowrap; overflow:hidden; }
+    .sidebar nav { flex:1; padding:8px 0; overflow-y:auto; overflow-x:hidden; }
+    .sidebar nav .group-header { display:flex; align-items:center; gap:10px; padding:10px 20px; color:rgba(255,255,255,.85); font-size:14px; font-weight:600; cursor:pointer; transition: all .15s; user-select:none; }
+    .sidebar nav .group-header:hover { background:rgba(255,255,255,.06); }
+    .sidebar nav .group-header .icon { font-size:16px; width:20px; text-align:center; flex-shrink:0; }
+    .sidebar nav .group-header .arrow { margin-left:auto; font-size:10px; transition: transform .2s ease; color:rgba(255,255,255,.4); }
+    .sidebar nav .group-header.open .arrow { transform: rotate(90deg); }
+    .sidebar nav .group-children { overflow:hidden; transition: max-height .25s ease; }
+    .sidebar nav .group-children.collapsed { max-height:0 !important; }
+    .sidebar nav a { display:flex; align-items:center; gap:10px; padding:9px 20px 9px 36px; color:rgba(255,255,255,.55); text-decoration:none; font-size:13px; transition: all .15s; cursor:pointer; border-left:2px solid transparent; }
     .sidebar nav a:hover { color:#fff; background:rgba(255,255,255,.06); }
-    .sidebar nav a.active { color:#fff; background:#006341; }
-    .sidebar nav a .icon { font-size:16px; width:20px; text-align:center; }
-    .sidebar .user-bar { padding:16px 24px; border-top:1px solid rgba(255,255,255,.1); font-size:13px; color:rgba(255,255,255,.5); }
+    .sidebar nav a.active { color:#fff; background:rgba(0,99,65,.25); border-left-color:#006341; }
+    .sidebar nav a .icon { font-size:14px; width:18px; text-align:center; flex-shrink:0; }
+    .sidebar nav a.top-level { padding-left:20px; color:rgba(255,255,255,.65); font-size:14px; }
+    .sidebar nav a.top-level .icon { font-size:16px; width:20px; }
+    .sidebar .user-bar { padding:16px 20px; border-top:1px solid rgba(255,255,255,.1); font-size:13px; color:rgba(255,255,255,.5); white-space:nowrap; overflow:hidden; }
     .sidebar .user-bar .username { color:#fff; font-weight:600; }
     .sidebar .user-bar button { margin-top:8px; background:none; border:1px solid rgba(255,255,255,.3); color:rgba(255,255,255,.7); padding:4px 12px; border-radius:4px; cursor:pointer; font-size:12px; }
     .sidebar .user-bar button:hover { border-color:#fff; color:#fff; }
+    .sidebar .collapse-btn { position:absolute; top:20px; right:-14px; width:28px; height:28px; background:#001529; border:1px solid rgba(255,255,255,.15); border-radius:50%; color:rgba(255,255,255,.6); font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:20; transition: all .2s; }
+    .sidebar .collapse-btn:hover { background:#006341; color:#fff; border-color:#006341; }
+    .sidebar.collapsed .collapse-btn { transform: rotate(180deg); }
+    .sidebar { position:relative; }
     .main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
     .topbar { height:64px; background:#fff; display:flex; align-items:center; padding:0 24px; box-shadow:0 1px 4px rgba(0,0,0,.06); z-index:10; }
     .topbar h2 { font-size:18px; color:#333; }
@@ -118,7 +139,8 @@
 <body>
 
 <div class="sidebar" id="sidebar">
-  <div class="logo">ZSTS CMS</div>
+  <div class="logo"><span>ZSTS CMS</span></div>
+  <button class="collapse-btn" onclick="toggleSidebar()" title="收起/展开">◀</button>
   <nav id="navMenu">
     <!-- JS 动态渲染 -->
   </nav>
@@ -223,31 +245,47 @@ function renderMenu() {
   let html = '';
   for (const item of pages) {
     if (item.children) {
-      html += `<div class="group-title">${item.label}</div>`;
+      const gid = 'grp_' + item.key;
+      html += `<div class="group-header open" onclick="toggleGroup('${gid}', this)">`;
+      html += `<span class="icon">${item.icon}</span><span>${item.label}</span><span class="arrow">▶</span>`;
+      html += `</div>`;
+      html += `<div class="group-children" id="${gid}">`;
       for (const child of item.children) {
         if (child.url) {
           html += `<a href="${child.url}" target="_blank" rel="noopener">
-            <span class="icon">${child.icon}</span>${child.label}
+            <span class="icon">${child.icon}</span><span class="nav-label">${child.label}</span>
           </a>`;
         } else {
           html += `<a data-page="${child.key}" onclick="navigateTo('${child.key}')">
-            <span class="icon">${child.icon}</span>${child.label}
+            <span class="icon">${child.icon}</span><span class="nav-label">${child.label}</span>
           </a>`;
         }
       }
+      html += `</div>`;
     } else {
       if (item.url) {
-        html += `<a href="${item.url}" target="_blank" rel="noopener">
-          <span class="icon">${item.icon}</span>${item.label}
+        html += `<a href="${item.url}" target="_blank" rel="noopener" class="top-level">
+          <span class="icon">${item.icon}</span><span class="nav-label">${item.label}</span>
         </a>`;
       } else {
-        html += `<a data-page="${item.key}" onclick="navigateTo('${item.key}')">
-          <span class="icon">${item.icon}</span>${item.label}
+        html += `<a data-page="${item.key}" onclick="navigateTo('${item.key}')" class="top-level">
+          <span class="icon">${item.icon}</span><span class="nav-label">${item.label}</span>
         </a>`;
       }
     }
   }
   document.getElementById('navMenu').innerHTML = html;
+}
+
+function toggleGroup(gid, headerEl) {
+  const children = document.getElementById(gid);
+  if (!children) return;
+  headerEl.classList.toggle('open');
+  children.classList.toggle('collapsed');
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
 }
 
 // ── 页面导航 ───────────────────────────────────
