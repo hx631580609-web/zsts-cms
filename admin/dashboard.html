@@ -317,19 +317,9 @@ async function loadPage(pageKey) {
   }
   
   try {
-    //  dashboard：欢迎页
+    //  dashboard：控制台
     if (pageKey === 'dashboard') {
-      container.innerHTML = `
-        <div class="bg-white rounded-2xl p-8 shadow-sm">
-          <h3 class="text-xl font-bold text-gray-900 mb-4">欢迎使用 ZSTS 内容管理系统</h3>
-          <p class="text-gray-600 leading-relaxed">
-            当前角色：<strong class="text-zsts-green">${currentUser.role === 'super_admin' ? '超级管理员' : '编辑'}</strong><br>
-            账号：<strong>${currentUser.username}</strong><br><br>
-            ${currentUser.role === 'super_admin'
-              ? '你可以管理全局配置、账号权限和系统设置。'
-              : '你可以编辑被授权的页面内容。'}
-          </p>
-        </div>`;
+      renderDashboard(container);
       return;
     }
 
@@ -387,6 +377,169 @@ async function loadPage(pageKey) {
     console.error('loadPage error:', e);
     container.innerHTML = '<div class="bg-red-50 p-4 rounded text-red-600">加载页面时出错：' + e.message + '</div>';
   }
+}
+
+// ── 控制台页面 ──────────────────────────────
+async function renderDashboard(container) {
+  const token = localStorage.getItem('cms_token');
+  const headers = { 'Authorization': 'Bearer ' + token };
+  const isAdmin = currentUser.role === 'super_admin';
+
+  // 并行请求数据
+  const [logsRes, usersRes, channelsRes] = await Promise.all([
+    fetch(`${API}/logs?page=1&limit=8`, { headers }).catch(() => null),
+    isAdmin ? fetch(`${API}/users`, { headers }).catch(() => null) : Promise.resolve(null),
+    fetch(`${API}/ai-channels`, { headers }).catch(() => null),
+  ]);
+
+  let logsData = { total: 0, rows: [] };
+  let usersData = [];
+  let channelsData = [];
+  try { if (logsRes?.ok) logsData = await logsRes.json(); } catch(e) {}
+  try { if (usersRes?.ok) usersData = await usersRes.json(); } catch(e) {}
+  try { if (channelsRes?.ok) channelsData = await channelsRes.json(); } catch(e) {}
+
+  const totalPages = 8; // 可管理页面总数
+  const now = new Date();
+  const timeStr = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日 ' +
+    now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+
+  const actionMap = {
+    login: '登录', create_user: '创建用户', delete_user: '删除用户',
+    reset_password: '重置密码', update_permissions: '更新权限',
+    update_content: '更新内容', create_ai_channel: '创建AI渠道',
+    update_ai_channel: '更新AI渠道', delete_ai_channel: '删除AI渠道',
+    set_default_ai_channel: '设置默认渠道',
+  };
+
+  container.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:24px;">
+
+      <!-- 欢迎横幅 -->
+      <div style="background:linear-gradient(135deg,#006341 0%,#00895a 100%);border-radius:16px;padding:32px 36px;color:#fff;position:relative;overflow:hidden;">
+        <div style="position:absolute;right:-30px;top:-30px;width:160px;height:160px;background:rgba(255,255,255,0.06);border-radius:50%;"></div>
+        <div style="position:absolute;right:50px;bottom:-40px;width:200px;height:200px;background:rgba(255,255,255,0.04);border-radius:50%;"></div>
+        <h2 style="font-size:22px;font-weight:700;margin:0 0 8px;">欢迎回来，${currentUser.username}</h2>
+        <p style="margin:0;font-size:14px;opacity:0.85;">${isAdmin ? '你拥有系统完整管理权限，可管理所有配置、账号与系统设置。' : '你可以编辑被授权的页面内容，如需更多权限请联系管理员。'}</p>
+        <p style="margin:12px 0 0;font-size:13px;opacity:0.7;">${timeStr} · ${isAdmin ? '超级管理员' : '编辑'}</p>
+      </div>
+
+      <!-- 统计卡片 -->
+      <div style="display:grid;grid-template-columns:repeat(${isAdmin ? 4 : 2},1fr);gap:16px;">
+        <div style="background:#fff;border-radius:14px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+            <div style="width:42px;height:42px;border-radius:12px;background:#e8f5e9;display:flex;align-items:center;justify-content:center;font-size:20px;">📄</div>
+            <span style="font-size:13px;color:#888;">管理页面</span>
+          </div>
+          <div style="font-size:28px;font-weight:700;color:#222;">${totalPages}</div>
+        </div>
+        ${isAdmin ? `
+        <div style="background:#fff;border-radius:14px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+            <div style="width:42px;height:42px;border-radius:12px;background:#e3f2fd;display:flex;align-items:center;justify-content:center;font-size:20px;">👥</div>
+            <span style="font-size:13px;color:#888;">系统账号</span>
+          </div>
+          <div style="font-size:28px;font-weight:700;color:#222;">${usersData.length}</div>
+        </div>` : ''}
+        ${isAdmin ? `
+        <div style="background:#fff;border-radius:14px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+            <div style="width:42px;height:42px;border-radius:12px;background:#f3e5f5;display:flex;align-items:center;justify-content:center;font-size:20px;">🤖</div>
+            <span style="font-size:13px;color:#888;">AI 渠道</span>
+          </div>
+          <div style="font-size:28px;font-weight:700;color:#222;">${channelsData.length}</div>
+        </div>` : ''}
+        <div style="background:#fff;border-radius:14px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+            <div style="width:42px;height:42px;border-radius:12px;background:#fff3e0;display:flex;align-items:center;justify-content:center;font-size:20px;">📋</div>
+            <span style="font-size:13px;color:#888;">操作日志</span>
+          </div>
+          <div style="font-size:28px;font-weight:700;color:#222;">${logsData.total}</div>
+        </div>
+      </div>
+
+      <!-- 两栏：最近操作 + 快捷入口 -->
+      <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;">
+
+        <!-- 最近操作 -->
+        <div style="background:#fff;border-radius:14px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 style="margin:0;font-size:16px;font-weight:600;color:#222;">最近操作</h3>
+            <a href="javascript:void(0)" onclick="navigateTo('logs')" style="font-size:13px;color:#006341;text-decoration:none;">查看全部 →</a>
+          </div>
+          ${logsData.rows.length === 0 ? `
+            <div style="text-align:center;padding:40px 0;color:#bbb;font-size:14px;">暂无操作记录</div>
+          ` : `
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead><tr style="border-bottom:1px solid #f0f0f0;">
+              <th style="text-align:left;padding:8px 10px;color:#999;font-weight:500;">时间</th>
+              <th style="text-align:left;padding:8px 10px;color:#999;font-weight:500;">用户</th>
+              <th style="text-align:left;padding:8px 10px;color:#999;font-weight:500;">操作</th>
+              <th style="text-align:left;padding:8px 10px;color:#999;font-weight:500;">对象</th>
+            </tr></thead>
+            <tbody>
+            ${logsData.rows.map(log => {
+              const actionLabel = actionMap[log.action] || log.action;
+              const t = log.timestamp ? log.timestamp.replace('T',' ').substring(0,16) : '-';
+              return `<tr style="border-bottom:1px solid #f7f7f7;">
+                <td style="padding:10px;color:#666;">${t}</td>
+                <td style="padding:10px;font-weight:500;color:#333;">${log.username}</td>
+                <td style="padding:10px;"><span style="background:#e8f5e9;color:#006341;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:500;">${actionLabel}</span></td>
+                <td style="padding:10px;color:#666;">${log.target || '-'}</td>
+              </tr>`;
+            }).join('')}
+            </tbody>
+          </table>`}
+        </div>
+
+        <!-- 快捷入口 -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div style="background:#fff;border-radius:14px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+            <h3 style="margin:0 0 16px;font-size:16px;font-weight:600;color:#222;">快捷操作</h3>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <a href="javascript:void(0)" onclick="navigateTo('home')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;text-decoration:none;color:#333;font-size:14px;background:#f9fafb;transition:background .15s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='#f9fafb'">
+                <span style="font-size:16px;">🏠</span> 编辑首页内容
+              </a>
+              ${isAdmin ? `
+              <a href="javascript:void(0)" onclick="navigateTo('nav')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;text-decoration:none;color:#333;font-size:14px;background:#f9fafb;transition:background .15s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='#f9fafb'">
+                <span style="font-size:16px;">🧭</span> 导航栏配置
+              </a>
+              <a href="javascript:void(0)" onclick="navigateTo('users')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;text-decoration:none;color:#333;font-size:14px;background:#f9fafb;transition:background .15s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='#f9fafb'">
+                <span style="font-size:16px;">👤</span> 账号管理
+              </a>
+              <a href="javascript:void(0)" onclick="navigateTo('ai-channels')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;text-decoration:none;color:#333;font-size:14px;background:#f9fafb;transition:background .15s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='#f9fafb'">
+                <span style="font-size:16px;">🤖</span> AI 渠道配置
+              </a>
+              <a href="javascript:void(0)" onclick="navigateTo('ai-content')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;text-decoration:none;color:#333;font-size:14px;background:#f9fafb;transition:background .15s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='#f9fafb'">
+                <span style="font-size:16px;">✨</span> AI 内容生成
+              </a>` : ''}
+              <a href="javascript:void(0)" onclick="navigateTo('logs')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;text-decoration:none;color:#333;font-size:14px;background:#f9fafb;transition:background .15s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='#f9fafb'">
+                <span style="font-size:16px;">📋</span> 操作日志
+              </a>
+            </div>
+          </div>
+
+          <!-- 页面概况 -->
+          <div style="background:#fff;border-radius:14px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+            <h3 style="margin:0 0 14px;font-size:16px;font-weight:600;color:#222;">页面概况</h3>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              ${[
+                {key:'home',name:'首页',icon:'🏠'},
+                {key:'about',name:'关于我们',icon:'🏢'},
+                {key:'visa',name:'签证服务',icon:'🛂'},
+                {key:'saudi-visa',name:'沙特签证',icon:'🏜️'},
+                {key:'enterprise',name:'企业服务',icon:'💼'},
+                {key:'transport',name:'交通接驳',icon:'🚗'},
+                {key:'insurance',name:'保险服务',icon:'🛡️'},
+                {key:'inspection',name:'视察服务',icon:'🔍'},
+              ].map(p => `<a href="javascript:void(0)" onclick="navigateTo('${p.key}')" style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-radius:6px;text-decoration:none;color:#555;font-size:13px;transition:background .15s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='transparent'">
+                <span>${p.icon} ${p.name}</span><span style="color:#ccc;font-size:11px;">编辑 →</span>
+              </a>`).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
 }
 
 // ── 账号管理页面（超级管理员）──────────────────
