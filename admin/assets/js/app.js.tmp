@@ -1,0 +1,1302 @@
+// ZSTS CMS 主应用逻辑
+// 配置式编辑器：基于固定页面结构，只编辑文案/图片/链接
+
+// ── Toast 提示 ──────────────────────────────────
+function showToast(msg, type = 'success') {
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// ══════════════════════════════════════════════
+//  图片上传组件（返回 HTML 字符串）
+// ══════════════════════════════════════════════
+function imgUploadField(id, currentSrc, label, hint) {
+  const displaySrc = currentSrc || '';
+  return `
+    <div class="img-upload-wrap" id="${id}-wrap">
+      <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">${label}</label>
+      <div class="flex items-center gap-4">
+        <div class="img-preview w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50 flex-shrink-0" id="${id}-preview">
+          ${displaySrc ? `<img src="${resolveImgUrl(displaySrc)}" alt="" class="w-full h-full object-contain">` : '<span class="text-xs text-gray-300">无图片</span>'}
+        </div>
+        <div class="flex-1 space-y-2">
+          <input type="hidden" id="${id}" value="${displaySrc}">
+          <label class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-zsts-green text-zsts-green rounded-lg text-sm cursor-pointer hover:bg-zsts-green-light transition-colors shadow-sm">
+            📤 点击上传图片
+            <input type="file" accept=".jpg,.jpeg,.png,.gif,.webp,.svg"
+              onchange="handleImageUpload(this, '${id}')"
+              class="hidden">
+          </label>
+          ${hint ? `<p class="text-xs text-gray-400">${hint}</p>` : ''}
+          <p class="text-xs text-gray-400 truncate max-w-xs" id="${id}-path">${displaySrc || '未设置'}</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function resolveImgUrl(src) {
+  if (!src) return '';
+  if (src.startsWith('/')) return src;
+  if (src.startsWith('http')) return src;
+  return `/cms-images/${src.replace(/^images\//, '')}`;
+}
+
+window.handleImageUpload = async function(input, fieldId) {
+  const file = input.files[0];
+  if (!file) return;
+  const preview = document.getElementById(`${fieldId}-preview`);
+  preview.innerHTML = '<span class="text-xs text-zsts-green animate-pulse">上传中...</span>';
+  const formData = new FormData();
+  formData.append('file', file);
+  try {
+    const res = await fetch(`${API}/upload`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('cms_token')}` },
+      body: formData,
+    });
+    if (!res.ok) throw new Error('上传失败');
+    const data = await res.json();
+    document.getElementById(fieldId).value = data.url;
+    preview.innerHTML = `<img src="${data.url}" alt="" class="w-full h-full object-contain">`;
+    document.getElementById(`${fieldId}-path`).textContent = data.url;
+    showToast(`✅ 图片已上传`);
+  } catch (e) {
+    preview.innerHTML = '<span class="text-xs text-red-500">❌ 上传失败</span>';
+    showToast('❌ 图片上传失败', 'error');
+  }
+};
+
+// ══════════════════════════════════════════════
+//  保存按钮区 CSS（hover 时显示）
+// ══════════════════════════════════════════════
+const SAVE_BAR_CSS = `
+.editor-panel {
+  position: relative;
+}
+.editor-panel .save-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 24px;
+  margin-top: 8px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+  border-radius: 0 0 12px 12px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity .25s, transform .25s;
+  pointer-events: none;
+}
+.editor-panel:hover .save-bar {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.save-bar .save-hint {
+  font-size: 12px;
+  color: #9ca3af;
+}
+.save-bar .btn-save {
+  background: #006341;
+  color: #fff;
+  border: none;
+  padding: 10px 28px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s;
+  box-shadow: 0 2px 8px rgba(0,99,65,.25);
+}
+.save-bar .btn-save:hover {
+  background: #004d33;
+}
+.save-bar .btn-reset {
+  background: #fff;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .2s;
+  margin-right: 10px;
+}
+.save-bar .btn-reset:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+`;
+
+(function() {
+  const style = document.createElement('style');
+  style.textContent = SAVE_BAR_CSS + `
+    .img-preview img { transition: opacity .2s; }
+    .img-upload-wrap:hover .img-preview img { opacity: .8; }
+  `;
+  document.head.appendChild(style);
+})();
+
+// ══════════════════════════════════════════════
+//  固定导航项定义
+// ══════════════════════════════════════════════
+const FIXED_NAV_ITEMS = [
+  { key:'home',       defaultZh:'首页',        defaultHref:'index.html' },
+  { key:'saudiVisa', defaultZh:'沙特签证',     defaultHref:'saudi-visa.html' },
+  { key:'visa',       defaultZh:'全球签证',     defaultHref:'visa.html' },
+  { key:'transport',   defaultZh:'境外交通住宿',  defaultHref:'transport.html' },
+  { key:'insurance',   defaultZh:'境外保险',     defaultHref:'insurance.html' },
+  { key:'enterprise',  defaultZh:'企业出海',     defaultHref:'enterprise.html' },
+  { key:'inspection',  defaultZh:'企业考察',     defaultHref:'inspection.html' },
+  { key:'news',        defaultZh:'沙特资讯',     defaultHref:'news.html' },
+  { key:'about',       defaultZh:'关于我们',     defaultHref:'about.html' },
+];
+
+// ══════════════════════════════════════════════
+//  全局配置编辑器
+// ══════════════════════════════════════════════
+async function renderGlobalEditor(container, tab) {
+  const titles = { nav:'导航菜单', footer:'页脚', consultation:'咨询弹窗' };
+  const tabs = ['nav','footer','consultation'];
+  
+  container.innerHTML = `
+    <div class="max-w-5xl mx-auto editor-panel" data-tab="${tab}">
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">全局配置</h1>
+        <p class="text-gray-500 text-sm mt-1">编辑网站全局导航、页脚和咨询弹窗内容</p>
+      </div>
+      <div class="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6 w-fit">
+        ${tabs.map(t => `
+          <button onclick="renderGlobalEditor(document.getElementById('pageContent'), '${t}')"
+            class="px-5 py-2 rounded-md text-sm font-medium transition-all ${t===tab ? 'bg-white text-zsts-green shadow-sm' : 'text-gray-600 hover:text-gray-900'}">
+            ${titles[t]}
+          </button>
+        `).join('')}
+      </div>
+      <div id="globalEditorContent"></div>
+    </div>
+  `;
+  
+  const contentDiv = container.querySelector('#globalEditorContent');
+  if (tab === 'nav') await renderNavEditor(contentDiv);
+  else if (tab === 'footer') await renderFooterEditor(contentDiv);
+  else if (tab === 'consultation') await renderConsultationEditor(contentDiv);
+}
+
+async function renderNavEditor(container) {
+  let data = {};
+  try {
+    const r = await fetch(`${API}/content/nav`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('cms_token')}` }
+    });
+    if (r.ok) data = await r.json();
+  } catch(e) { console.error(e); }
+
+  let itemsHTML = '';
+  FIXED_NAV_ITEMS.forEach((item, idx) => {
+    const zhVal = data.items?.find(i => i.key === item.key)?.label_zh || item.defaultZh;
+    const hrefVal = data.items?.find(i => i.key === item.key)?.url || item.defaultHref;
+
+    itemsHTML += `
+      <div class="bg-gray-50 rounded-lg p-4 mb-3">
+        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">${idx + 1}. ${item.defaultZh}</div>
+        <div class="grid grid-cols-2 gap-4">
+          <div><label class="text-xs text-gray-500">标签文字</label>
+            <input type="text" id="nav-${item.key}-zh" value="${esc(zhVal)}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"></div>
+          <div><label class="text-xs text-gray-500">链接地址</label>
+            <input type="text" id="nav-${item.key}-href" value="${esc(hrefVal)}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"></div>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = `
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+      <p class="text-sm text-gray-500 mb-6">固定 9 个导航项，可修改标签文字和链接地址</p>
+      ${itemsHTML}
+      <div class="save-bar">
+        <span class="save-hint">编辑完成后点击保存</span>
+        <div class="flex gap-2">
+          <button onclick="saveNavConfig()" class="btn-save">💾 保存导航配置</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function saveNavConfig() {
+  const items = FIXED_NAV_ITEMS.map(item => ({
+    key: item.key,
+    label_zh: document.getElementById(`nav-${item.key}-zh`)?.value || '',
+    url: document.getElementById(`nav-${item.key}-href`)?.value || '',
+  }));
+
+  await doSave('nav', { items });
+}
+
+async function renderFooterEditor(container) {
+  let data = {};
+  try {
+    const r = await fetch(`${API}/content/footer`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('cms_token')}` }
+    });
+    if (r.ok) data = await r.json();
+  } catch(e) { console.error(e); }
+  
+  container.innerHTML = `
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+      <div class="grid grid-cols-2 gap-6">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">公司描述（中文）</label>
+          <textarea id="footer-desc-zh" rows="3" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm">${esc(data.description?.zh || '')}</textarea>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">公司描述（英文）</label>
+          <textarea id="footer-desc-en" rows="3" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm">${esc(data.description?.en || '')}</textarea>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">电话</label>
+          <input type="text" id="footer-phone" value="${esc(data.phone || '')}" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">邮箱</label>
+          <input type="text" id="footer-email" value="${esc(data.email || '')}" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm">
+        </div>
+      </div>
+      <div class="save-bar">
+        <span class="save-hint">编辑完成后点击保存</span>
+        <div class="flex gap-2">
+          <button onclick="saveFooterConfig()" class="btn-save">💾 保存页脚配置</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function saveFooterConfig() {
+  const payload = {
+    description: {
+      zh: document.getElementById('footer-desc-zh')?.value || '',
+      en: document.getElementById('footer-desc-en')?.value || ''
+    },
+    phone: document.getElementById('footer-phone')?.value || '',
+    email: document.getElementById('footer-email')?.value || '',
+  };
+  await doSave('footer', payload);
+}
+
+async function renderConsultationEditor(container) {
+  let data = {};
+  try {
+    const r = await fetch(`${API}/content/consultation`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('cms_token')}` }
+    });
+    if (r.ok) data = await r.json();
+  } catch(e) { console.error(e); }
+  
+  container.innerHTML = `
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+      <div class="grid grid-cols-2 gap-6 mb-6">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">弹窗标题（中文）</label>
+          <input type="text" id="consult-title-zh" value="${esc(data.title?.zh || '')}" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">弹窗标题（英文）</label>
+          <input type="text" id="consult-title-en" value="${esc(data.title?.en || '')}" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm">
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-6 mb-6">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">弹窗描述（中文）</label>
+          <input type="text" id="consult-desc-zh" value="${esc(data.desc?.zh || '')}" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm" placeholder="选择您方便的方式联系我们">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">弹窗描述（英文）</label>
+          <input type="text" id="consult-desc-en" value="${esc(data.desc?.en || '')}" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm" placeholder="Choose your preferred contact method">
+        </div>
+      </div>
+      <div class="mb-6">
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">弹窗底部电话</label>
+        <input type="text" id="consult-phone" value="${esc(data.contact_phone || '')}" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm" placeholder="客服电话：010-85656995 / ...">
+      </div>
+      <div>
+        ${imgUploadField('consult-qr-wechat1', data.qr_codes?.wechat1?.src || '', '微信二维码1', '建议尺寸 200x200')}
+      </div>
+      <div class="mt-4">
+        ${imgUploadField('consult-qr-wechat2', data.qr_codes?.wechat2?.src || '', '微信二维码2', '建议尺寸 200x200')}
+      </div>
+      <div class="mt-4">
+        ${imgUploadField('consult-qr-whatsapp', data.qr_codes?.whatsapp?.src || '', 'WhatsApp二维码', '建议尺寸 200x200')}
+      </div>
+      <div class="save-bar">
+        <span class="save-hint">编辑完成后点击保存</span>
+        <div class="flex gap-2">
+          <button onclick="saveConsultationConfig()" class="btn-save">💾 保存咨询配置</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function saveConsultationConfig() {
+  const payload = {
+    title: {
+      zh: document.getElementById('consult-title-zh')?.value || '',
+      en: document.getElementById('consult-title-en')?.value || ''
+    },
+    desc: {
+      zh: document.getElementById('consult-desc-zh')?.value || '',
+      en: document.getElementById('consult-desc-en')?.value || ''
+    },
+    contact_phone: document.getElementById('consult-phone')?.value || '',
+    qr_codes: {
+      wechat1:  { src: document.getElementById('consult-qr-wechat1')?.value || '' },
+      wechat2:  { src: document.getElementById('consult-qr-wechat2')?.value || '' },
+      whatsapp: { src: document.getElementById('consult-qr-whatsapp')?.value || '' },
+    }
+  };
+  await doSave('consultation', payload);
+}
+
+async function doSave(type, payload) {
+  try {
+    const res = await fetch(`${API}/content/${type}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('cms_token')}` },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) { const t = await res.text(); throw new Error(`HTTP ${res.status}: ${t}`); }
+    showToast('✅ 已保存', 'success');
+  } catch(e) { showToast('❌ 保存失败: ' + e.message, 'error'); }
+}
+
+function resetGlobalEditor(type) { if (confirm('确定要重置？')) loadGlobalConfig(type); }
+
+// ══════════════════════════════════════════════
+//  页面内容编辑器（基于 PAGE_FIELDS 配置）
+// ══════════════════════════════════════════════
+// ══════════════════════════════════════════════
+//  页面内容编辑器字段配置（自动生成）
+//  包含所有文本字段 + 图片上传字段
+//  生成时间: 2026-06-21T11:24:47.836Z
+// ══════════════════════════════════════════════
+const PAGE_FIELDS = {
+  // ════════════════════════════════════════════
+  //  首页
+  // ════════════════════════════════════════════
+  'home': [
+    { key:'visa.tag', label:'Visa-Tag', type:'text' },
+    { key:'visa.title1', label:'Visa-Title1', type:'text' },
+    { key:'visa.title2', label:'Visa-Title2', type:'text' },
+    { key:'visa.desc', label:'Visa-Desc', type:'text' },
+    { key:'visa.feature1.title', label:'Visa-Feature1-Title', type:'text' },
+    { key:'visa.feature1.desc', label:'Visa-Feature1-Desc', type:'text' },
+    { key:'visa.feature2.title', label:'Visa-Feature2-Title', type:'text' },
+    { key:'visa.feature2.desc', label:'Visa-Feature2-Desc', type:'text' },
+    { key:'visa.feature3.title', label:'Visa-Feature3-Title', type:'text' },
+    { key:'visa.feature3.desc', label:'Visa-Feature3-Desc', type:'text' },
+    { key:'visa.feature4.title', label:'Visa-Feature4-Title', type:'text' },
+    { key:'visa.feature4.desc', label:'Visa-Feature4-Desc', type:'text' },
+    { key:'visa.cta', label:'Visa-Cta', type:'text' },
+    { key:'services.tag', label:'Services-Tag', type:'text' },
+    { key:'services.title', label:'Services-Title', type:'text' },
+    { key:'services.subtitle', label:'Services-Subtitle', type:'text' },
+    { key:'services.card1.title', label:'Services-Card1-Title', type:'text' },
+    { key:'services.card1.desc', label:'Services-Card1-Desc', type:'text' },
+    { key:'services.card1.cta', label:'Services-Card1-Cta', type:'text' },
+    { key:'services.card1.url', label:'服务卡片1-按钮链接', type:'url' },
+    { key:'services.card2.title', label:'Services-Card2-Title', type:'text' },
+    { key:'services.card2.desc', label:'Services-Card2-Desc', type:'text' },
+    { key:'services.card2.cta', label:'Services-Card2-Cta', type:'text' },
+    { key:'services.card2.url', label:'服务卡片2-按钮链接', type:'url' },
+    { key:'services.card3.title', label:'Services-Card3-Title', type:'text' },
+    { key:'services.card3.desc', label:'Services-Card3-Desc', type:'text' },
+    { key:'services.card3.cta', label:'Services-Card3-Cta', type:'text' },
+    { key:"services.card3.url", label:"服务卡片3-按钮链接", type:"url" },
+    { key:'services.card3.url', label:'服务卡片3-按钮链接', type:'url' },
+    { key:'services.card4.title', label:'Services-Card4-Title', type:'text' },
+    { key:'services.card4.desc', label:'Services-Card4-Desc', type:'text' },
+    { key:'services.card4.cta', label:'Services-Card4-Cta', type:'text' },
+    { key:'services.card5.title', label:'Services-Card5-Title', type:'text' },
+    { key:'services.card5.desc', label:'Services-Card5-Desc', type:'text' },
+    { key:'services.card5.cta', label:'Services-Card5-Cta', type:'text' },
+    { key:'news.tag', label:'News-Tag', type:'text' },
+    { key:'news.title', label:'News-Title', type:'text' },
+    { key:'news.viewAll', label:'News-View All', type:'text' },
+    { key:'news.card1.tag', label:'News-Card1-Tag', type:'text' },
+    { key:'news.card1.title', label:'News-Card1-Title', type:'text' },
+    { key:'news.card1.desc', label:'News-Card1-Desc', type:'text' },
+    { key:"news.card1.image", label:"新闻卡片1-图片", type:"image" },
+    { key:'news.card2.tag', label:'News-Card2-Tag', type:'text' },
+    { key:'news.card2.title', label:'News-Card2-Title', type:'text' },
+    { key:'news.card2.desc', label:'News-Card2-Desc', type:'text' },
+    { key:'news.card3.tag', label:'News-Card3-Tag', type:'text' },
+    { key:'news.card3.title', label:'News-Card3-Title', type:'text' },
+    { key:'news.card3.desc', label:'News-Card3-Desc', type:'text' },
+    { key:'page.title', label:'浏览器页面标题', type:'text' },
+    { key:'hero.title1', label:'大图标题（行1）', type:'text' },
+    { key:'hero.title2', label:'大图标题（行2）', type:'text' },
+    { key:'hero.subtitle', label:'大图副标题', type:'text' },
+    { key:'hero.services', label:'服务/业务标签', type:'text' },
+    { key:'hero.bgImage', label:'大图背景图片', type:'image' },
+    { key:'hero.cta1', label:'按钮一文案', type:'text' },
+    { key:'hero.cta1_url', label:'按钮一链接', type:'url' },
+    { key:'hero.cta2', label:'按钮二文案', type:'text' },
+    { key:'hero.cta2_url', label:'按钮二链接', type:'url' },
+    { key:'stats.countries', label:'Stats-Countries', type:'text' },
+    { key:'stats.rate', label:'Stats-Rate', type:'text' },
+    { key:'stats.clients', label:'Stats-Clients', type:'text' },
+    { key:'stats.yearsUnit', label:'Stats-Years Unit', type:'text' },
+    { key:'stats.experience', label:'Stats-Experience', type:'text' },
+    { key:'cta.title', label:'CTA区域-标题', type:'text' },
+    { key:'cta.subtitle', label:'CTA区域-副标题', type:'text' },
+    { key:'cta.btn1', label:'CTA按钮一文案', type:'text' },
+    { key:'cta.btn1_url', label:'CTA按钮一链接', type:'url' },
+    { key:'cta.btn2', label:'CTA按钮二文案', type:'text' },
+    { key:'cta.btn2_url', label:'CTA按钮二链接', type:'url' },
+    { key:'testimonial.1.text', label:'客户1-评价内容', type:'text' },
+    { key:'testimonial.1.name', label:'客户1-姓名', type:'text' },
+    { key:'testimonial.1.title', label:'Testimonial-1-Title', type:'text' },
+    { key:'testimonial.2.text', label:'客户2-评价内容', type:'text' },
+    { key:'testimonial.2.name', label:'客户2-姓名', type:'text' },
+    { key:'testimonial.2.title', label:'Testimonial-2-Title', type:'text' },
+    { key:'testimonial.3.text', label:'客户3-评价内容', type:'text' },
+    { key:'testimonial.3.name', label:'客户3-姓名', type:'text' },
+    { key:'testimonial.3.title', label:'Testimonial-3-Title', type:'text' }
+  ],
+
+  // ════════════════════════════════════════════
+  //  沙特签证
+  // ════════════════════════════════════════════
+  'saudi-visa': [
+    { key:'page.title', label:'浏览器页面标题', type:'text' },
+    { key:'hero.badge', label:'大图徽章标签', type:'text' },
+    { key:'hero.title', label:'大图主标题', type:'text' },
+    { key:'hero.subtitle', label:'大图副标题', type:'text' },
+    { key:'hero.desc', label:'大图描述', type:'text' },
+    { key:'section.process.tag', label:'办理流程-区域标签', type:'text' },
+    { key:'section.process.title', label:'办理流程-标题', type:'text' },
+    { key:'section.process.subtitle', label:'办理流程-副标题', type:'text' },
+    { key:'section.materials.tag', label:'申请材料-区域标签', type:'text' },
+    { key:'section.materials.title', label:'申请材料-标题', type:'text' },
+    { key:'section.materials.subtitle', label:'申请材料-副标题', type:'text' },
+    { key:'section.faq.tag', label:'常见问题-区域标签', type:'text' },
+    { key:'section.faq.title', label:'常见问题-标题', type:'text' },
+    { key:'step.1.title', label:'步骤1-标题', type:'text' },
+    { key:'step.1.desc', label:'步骤1-描述', type:'text' },
+    { key:'step.2.title', label:'步骤2-标题', type:'text' },
+    { key:'step.2.desc', label:'步骤2-描述', type:'text' },
+    { key:'step.3.title', label:'步骤3-标题', type:'text' },
+    { key:'step.3.desc', label:'步骤3-描述', type:'text' },
+    { key:'step.4.title', label:'步骤4-标题', type:'text' },
+    { key:'step.4.desc', label:'步骤4-描述', type:'text' },
+    { key:'step.5.title', label:'步骤5-标题', type:'text' },
+    { key:'step.5.desc', label:'步骤5-描述', type:'text' },
+    { key:'faq.q1', label:'问题1', type:'text' },
+    { key:'faq.a1', label:'答案1', type:'textarea' },
+    { key:'faq.q2', label:'问题2', type:'text' },
+    { key:'faq.a2', label:'答案2', type:'textarea' },
+    { key:'faq.q3', label:'问题3', type:'text' },
+    { key:'faq.a3', label:'答案3', type:'textarea' },
+    { key:'faq.q4', label:'问题4', type:'text' },
+    { key:'faq.a4', label:'答案4', type:'textarea' },
+    { key:'faq.q5', label:'问题5', type:'text' },
+    { key:'faq.a5', label:'答案5', type:'textarea' },
+    { key:'faq.q6', label:'问题6', type:'text' },
+    { key:'faq.a6', label:'答案6', type:'textarea' },
+    { key:'faq.q7', label:'问题7', type:'text' },
+    { key:'faq.a7', label:'答案7', type:'textarea' },
+    { key:'cta.title', label:'CTA区域-标题', type:'text' },
+    { key:'cta.subtitle', label:'CTA区域-副标题', type:'text' },
+    { key:'cta.btn1', label:'CTA按钮一文案', type:'text' },
+    { key:'cta.btn1_url', label:'CTA按钮一链接', type:'url' },
+    { key:'cta.btn2', label:'CTA按钮二文案', type:'text' },
+    { key:'cta.btn2_url', label:'CTA按钮二链接', type:'url' },
+    { key:'sidebar.contact.title', label:'侧边栏-联系标题', type:'text' },
+    { key:'sidebar.contact.sub', label:'侧边栏-联系副标题', type:'text' },
+    { key:'sidebar.phone.label', label:'侧边栏-电话标签', type:'text' },
+    { key:'sidebar.email.label', label:'侧边栏-邮箱标签', type:'text' },
+    { key:'sidebar.qr.personal', label:'侧边栏-个人微信二维码', type:'image' },
+    { key:'sidebar.qr.enterprise', label:'侧边栏-企业微信二维码', type:'image' },
+    { key:'sidebar.qr.whatsapp', label:'侧边栏-WhatsApp二维码', type:'image' },
+    { key:'sidebar.trust.title', label:'侧边栏-信任标题', type:'text' },
+    { key:'sidebar.trust.p1', label:'侧边栏-信任点1', type:'text' },
+    { key:'sidebar.trust.p2', label:'侧边栏-信任点2', type:'text' },
+    { key:'sidebar.trust.p3', label:'侧边栏-信任点3', type:'text' },
+    { key:'sidebar.trust.p4', label:'侧边栏-信任点4', type:'text' },
+    { key:'sidebar.trust.p5', label:'侧边栏-信任点5', type:'text' }
+  ],
+
+  // ════════════════════════════════════════════
+  //  全球签证
+  // ════════════════════════════════════════════
+  'visa': [
+    { key:'page.title', label:'浏览器页面标题', type:'text' },
+    { key:'hero.badge', label:'大图徽章标签', type:'text' },
+    { key:'hero.title', label:'大图主标题', type:'text' },
+    { key:'hero.subtitle', label:'大图副标题', type:'text' },
+    { key:'hero.desc', label:'大图描述', type:'text' },
+    { key:'section.process.tag', label:'办理流程-区域标签', type:'text' },
+    { key:'section.process.title', label:'办理流程-标题', type:'text' },
+    { key:'section.process.subtitle', label:'办理流程-副标题', type:'text' },
+    { key:'section.regions.tag', label:'热门国家-区域标签', type:'text' },
+    { key:'section.regions.title', label:'热门国家-标题', type:'text' },
+    { key:'section.regions.subtitle', label:'热门国家-副标题', type:'text' },
+    { key:'section.faq.tag', label:'常见问题-区域标签', type:'text' },
+    { key:'section.faq.title', label:'常见问题-标题', type:'text' },
+    { key:'step.1.title', label:'步骤1-标题', type:'text' },
+    { key:'step.1.desc', label:'步骤1-描述', type:'text' },
+    { key:'step.2.title', label:'步骤2-标题', type:'text' },
+    { key:'step.2.desc', label:'步骤2-描述', type:'text' },
+    { key:'step.3.title', label:'步骤3-标题', type:'text' },
+    { key:'step.3.desc', label:'步骤3-描述', type:'text' },
+    { key:'step.4.title', label:'步骤4-标题', type:'text' },
+    { key:'step.4.desc', label:'步骤4-描述', type:'text' },
+    { key:'step.5.title', label:'步骤5-标题', type:'text' },
+    { key:'step.5.desc', label:'步骤5-描述', type:'text' },
+    { key:'region.tab.mea', label:'地区mea-Tab标签', type:'text' },
+    { key:'region.tab.eu', label:'地区eu-Tab标签', type:'text' },
+    { key:'region.tab.na', label:'地区na-Tab标签', type:'text' },
+    { key:'region.tab.sa', label:'地区sa-Tab标签', type:'text' },
+    { key:'region.tab.jpkr', label:'地区jpkr-Tab标签', type:'text' },
+    { key:'region.tab.aunz', label:'地区aunz-Tab标签', type:'text' },
+    { key:'region.mea.title', label:'地区mea-标题', type:'text' },
+    { key:'region.mea.intro', label:'地区mea-介绍', type:'text' },
+    { key:'region.mea.types.title', label:'地区mea.types-标题', type:'text' },
+    { key:'region.mea.types.t1', label:'Region-Mea-Types-T1', type:'text' },
+    { key:'region.mea.types.t2', label:'Region-Mea-Types-T2', type:'text' },
+    { key:'region.mea.types.t3', label:'Region-Mea-Types-T3', type:'text' },
+    { key:'region.mea.types.t4', label:'Region-Mea-Types-T4', type:'text' },
+    { key:'region.mea.travel.title', label:'地区mea.travel-标题', type:'text' },
+    { key:'region.mea.travel.p1', label:'Region-Mea-Travel-P1', type:'text' },
+    { key:'region.mea.travel.p2', label:'Region-Mea-Travel-P2', type:'text' },
+    { key:'region.mea.services.title', label:'地区mea.services-标题', type:'text' },
+    { key:'region.mea.services.s1', label:'Region-Mea-Services-S1', type:'text' },
+    { key:'region.mea.services.s2', label:'Region-Mea-Services-S2', type:'text' },
+    { key:'region.mea.services.s3', label:'Region-Mea-Services-S3', type:'text' },
+    { key:'region.mea.services.s4', label:'Region-Mea-Services-S4', type:'text' },
+    { key:'region.mea.services.s5', label:'Region-Mea-Services-S5', type:'text' },
+    { key:'region.mea.note', label:'Region-Mea-Note', type:'text' },
+    { key:'region.eu.title', label:'地区eu-标题', type:'text' },
+    { key:'region.eu.intro', label:'地区eu-介绍', type:'text' },
+    { key:'region.eu.types.title', label:'地区eu.types-标题', type:'text' },
+    { key:'region.eu.types.t1', label:'Region-Eu-Types-T1', type:'text' },
+    { key:'region.eu.types.t2', label:'Region-Eu-Types-T2', type:'text' },
+    { key:'region.eu.types.t3', label:'Region-Eu-Types-T3', type:'text' },
+    { key:'region.eu.travel.title', label:'地区eu.travel-标题', type:'text' },
+    { key:'region.eu.travel.p1', label:'Region-Eu-Travel-P1', type:'text' },
+    { key:'region.eu.travel.p2', label:'Region-Eu-Travel-P2', type:'text' },
+    { key:'region.eu.services.title', label:'地区eu.services-标题', type:'text' },
+    { key:'region.eu.services.s1', label:'Region-Eu-Services-S1', type:'text' },
+    { key:'region.eu.services.s2', label:'Region-Eu-Services-S2', type:'text' },
+    { key:'region.eu.services.s3', label:'Region-Eu-Services-S3', type:'text' },
+    { key:'region.eu.services.s4', label:'Region-Eu-Services-S4', type:'text' },
+    { key:'region.eu.services.s5', label:'Region-Eu-Services-S5', type:'text' },
+    { key:'region.eu.note', label:'Region-Eu-Note', type:'text' },
+    { key:'region.na.title', label:'地区na-标题', type:'text' },
+    { key:'region.na.intro', label:'地区na-介绍', type:'text' },
+    { key:'region.na.types.title', label:'地区na.types-标题', type:'text' },
+    { key:'region.na.types.t1', label:'Region-Na-Types-T1', type:'text' },
+    { key:'region.na.types.t2', label:'Region-Na-Types-T2', type:'text' },
+    { key:'region.na.types.t3', label:'Region-Na-Types-T3', type:'text' },
+    { key:'region.na.travel.title', label:'地区na.travel-标题', type:'text' },
+    { key:'region.na.travel.p1', label:'Region-Na-Travel-P1', type:'text' },
+    { key:'region.na.travel.p2', label:'Region-Na-Travel-P2', type:'text' },
+    { key:'region.na.services.title', label:'地区na.services-标题', type:'text' },
+    { key:'region.na.services.s1', label:'Region-Na-Services-S1', type:'text' },
+    { key:'region.na.services.s2', label:'Region-Na-Services-S2', type:'text' },
+    { key:'region.na.services.s3', label:'Region-Na-Services-S3', type:'text' },
+    { key:'region.na.services.s4', label:'Region-Na-Services-S4', type:'text' },
+    { key:'region.na.services.s5', label:'Region-Na-Services-S5', type:'text' },
+    { key:'region.na.note', label:'Region-Na-Note', type:'text' },
+    { key:'region.sa.title', label:'地区sa-标题', type:'text' },
+    { key:'region.sa.intro', label:'地区sa-介绍', type:'text' },
+    { key:'region.sa.types.title', label:'地区sa.types-标题', type:'text' },
+    { key:'region.sa.types.t1', label:'Region-Sa-Types-T1', type:'text' },
+    { key:'region.sa.types.t2', label:'Region-Sa-Types-T2', type:'text' },
+    { key:'region.sa.types.t3', label:'Region-Sa-Types-T3', type:'text' },
+    { key:'region.sa.travel.title', label:'地区sa.travel-标题', type:'text' },
+    { key:'region.sa.travel.p1', label:'Region-Sa-Travel-P1', type:'text' },
+    { key:'region.sa.travel.p2', label:'Region-Sa-Travel-P2', type:'text' },
+    { key:'region.sa.services.title', label:'地区sa.services-标题', type:'text' },
+    { key:'region.sa.services.s1', label:'Region-Sa-Services-S1', type:'text' },
+    { key:'region.sa.services.s2', label:'Region-Sa-Services-S2', type:'text' },
+    { key:'region.sa.services.s3', label:'Region-Sa-Services-S3', type:'text' },
+    { key:'region.sa.services.s4', label:'Region-Sa-Services-S4', type:'text' },
+    { key:'region.sa.note', label:'Region-Sa-Note', type:'text' },
+    { key:'region.jpkr.title', label:'地区jpkr-标题', type:'text' },
+    { key:'region.jpkr.intro', label:'地区jpkr-介绍', type:'text' },
+    { key:'region.jpkr.types.title', label:'地区jpkr.types-标题', type:'text' },
+    { key:'region.jpkr.types.t1', label:'Region-Jpkr-Types-T1', type:'text' },
+    { key:'region.jpkr.types.t2', label:'Region-Jpkr-Types-T2', type:'text' },
+    { key:'region.jpkr.types.t3', label:'Region-Jpkr-Types-T3', type:'text' },
+    { key:'region.jpkr.travel.title', label:'地区jpkr.travel-标题', type:'text' },
+    { key:'region.jpkr.travel.p1', label:'Region-Jpkr-Travel-P1', type:'text' },
+    { key:'region.jpkr.travel.p2', label:'Region-Jpkr-Travel-P2', type:'text' },
+    { key:'region.jpkr.services.title', label:'地区jpkr.services-标题', type:'text' },
+    { key:'region.jpkr.services.s1', label:'Region-Jpkr-Services-S1', type:'text' },
+    { key:'region.jpkr.services.s2', label:'Region-Jpkr-Services-S2', type:'text' },
+    { key:'region.jpkr.services.s3', label:'Region-Jpkr-Services-S3', type:'text' },
+    { key:'region.jpkr.services.s4', label:'Region-Jpkr-Services-S4', type:'text' },
+    { key:'region.jpkr.services.s5', label:'Region-Jpkr-Services-S5', type:'text' },
+    { key:'region.jpkr.note', label:'Region-Jpkr-Note', type:'text' },
+    { key:'region.aunz.title', label:'地区aunz-标题', type:'text' },
+    { key:'region.aunz.intro', label:'地区aunz-介绍', type:'text' },
+    { key:'region.aunz.types.title', label:'地区aunz.types-标题', type:'text' },
+    { key:'region.aunz.types.t1', label:'Region-Aunz-Types-T1', type:'text' },
+    { key:'region.aunz.types.t2', label:'Region-Aunz-Types-T2', type:'text' },
+    { key:'region.aunz.types.t3', label:'Region-Aunz-Types-T3', type:'text' },
+    { key:'region.aunz.travel.title', label:'地区aunz.travel-标题', type:'text' },
+    { key:'region.aunz.travel.p1', label:'Region-Aunz-Travel-P1', type:'text' },
+    { key:'region.aunz.travel.p2', label:'Region-Aunz-Travel-P2', type:'text' },
+    { key:'region.aunz.services.title', label:'地区aunz.services-标题', type:'text' },
+    { key:'region.aunz.services.s1', label:'Region-Aunz-Services-S1', type:'text' },
+    { key:'region.aunz.services.s2', label:'Region-Aunz-Services-S2', type:'text' },
+    { key:'region.aunz.services.s3', label:'Region-Aunz-Services-S3', type:'text' },
+    { key:'region.aunz.services.s4', label:'Region-Aunz-Services-S4', type:'text' },
+    { key:'region.aunz.services.s5', label:'Region-Aunz-Services-S5', type:'text' },
+    { key:'region.aunz.note', label:'Region-Aunz-Note', type:'text' },
+    { key:'faq.q1', label:'问题1', type:'text' },
+    { key:'faq.a1', label:'答案1', type:'textarea' },
+    { key:'faq.q2', label:'问题2', type:'text' },
+    { key:'faq.a2', label:'答案2', type:'textarea' },
+    { key:'faq.q3', label:'问题3', type:'text' },
+    { key:'faq.a3', label:'答案3', type:'textarea' },
+    { key:'faq.q4', label:'问题4', type:'text' },
+    { key:'faq.a4', label:'答案4', type:'textarea' },
+    { key:'faq.q5', label:'问题5', type:'text' },
+    { key:'faq.a5', label:'答案5', type:'textarea' },
+    { key:'faq.q6', label:'问题6', type:'text' },
+    { key:'faq.a6', label:'答案6', type:'textarea' },
+    { key:'cta.title', label:'CTA区域-标题', type:'text' },
+    { key:'cta.subtitle', label:'CTA区域-副标题', type:'text' },
+    { key:'cta.btn1', label:'CTA按钮一文案', type:'text' },
+    { key:'cta.btn1_url', label:'CTA按钮一链接', type:'url' },
+    { key:'cta.btn2', label:'CTA按钮二文案', type:'text' },
+    { key:'cta.btn2_url', label:'CTA按钮二链接', type:'url' },
+    { key:'sidebar.contact.title', label:'侧边栏-联系标题', type:'text' },
+    { key:'sidebar.contact.sub', label:'侧边栏-联系副标题', type:'text' },
+    { key:'sidebar.phone.label', label:'侧边栏-电话标签', type:'text' },
+    { key:'sidebar.email.label', label:'侧边栏-邮箱标签', type:'text' },
+    { key:'sidebar.qr.personal', label:'侧边栏-个人微信二维码', type:'image' },
+    { key:'sidebar.qr.enterprise', label:'侧边栏-企业微信二维码', type:'image' },
+    { key:'sidebar.qr.whatsapp', label:'侧边栏-WhatsApp二维码', type:'image' },
+    { key:'sidebar.trust.title', label:'侧边栏-信任标题', type:'text' },
+    { key:'sidebar.trust.p1', label:'侧边栏-信任点1', type:'text' },
+    { key:'sidebar.trust.p2', label:'侧边栏-信任点2', type:'text' },
+    { key:'sidebar.trust.p3', label:'侧边栏-信任点3', type:'text' },
+    { key:'sidebar.trust.p4', label:'侧边栏-信任点4', type:'text' },
+    { key:'sidebar.trust.p5', label:'侧边栏-信任点5', type:'text' }
+  ],
+
+  // ════════════════════════════════════════════
+  //  境外保险
+  // ════════════════════════════════════════════
+  'insurance': [
+    { key:'ins.type1.title', label:'Ins-Type1-Title', type:'text' },
+    { key:'ins.type1.desc', label:'Ins-Type1-Desc', type:'text' },
+    { key:'ins.type1.cta', label:'Ins-Type1-Cta', type:'text' },
+    { key:'ins.type2.title', label:'Ins-Type2-Title', type:'text' },
+    { key:'ins.type2.desc', label:'Ins-Type2-Desc', type:'text' },
+    { key:'ins.type2.cta', label:'Ins-Type2-Cta', type:'text' },
+    { key:'ins.type3.title', label:'Ins-Type3-Title', type:'text' },
+    { key:'ins.type3.desc', label:'Ins-Type3-Desc', type:'text' },
+    { key:'ins.type3.cta', label:'Ins-Type3-Cta', type:'text' },
+    { key:'ins.type4.title', label:'Ins-Type4-Title', type:'text' },
+    { key:'ins.type4.desc', label:'Ins-Type4-Desc', type:'text' },
+    { key:'ins.type4.cta', label:'Ins-Type4-Cta', type:'text' },
+    { key:'page.title', label:'浏览器页面标题', type:'text' },
+    { key:'hero.badge', label:'大图徽章标签', type:'text' },
+    { key:'hero.title', label:'大图主标题', type:'text' },
+    { key:'hero.subtitle', label:'大图副标题', type:'text' },
+    { key:'hero.desc', label:'大图描述', type:'text' },
+    { key:'section.types.tag', label:'保险类型-区域标签', type:'text' },
+    { key:'section.types.title', label:'保险类型-标题', type:'text' },
+    { key:'section.types.subtitle', label:'保险类型-副标题', type:'text' },
+    { key:'section.process.tag', label:'办理流程-区域标签', type:'text' },
+    { key:'section.process.title', label:'办理流程-标题', type:'text' },
+    { key:'section.process.subtitle', label:'办理流程-副标题', type:'text' },
+    { key:'section.faq.tag', label:'常见问题-区域标签', type:'text' },
+    { key:'section.faq.title', label:'常见问题-标题', type:'text' },
+    { key:'step.1.title', label:'步骤1-标题', type:'text' },
+    { key:'step.1.desc', label:'步骤1-描述', type:'text' },
+    { key:'step.2.title', label:'步骤2-标题', type:'text' },
+    { key:'step.2.desc', label:'步骤2-描述', type:'text' },
+    { key:'step.3.title', label:'步骤3-标题', type:'text' },
+    { key:'step.3.desc', label:'步骤3-描述', type:'text' },
+    { key:'step.4.title', label:'步骤4-标题', type:'text' },
+    { key:'step.4.desc', label:'步骤4-描述', type:'text' },
+    { key:'step.5.title', label:'步骤5-标题', type:'text' },
+    { key:'step.5.desc', label:'步骤5-描述', type:'text' },
+    { key:'faq.q1', label:'问题1', type:'text' },
+    { key:'faq.a1', label:'答案1', type:'textarea' },
+    { key:'faq.q2', label:'问题2', type:'text' },
+    { key:'faq.a2', label:'答案2', type:'textarea' },
+    { key:'faq.q3', label:'问题3', type:'text' },
+    { key:'faq.a3', label:'答案3', type:'textarea' },
+    { key:'faq.q4', label:'问题4', type:'text' },
+    { key:'faq.a4', label:'答案4', type:'textarea' },
+    { key:'faq.q5', label:'问题5', type:'text' },
+    { key:'faq.a5', label:'答案5', type:'textarea' },
+    { key:'faq.q6', label:'问题6', type:'text' },
+    { key:'faq.a6', label:'答案6', type:'textarea' },
+    { key:'cta.title', label:'CTA区域-标题', type:'text' },
+    { key:'cta.subtitle', label:'CTA区域-副标题', type:'text' },
+    { key:'cta.btn1', label:'CTA按钮一文案', type:'text' },
+    { key:'cta.btn1_url', label:'CTA按钮一链接', type:'url' },
+    { key:'cta.btn2', label:'CTA按钮二文案', type:'text' },
+    { key:'cta.btn2_url', label:'CTA按钮二链接', type:'url' },
+    { key:'sidebar.contact.title', label:'侧边栏-联系标题', type:'text' },
+    { key:'sidebar.contact.sub', label:'侧边栏-联系副标题', type:'text' },
+    { key:'sidebar.phone.label', label:'侧边栏-电话标签', type:'text' },
+    { key:'sidebar.email.label', label:'侧边栏-邮箱标签', type:'text' },
+    { key:'sidebar.qr.personal', label:'侧边栏-个人微信二维码', type:'image' },
+    { key:'sidebar.qr.enterprise', label:'侧边栏-企业微信二维码', type:'image' },
+    { key:'sidebar.qr.whatsapp', label:'侧边栏-WhatsApp二维码', type:'image' },
+    { key:'sidebar.trust.title', label:'侧边栏-信任标题', type:'text' },
+    { key:'sidebar.trust.p1', label:'侧边栏-信任点1', type:'text' },
+    { key:'sidebar.trust.p4', label:'侧边栏-信任点4', type:'text' },
+    { key:'sidebar.trust.p5', label:'侧边栏-信任点5', type:'text' }
+  ],
+
+  // ════════════════════════════════════════════
+  //  境外交通住宿
+  // ════════════════════════════════════════════
+  'transport': [
+    { key:'transport.section1.tag', label:'Transport-Section1-Tag', type:'text' },
+    { key:'transport.section1.title', label:'Transport-Section1-Title', type:'text' },
+    { key:'transport.section1.subtitle', label:'Transport-Section1-Subtitle', type:'text' },
+    { key:'transport.service1.title', label:'Transport-Service1-Title', type:'text' },
+    { key:'transport.service1.desc', label:'Transport-Service1-Desc', type:'text' },
+    { key:'transport.service2.title', label:'Transport-Service2-Title', type:'text' },
+    { key:'transport.service2.desc', label:'Transport-Service2-Desc', type:'text' },
+    { key:'transport.service3.title', label:'Transport-Service3-Title', type:'text' },
+    { key:'transport.service3.desc', label:'Transport-Service3-Desc', type:'text' },
+    { key:'transport.service4.title', label:'Transport-Service4-Title', type:'text' },
+    { key:'transport.service4.desc', label:'Transport-Service4-Desc', type:'text' },
+    { key:'transport.service5.title', label:'Transport-Service5-Title', type:'text' },
+    { key:'transport.service5.desc', label:'Transport-Service5-Desc', type:'text' },
+    { key:'transport.section2.tag', label:'Transport-Section2-Tag', type:'text' },
+    { key:'transport.section2.title', label:'Transport-Section2-Title', type:'text' },
+    { key:'transport.section2.subtitle', label:'Transport-Section2-Subtitle', type:'text' },
+    { key:'transport.step.1.title', label:'Transport-Step-1-Title', type:'text' },
+    { key:'transport.step.1.desc', label:'Transport-Step-1-Desc', type:'text' },
+    { key:'transport.step.2.title', label:'Transport-Step-2-Title', type:'text' },
+    { key:'transport.step.2.desc', label:'Transport-Step-2-Desc', type:'text' },
+    { key:'transport.step.3.title', label:'Transport-Step-3-Title', type:'text' },
+    { key:'transport.step.3.desc', label:'Transport-Step-3-Desc', type:'text' },
+    { key:'transport.step.4.title', label:'Transport-Step-4-Title', type:'text' },
+    { key:'transport.step.4.desc', label:'Transport-Step-4-Desc', type:'text' },
+    { key:'transport.step.5.title', label:'Transport-Step-5-Title', type:'text' },
+    { key:'transport.step.5.desc', label:'Transport-Step-5-Desc', type:'text' },
+    { key:'transport.section4.tag', label:'Transport-Section4-Tag', type:'text' },
+    { key:'transport.section4.title', label:'Transport-Section4-Title', type:'text' },
+    { key:'transport.faq.q1', label:'Transport-Faq-Q1', type:'text' },
+    { key:'transport.faq.a1', label:'Transport-Faq-A1', type:'text' },
+    { key:'transport.faq.q2', label:'Transport-Faq-Q2', type:'text' },
+    { key:'transport.faq.a2', label:'Transport-Faq-A2', type:'text' },
+    { key:'transport.faq.q3', label:'Transport-Faq-Q3', type:'text' },
+    { key:'transport.faq.a3', label:'Transport-Faq-A3', type:'text' },
+    { key:'transport.faq.q4', label:'Transport-Faq-Q4', type:'text' },
+    { key:'transport.faq.a4', label:'Transport-Faq-A4', type:'text' },
+    { key:'transport.faq.q5', label:'Transport-Faq-Q5', type:'text' },
+    { key:'transport.faq.a5', label:'Transport-Faq-A5', type:'text' },
+    { key:'transport.faq.q6', label:'Transport-Faq-Q6', type:'text' },
+    { key:'transport.faq.a6', label:'Transport-Faq-A6', type:'text' },
+    { key:'transport.faq.q7', label:'Transport-Faq-Q7', type:'text' },
+    { key:'transport.faq.a7', label:'Transport-Faq-A7', type:'text' },
+    { key:'transport.trust.p1', label:'Transport-Trust-P1', type:'text' },
+    { key:'transport.trust.p3', label:'Transport-Trust-P3', type:'text' },
+    { key:'transport.trust.p4', label:'Transport-Trust-P4', type:'text' },
+    { key:'page.title', label:'浏览器页面标题', type:'text' },
+    { key:'hero.badge', label:'大图徽章标签', type:'text' },
+    { key:'hero.title', label:'大图主标题', type:'text' },
+    { key:'hero.subtitle', label:'大图副标题', type:'text' },
+    { key:'hero.desc', label:'大图描述', type:'text' },
+    { key:'cta.title', label:'CTA区域-标题', type:'text' },
+    { key:'cta.subtitle', label:'CTA区域-副标题', type:'text' },
+    { key:'cta.btn1', label:'CTA按钮一文案', type:'text' },
+    { key:'cta.btn1_url', label:'CTA按钮一链接', type:'url' },
+    { key:'cta.btn2', label:'CTA按钮二文案', type:'text' },
+    { key:'cta.btn2_url', label:'CTA按钮二链接', type:'url' },
+    { key:'sidebar.contact.title', label:'侧边栏-联系标题', type:'text' },
+    { key:'sidebar.contact.sub', label:'侧边栏-联系副标题', type:'text' },
+    { key:'sidebar.phone.label', label:'侧边栏-电话标签', type:'text' },
+    { key:'sidebar.email.label', label:'侧边栏-邮箱标签', type:'text' },
+    { key:'sidebar.qr.personal', label:'侧边栏-个人微信二维码', type:'image' },
+    { key:'sidebar.qr.enterprise', label:'侧边栏-企业微信二维码', type:'image' },
+    { key:'sidebar.qr.whatsapp', label:'侧边栏-WhatsApp二维码', type:'image' },
+    { key:'sidebar.trust.title', label:'侧边栏-信任标题', type:'text' }
+  ],
+
+  // ════════════════════════════════════════════
+  //  企业出海
+  // ════════════════════════════════════════════
+  'enterprise': [
+    { key:'enterprise.services.tag', label:'Enterprise-Services-Tag', type:'text' },
+    { key:'enterprise.services.title', label:'Enterprise-Services-Title', type:'text' },
+    { key:'enterprise.services.subtitle', label:'Enterprise-Services-Subtitle', type:'text' },
+    { key:'enterprise.service1.title', label:'Enterprise-Service1-Title', type:'text' },
+    { key:'enterprise.service1.desc', label:'Enterprise-Service1-Desc', type:'text' },
+    { key:'enterprise.service1.point1', label:'Enterprise-Service1-Point1', type:'text' },
+    { key:'enterprise.service1.point2', label:'Enterprise-Service1-Point2', type:'text' },
+    { key:'enterprise.service1.point3', label:'Enterprise-Service1-Point3', type:'text' },
+    { key:'enterprise.service2.title', label:'Enterprise-Service2-Title', type:'text' },
+    { key:'enterprise.service2.desc', label:'Enterprise-Service2-Desc', type:'text' },
+    { key:'enterprise.service2.point1', label:'Enterprise-Service2-Point1', type:'text' },
+    { key:'enterprise.service2.point2', label:'Enterprise-Service2-Point2', type:'text' },
+    { key:'enterprise.service2.point3', label:'Enterprise-Service2-Point3', type:'text' },
+    { key:'enterprise.service3.title', label:'Enterprise-Service3-Title', type:'text' },
+    { key:'enterprise.service3.desc', label:'Enterprise-Service3-Desc', type:'text' },
+    { key:'enterprise.service3.point1', label:'Enterprise-Service3-Point1', type:'text' },
+    { key:'enterprise.service3.point2', label:'Enterprise-Service3-Point2', type:'text' },
+    { key:'enterprise.service3.point3', label:'Enterprise-Service3-Point3', type:'text' },
+    { key:'enterprise.service4.title', label:'Enterprise-Service4-Title', type:'text' },
+    { key:'enterprise.service4.desc', label:'Enterprise-Service4-Desc', type:'text' },
+    { key:'enterprise.service4.point1', label:'Enterprise-Service4-Point1', type:'text' },
+    { key:'enterprise.service4.point2', label:'Enterprise-Service4-Point2', type:'text' },
+    { key:'enterprise.service4.point3', label:'Enterprise-Service4-Point3', type:'text' },
+    { key:'enterprise.step.1.title', label:'Enterprise-Step-1-Title', type:'text' },
+    { key:'enterprise.step.1.desc', label:'Enterprise-Step-1-Desc', type:'text' },
+    { key:'enterprise.step.2.title', label:'Enterprise-Step-2-Title', type:'text' },
+    { key:'enterprise.step.2.desc', label:'Enterprise-Step-2-Desc', type:'text' },
+    { key:'enterprise.step.3.title', label:'Enterprise-Step-3-Title', type:'text' },
+    { key:'enterprise.step.3.desc', label:'Enterprise-Step-3-Desc', type:'text' },
+    { key:'enterprise.step.4.title', label:'Enterprise-Step-4-Title', type:'text' },
+    { key:'enterprise.step.4.desc', label:'Enterprise-Step-4-Desc', type:'text' },
+    { key:'enterprise.step.5.title', label:'Enterprise-Step-5-Title', type:'text' },
+    { key:'enterprise.step.5.desc', label:'Enterprise-Step-5-Desc', type:'text' },
+    { key:'enterprise.faq.q1', label:'Enterprise-Faq-Q1', type:'text' },
+    { key:'enterprise.faq.a1', label:'Enterprise-Faq-A1', type:'text' },
+    { key:'enterprise.faq.q2', label:'Enterprise-Faq-Q2', type:'text' },
+    { key:'enterprise.faq.a2', label:'Enterprise-Faq-A2', type:'text' },
+    { key:'enterprise.faq.q3', label:'Enterprise-Faq-Q3', type:'text' },
+    { key:'enterprise.faq.a3', label:'Enterprise-Faq-A3', type:'text' },
+    { key:'enterprise.faq.q4', label:'Enterprise-Faq-Q4', type:'text' },
+    { key:'enterprise.faq.a4', label:'Enterprise-Faq-A4', type:'text' },
+    { key:'enterprise.faq.q5', label:'Enterprise-Faq-Q5', type:'text' },
+    { key:'enterprise.faq.a5', label:'Enterprise-Faq-A5', type:'text' },
+    { key:'enterprise.faq.q6', label:'Enterprise-Faq-Q6', type:'text' },
+    { key:'enterprise.faq.a6', label:'Enterprise-Faq-A6', type:'text' },
+    { key:'page.title', label:'浏览器页面标题', type:'text' },
+    { key:'hero.badge', label:'大图徽章标签', type:'text' },
+    { key:'hero.title', label:'大图主标题', type:'text' },
+    { key:'hero.subtitle', label:'大图副标题', type:'text' },
+    { key:'hero.desc', label:'大图描述', type:'text' },
+    { key:'section.process.tag', label:'办理流程-区域标签', type:'text' },
+    { key:'section.process.title', label:'办理流程-标题', type:'text' },
+    { key:'section.process.subtitle', label:'办理流程-副标题', type:'text' },
+    { key:'section.faq.tag', label:'常见问题-区域标签', type:'text' },
+    { key:'section.faq.title', label:'常见问题-标题', type:'text' },
+    { key:'cta.title', label:'CTA区域-标题', type:'text' },
+    { key:'cta.subtitle', label:'CTA区域-副标题', type:'text' },
+    { key:'cta.btn1', label:'CTA按钮一文案', type:'text' },
+    { key:'cta.btn1_url', label:'CTA按钮一链接', type:'url' },
+    { key:'cta.btn2', label:'CTA按钮二文案', type:'text' },
+    { key:'cta.btn2_url', label:'CTA按钮二链接', type:'url' },
+    { key:'sidebar.contact.title', label:'侧边栏-联系标题', type:'text' },
+    { key:'sidebar.contact.sub', label:'侧边栏-联系副标题', type:'text' },
+    { key:'sidebar.phone.label', label:'侧边栏-电话标签', type:'text' },
+    { key:'sidebar.email.label', label:'侧边栏-邮箱标签', type:'text' },
+    { key:'sidebar.qr.personal', label:'侧边栏-个人微信二维码', type:'image' },
+    { key:'sidebar.qr.enterprise', label:'侧边栏-企业微信二维码', type:'image' },
+    { key:'sidebar.qr.whatsapp', label:'侧边栏-WhatsApp二维码', type:'image' },
+    { key:'sidebar.trust.title', label:'侧边栏-信任标题', type:'text' }
+  ],
+
+  // ════════════════════════════════════════════
+  //  企业考察
+  // ════════════════════════════════════════════
+  'inspection': [
+    { key:'inspection.service1.title', label:'Inspection-Service1-Title', type:'text' },
+    { key:'inspection.service1.desc', label:'Inspection-Service1-Desc', type:'text' },
+    { key:'inspection.service2.title', label:'Inspection-Service2-Title', type:'text' },
+    { key:'inspection.service2.desc', label:'Inspection-Service2-Desc', type:'text' },
+    { key:'inspection.service3.title', label:'Inspection-Service3-Title', type:'text' },
+    { key:'inspection.service3.desc', label:'Inspection-Service3-Desc', type:'text' },
+    { key:'inspection.service4.title', label:'Inspection-Service4-Title', type:'text' },
+    { key:'inspection.service4.desc', label:'Inspection-Service4-Desc', type:'text' },
+    { key:'inspection.step.1.title', label:'Inspection-Step-1-Title', type:'text' },
+    { key:'inspection.step.1.desc', label:'Inspection-Step-1-Desc', type:'text' },
+    { key:'inspection.step.2.title', label:'Inspection-Step-2-Title', type:'text' },
+    { key:'inspection.step.2.desc', label:'Inspection-Step-2-Desc', type:'text' },
+    { key:'inspection.step.3.title', label:'Inspection-Step-3-Title', type:'text' },
+    { key:'inspection.step.3.desc', label:'Inspection-Step-3-Desc', type:'text' },
+    { key:'inspection.step.4.title', label:'Inspection-Step-4-Title', type:'text' },
+    { key:'inspection.step.4.desc', label:'Inspection-Step-4-Desc', type:'text' },
+    { key:'inspection.step.5.title', label:'Inspection-Step-5-Title', type:'text' },
+    { key:'inspection.step.5.desc', label:'Inspection-Step-5-Desc', type:'text' },
+    { key:'inspection.faq.q1', label:'Inspection-Faq-Q1', type:'text' },
+    { key:'inspection.faq.a1', label:'Inspection-Faq-A1', type:'text' },
+    { key:'inspection.faq.q2', label:'Inspection-Faq-Q2', type:'text' },
+    { key:'inspection.faq.a2', label:'Inspection-Faq-A2', type:'text' },
+    { key:'inspection.faq.q3', label:'Inspection-Faq-Q3', type:'text' },
+    { key:'inspection.faq.a3', label:'Inspection-Faq-A3', type:'text' },
+    { key:'inspection.faq.q4', label:'Inspection-Faq-Q4', type:'text' },
+    { key:'inspection.faq.a4', label:'Inspection-Faq-A4', type:'text' },
+    { key:'inspection.faq.q5', label:'Inspection-Faq-Q5', type:'text' },
+    { key:'inspection.faq.a5', label:'Inspection-Faq-A5', type:'text' },
+    { key:'inspection.faq.q6', label:'Inspection-Faq-Q6', type:'text' },
+    { key:'inspection.faq.a6', label:'Inspection-Faq-A6', type:'text' },
+    { key:'page.title', label:'浏览器页面标题', type:'text' },
+    { key:'hero.badge', label:'大图徽章标签', type:'text' },
+    { key:'hero.title', label:'大图主标题', type:'text' },
+    { key:'hero.subtitle', label:'大图副标题', type:'text' },
+    { key:'hero.desc', label:'大图描述', type:'text' },
+    { key:'section.services.tag', label:'Section-Services-Tag', type:'text' },
+    { key:'section.services.title', label:'Section-Services-Title', type:'text' },
+    { key:'section.services.subtitle', label:'Section-Services-Subtitle', type:'text' },
+    { key:'section.process.tag', label:'办理流程-区域标签', type:'text' },
+    { key:'section.process.title', label:'办理流程-标题', type:'text' },
+    { key:'section.process.subtitle', label:'办理流程-副标题', type:'text' },
+    { key:'section.faq.tag', label:'常见问题-区域标签', type:'text' },
+    { key:'section.faq.title', label:'常见问题-标题', type:'text' },
+    { key:'cta.title', label:'CTA区域-标题', type:'text' },
+    { key:'cta.subtitle', label:'CTA区域-副标题', type:'text' },
+    { key:'cta.btn1', label:'CTA按钮一文案', type:'text' },
+    { key:'cta.btn1_url', label:'CTA按钮一链接', type:'url' },
+    { key:'cta.btn2', label:'CTA按钮二文案', type:'text' },
+    { key:'cta.btn2_url', label:'CTA按钮二链接', type:'url' },
+    { key:'sidebar.contact.title', label:'侧边栏-联系标题', type:'text' },
+    { key:'sidebar.contact.sub', label:'侧边栏-联系副标题', type:'text' },
+    { key:'sidebar.phone.label', label:'侧边栏-电话标签', type:'text' },
+    { key:'sidebar.email.label', label:'侧边栏-邮箱标签', type:'text' },
+    { key:'sidebar.qr.personal', label:'侧边栏-个人微信二维码', type:'image' },
+    { key:'sidebar.qr.enterprise', label:'侧边栏-企业微信二维码', type:'image' },
+    { key:'sidebar.qr.whatsapp', label:'侧边栏-WhatsApp二维码', type:'image' },
+    { key:'sidebar.trust.title', label:'侧边栏-信任标题', type:'text' },
+    { key:'sidebar.trust.p1', label:'侧边栏-信任点1', type:'text' },
+    { key:'sidebar.trust.p2', label:'侧边栏-信任点2', type:'text' },
+    { key:'sidebar.trust.p3', label:'侧边栏-信任点3', type:'text' },
+    { key:'sidebar.trust.p4', label:'侧边栏-信任点4', type:'text' },
+    { key:'sidebar.trust.p5', label:'侧边栏-信任点5', type:'text' }
+  ],
+
+  // ════════════════════════════════════════════
+  //  关于我们
+  // ════════════════════════════════════════════
+  'about': [
+    { key:'page.title', label:'浏览器页面标题', type:'text' },
+    { key:'hero.badge', label:'大图徽章标签', type:'text' },
+    { key:'hero.title', label:'大图主标题', type:'text' },
+    { key:'hero.subtitle', label:'大图副标题', type:'text' },
+    { key:'profile.tag', label:'公司简介-标签', type:'text' },
+    { key:'profile.title', label:'公司简介-标题', type:'text' },
+    { key:'profile.p1', label:'公司简介-段落1', type:'text' },
+    { key:'profile.p3', label:'公司简介-段落3', type:'text' },
+    { key:'stats.1.number', label:'统计数据1-数字', type:'text' },
+    { key:'stats.1.label', label:'统计数据1-标签', type:'text' },
+    { key:'stats.2.number', label:'统计数据2-数字', type:'text' },
+    { key:'stats.2.label', label:'统计数据2-标签', type:'text' },
+    { key:'stats.3.number', label:'统计数据3-数字', type:'text' },
+    { key:'stats.3.label', label:'统计数据3-标签', type:'text' },
+    { key:'stats.4.number', label:'统计数据4-数字', type:'text' },
+    { key:'stats.4.label', label:'统计数据4-标签', type:'text' },
+    { key:'advantages.tag', label:'核心优势-区域标签', type:'text' },
+    { key:'advantages.title', label:'核心优势-标题', type:'text' },
+    { key:'advantages.subtitle', label:'核心优势-副标题', type:'text' },
+    { key:'adv.1.title', label:'优势1-标题', type:'text' },
+    { key:'adv.1.desc', label:'优势1-描述', type:'text' },
+    { key:'adv.2.title', label:'优势2-标题', type:'text' },
+    { key:'adv.2.desc', label:'优势2-描述', type:'text' },
+    { key:'adv.3.title', label:'优势3-标题', type:'text' },
+    { key:'adv.3.desc', label:'优势3-描述', type:'text' },
+    { key:'adv.4.title', label:'优势4-标题', type:'text' },
+    { key:'adv.4.desc', label:'优势4-描述', type:'text' },
+    { key:'adv.5.title', label:'优势5-标题', type:'text' },
+    { key:'adv.5.desc', label:'优势5-描述', type:'text' },
+    { key:'adv.6.title', label:'优势6-标题', type:'text' },
+    { key:'adv.6.desc', label:'优势6-描述', type:'text' },
+    { key:'cta.title', label:'CTA区域-标题', type:'text' },
+    { key:'cta.subtitle', label:'CTA区域-副标题', type:'text' },
+    { key:'cta.btn1', label:'CTA按钮一文案', type:'text' },
+    { key:'cta.btn2', label:'CTA按钮二文案', type:'text' }
+  ],
+};
+
+function getPageFields(pageKey) { return PAGE_FIELDS[pageKey] || []; }
+
+// 合并 snapshot 到现有 data：扁平 key (如 hero.title) → 嵌套路径
+// snapshot 值是字符串时 → 转成 {zh:..., en:''}
+// snapshot 值是对象时 → 保持
+function mergeSnapshot(data, snapshot) {
+  const out = JSON.parse(JSON.stringify(data || {}));
+  Object.keys(snapshot).forEach(flatKey => {
+    const val = snapshot[flatKey];
+    const parts = flatKey.split('.');
+    let cur = out;
+    for (let i = 0; i < parts.length; i++) {
+      if (i === parts.length - 1) {
+        // 只有目标位置为空才写入（避免覆盖已有内容）
+        if (cur[parts[i]] == null) {
+          cur[parts[i]] = (val && typeof val === 'object') ? val : { zh: String(val || ''), en: '' };
+        }
+      } else {
+        cur[parts[i]] = cur[parts[i]] || {};
+        cur = cur[parts[i]];
+      }
+    }
+  });
+  return out;
+}
+
+function getNested(obj, key) {
+  const parts = key.split('.');
+  let cur = obj;
+  for (const p of parts) { if (cur == null) return null; cur = cur[p]; }
+  if (cur && typeof cur === 'object' && cur.zh) return cur.zh;
+  if (typeof cur === 'string') return cur;
+  return null;
+}
+
+const PAGE_LABELS = {home:'首页',about:'关于我们',visa:'全球签证','saudi-visa':'沙特签证',enterprise:'企业出海',transport:'境外交通住宿',insurance:'境外保险',inspection:'企业考察',news:'沙特资讯'};
+function getPageLabel(k) { return PAGE_LABELS[k] || k; }
+function esc(s) { if (!s) return ''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// 模块名 + 图标 映射（key 第一段 → 中文显示名 + emoji）
+const MODULE_META = {
+  page:            { name: '页面基础信息',    icon: '📄' },
+  hero:            { name: '顶部大图 Hero',    icon: '🎯' },
+  visa:            { name: '签证服务板块',     icon: '✈️' },
+  services:        { name: '核心服务卡片',     icon: '🛠️' },
+  news:            { name: '新闻资讯板块',     icon: '📰' },
+  stats:           { name: '数据统计',        icon: '📊' },
+  cta:             { name: '行动召唤 CTA',     icon: '📣' },
+  testimonial:     { name: '客户评价',        icon: '💬' },
+  section:         { name: '内容板块',        icon: '📑' },
+  step:            { name: '办理步骤',        icon: '👣' },
+  steps:           { name: '办理步骤',        icon: '👣' },
+  faq:             { name: '常见问题 FAQ',     icon: '❓' },
+  process:         { name: '业务流程',        icon: '⚙️' },
+  region:          { name: '地区分类',        icon: '🌍' },
+  countries:       { name: '国家/热门签证',    icon: '🗺️' },
+  types:           { name: '签证类型',        icon: '📋' },
+  features:        { name: '产品特点',        icon: '✨' },
+  advantage:       { name: '核心优势',        icon: '🏆' },
+  advantages:      { name: '核心优势',        icon: '🏆' },
+  service:         { name: '服务内容',        icon: '🎁' },
+  services_:       { name: '服务内容',        icon: '🎁' },
+  plan:            { name: '方案/套餐',        icon: '📦' },
+  team:            { name: '团队介绍',        icon: '👥' },
+  company:         { name: '公司信息',        icon: '🏢' },
+  about:           { name: '关于我们',        icon: 'ℹ️' },
+  contact:         { name: '联系方式',        icon: '📞' },
+  sidebar:         { name: '侧边栏',         icon: '📌' },
+  form:            { name: '表单/输入',       icon: '📝' },
+  modal:           { name: '弹窗',          icon: '💭' },
+  consult:         { name: '咨询表单',       icon: '💬' },
+  intro:           { name: '简介/概述',       icon: '📖' },
+  introSection:    { name: '简介/概述',       icon: '📖' },
+  culture:         { name: '企业文化',       icon: '🎨' },
+  history:         { name: '发展历程',       icon: '⏳' },
+  honor:           { name: '荣誉资质',       icon: '🏅' },
+  partner:         { name: '合作伙伴',       icon: '🤝' },
+  price:           { name: '价格/费用',       icon: '💰' },
+  material:        { name: '所需材料',       icon: '📂' },
+  materials:       { name: '所需材料',       icon: '📂' },
+  notice:          { name: '注意事项',       icon: '⚠️' },
+  flow:            { name: '流程介绍',       icon: '🔁' },
+  coverage:        { name: '保障范围',       icon: '🛡️' },
+  claim:           { name: '理赔说明',       icon: '📑' },
+  vehicle:         { name: '车辆/交通',       icon: '🚗' },
+  hotel:           { name: '酒店住宿',       icon: '🏨' },
+  itinerary:       { name: '行程安排',       icon: '🗓️' },
+  travel:          { name: '旅游信息',       icon: '🌴' },
+  route:           { name: '路线/航线',       icon: '🧭' },
+  area:            { name: '地区板块',       icon: '🌏' },
+  card:            { name: '卡片',          icon: '🃏' },
+  highlight:       { name: '亮点/推荐',       icon: '⭐' },
+  strategy:        { name: '战略板块',       icon: '🎯' },
+  solution:        { name: '解决方案',       icon: '💡' },
+  case_:           { name: '案例展示',       icon: '📚' },
+  footer:          { name: '页脚',          icon: '⬇️' },
+  nav:             { name: '导航菜单',       icon: '🧭' },
+  meta:            { name: 'Meta/SEO',      icon: '🔎' },
+  banner:          { name: '横幅 Banner',    icon: '🖼️' },
+};
+function getModuleName(key) {
+  // 兼容 region.jpkr.types → 取第一段；带前缀的（如 section.process）取第二段
+  const firstSeg = key.split('.')[0];
+  if (MODULE_META[firstSeg]) return MODULE_META[firstSeg].name;
+  // 兜底：自动生成中文名
+  const fallback = { hero:'Hero', faq:'FAQ', cta:'CTA' };
+  return fallback[firstSeg] || (firstSeg.charAt(0).toUpperCase() + firstSeg.slice(1) + ' 模块');
+}
+function getModuleIcon(key) {
+  const firstSeg = key.split('.')[0];
+  return (MODULE_META[firstSeg] || {}).icon || '📦';
+}
+
+async function renderPageEditor(container, pageKey) {
+  const fields = getPageFields(pageKey);
+  let data = {};
+  try {
+    const r = await fetch(`${API}/content/${pageKey}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('cms_token')}` }
+    });
+    if (r.ok) data = await r.json();
+  } catch(e) { console.error(e); }
+
+  // 如果服务端没有数据（或字段全空），从 HTML 抓取当前默认值回显
+  const allEmpty = fields.every(f => !getNested(data, f.key));
+  if (allEmpty && fields.length > 0) {
+    try {
+      const snapR = await fetch(`${API}/page-snapshot/${pageKey}`);
+      if (snapR.ok) {
+        const { snapshot } = await snapR.json();
+        if (snapshot && Object.keys(snapshot).length) {
+          data = mergeSnapshot(data, snapshot);
+          console.log('[CMS] 从 HTML 抓取默认值:', Object.keys(snapshot).length, '个字段');
+        }
+      }
+    } catch(e) { console.warn('[CMS] 抓取默认值失败:', e); }
+  }
+
+  // 按模块（key 第一段，如 hero/section.process/step/faq/cta）分组
+  const groups = {};
+  fields.forEach(f => {
+    const moduleKey = f.key.split('.')[0];
+    if (!groups[moduleKey]) groups[moduleKey] = [];
+    groups[moduleKey].push(f);
+  });
+  // 保持字段在原始数组中的顺序
+  const orderedKeys = [];
+  fields.forEach(f => {
+    const k = f.key.split('.')[0];
+    if (!orderedKeys.includes(k)) orderedKeys.push(k);
+  });
+
+  const groupsHTML = orderedKeys.map(modKey => {
+    const modFields = groups[modKey];
+    const fieldsHTML = modFields.map(f => {
+      const val = getNested(data, f.key) || '';
+      if (f.type === 'image') {
+        return imgUploadField(`field-${f.key}`, val, f.label, '建议尺寸 800x600px，支持 JPG/PNG/WebP');
+      } else if (f.type === 'url') {
+        return `
+        <div class="mb-3">
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">${f.label} <span class="text-gray-400 font-normal normal-case">（链接地址）</span></label>
+          <input type="url" id="field-${f.key}" value="${esc(val)}" placeholder="https:// 或 /page.html 或 tel:..." class="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green">
+        </div>`;
+      } else if (f.type === 'textarea') {
+        return `
+        <div class="mb-3">
+          <label class="block text-xs font-semibold text-gray-500 mb-1.5">${f.label}</label>
+          <textarea id="field-${f.key}" rows="3" class="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green">${esc(val)}</textarea>
+        </div>`;
+      } else {
+        return `
+        <div class="mb-3">
+          <label class="block text-xs font-semibold text-gray-500 mb-1.5">${f.label}</label>
+          <input type="text" id="field-${f.key}" value="${esc(val)}" class="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green">
+        </div>`;
+      }
+    }).join('');
+
+    return `
+      <div class="module-group" data-module="${modKey}">
+        <div class="module-header">
+          <div class="module-icon">${getModuleIcon(modKey)}</div>
+          <div>
+            <h3 class="module-title">${getModuleName(modKey)}</h3>
+            <div class="module-meta">${modFields.length} 个字段 · 命名空间 <code>${modKey}.*</code></div>
+          </div>
+          <button type="button" class="module-toggle" onclick="this.closest('.module-group').classList.toggle('collapsed')">
+            <span class="toggle-icon">▾</span>
+          </button>
+        </div>
+        <div class="module-body">${fieldsHTML}</div>
+      </div>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="max-w-5xl mx-auto editor-panel">
+      <div class="mb-6 flex items-end justify-between flex-wrap gap-3">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">页面内容 — ${getPageLabel(pageKey)}</h1>
+          <p class="text-gray-500 text-sm mt-1">按模块分组展示，方便定位要编辑的字段。编辑完成后点击右下角保存。</p>
+        </div>
+        <div class="flex gap-2 text-xs">
+          <button type="button" onclick="document.querySelectorAll('.module-group').forEach(g=>g.classList.remove('collapsed'))" class="px-3 py-1.5 bg-white border border-gray-200 rounded-md hover:bg-gray-50">全部展开</button>
+          <button type="button" onclick="document.querySelectorAll('.module-group').forEach(g=>g.classList.add('collapsed'))" class="px-3 py-1.5 bg-white border border-gray-200 rounded-md hover:bg-gray-50">全部折叠</button>
+        </div>
+      </div>
+      <div class="space-y-4">
+        ${groupsHTML || '<p class="text-gray-400 py-8 text-center bg-white rounded-xl border">该页面暂未配置可编辑字段。</p>'}
+      </div>
+      ${fields.length ? `
+      <div class="save-bar">
+        <span class="save-hint">编辑完成后点击保存</span>
+        <div class="flex gap-2">
+          <button onclick="openPreview('${pageKey}')" class="btn-reset">👁 预览前台</button>
+          <button onclick="savePageContent('${pageKey}')" class="btn-save">💾 保存页面内容</button>
+        </div>
+      </div>` : ''}
+    </div>`;
+}
+
+async function savePageContent(pageKey) {
+  const fields = getPageFields(pageKey);
+  const payload = {};
+  fields.forEach(f => {
+    const keys = f.key.split('.');
+    let cur = payload;
+    for (let i = 0; i < keys.length; i++) {
+      if (i === keys.length - 1) {
+        if (f.type === 'image' || f.type === 'url') {
+          // 图片/链接字段：直接存储URL字符串
+          cur[keys[i]] = document.getElementById(`field-${f.key}`)?.value || '';
+        } else {
+          // 文本字段：存储为 {zh, en} 对象
+          cur[keys[i]] = { zh: document.getElementById(`field-${f.key}`)?.value || '', en: '' };
+        }
+      } else {
+        cur[keys[i]] = cur[keys[i]] || {};
+        cur = cur[keys[i]];
+      }
+    }
+  });
+  await doSave(pageKey, payload);
+}
+
+// ── 预览前台页面 ───────────────────────────────
+window.openPreview = function(pageKey) {
+  const pageMap = {
+    'home':'index.html',
+    'about':'about.html',
+    'visa':'visa.html',
+    'saudi-visa':'saudi-visa.html',
+    'enterprise':'enterprise.html',
+    'transport':'transport.html',
+    'insurance':'insurance.html',
+    'inspection':'inspection.html',
+  };
+  const htmlFile = pageMap[pageKey] || `${pageKey}.html`;
+  const previewUrl = `/preview/${htmlFile}?preview=1&t=${Date.now()}`;
+  window.open(previewUrl, '_blank', 'width=1280,height=900');
+};
+
+// ── 快速预览（从顶部按钮调用）───────────────────────
+window.openPreviewDirect = function() {
+  if (typeof window.openPreview === 'function') {
+    window.openPreview('home');
+  } else {
+    window.open('/preview/index.html?preview=1&t=' + Date.now(), '_blank', 'width=1280,height=900');
+  }
+};
+
+// ══════════════════════════════════════════════
+//  占位页面
+// ══════════════════════════════════════════════
+async function renderAiChannelsPage(container) {
+  container.innerHTML = `<div class="max-w-5xl mx-auto"><div class="bg-white rounded-xl p-10 text-center text-gray-400">🤖 AI 渠道配置（接入 Coze 后开发）</div></div>`;
+}
+
+async function renderLogsPage(container) {
+  container.innerHTML = `<div class="max-w-5xl mx-auto"><div class="bg-white rounded-xl p-10 text-center text-gray-400">📋 操作日志查看（后续补充表格界面）</div></div>`;
+}

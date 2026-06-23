@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZSTS CMS - 登录</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, 'Noto Sans SC', sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-box {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+      padding: 48px 40px;
+      width: 400px;
+    }
+    .login-box h1 {
+      font-size: 24px;
+      color: #006341;
+      margin-bottom: 8px;
+    }
+    .login-box p.subtitle {
+      color: #888;
+      margin-bottom: 32px;
+      font-size: 14px;
+    }
+    .field { margin-bottom: 20px; }
+    .field label {
+      display: block;
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .field input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #d9d9d9;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .field input:focus { border-color: #006341; }
+    .btn-login {
+      width: 100%;
+      padding: 12px;
+      background: #006341;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .btn-login:hover { background: #004d33; }
+    .error-msg {
+      color: #ff4d4f;
+      font-size: 13px;
+      margin-top: 12px;
+      display: none;
+    }
+    .success-msg {
+      color: #52c41a;
+      font-size: 13px;
+      margin-top: 12px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <h1>ZSTS 内容管理</h1>
+    <p class="subtitle">中盛启瀚（ZSTS）官网后台</p>
+    <form id="loginForm">
+      <div class="field">
+        <label>用户名</label>
+        <input type="text" id="username" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label>密码</label>
+        <input type="password" id="password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn-login" id="btnLogin">登  录</button>
+      <div class="error-msg" id="errorMsg"></div>
+    </form>
+  </div>
+
+  <script>
+    const API = '/api';
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnLogin');
+      const err = document.getElementById('errorMsg');
+      err.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = '登录中...';
+
+      try {
+        const res = await fetch(`${API}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: document.getElementById('username').value.trim(),
+            password: document.getElementById('password').value,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || '登录失败');
+
+        // 存储 token 和用户信息
+        localStorage.setItem('cms_token', data.token);
+        localStorage.setItem('cms_user', JSON.stringify(data.user));
+        location.href = '/admin/dashboard.html';
+      } catch (ex) {
+        err.textContent = ex.message;
+        err.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '登  录';
+      }
+    });
+  </script>
+</body>
+</html>

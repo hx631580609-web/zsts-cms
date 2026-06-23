@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>沙特签证办理 | 中盛启瀚 ZSTS</title>
+    <meta name="description" content="中盛启瀚ZSTS提供沙特商务签证、工作签证专业代办服务。使馆官方授权，98%出签率，全程一对一服务。">
+    <link rel="stylesheet" href="local-cdn/tailwind.css">
+    <script src="local-cdn/lucide.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        if(typeof tailwind!=='undefined') {
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'zsts-green': '#006341',
+                        'zsts-green-dark': '#004d33',
+                        'zsts-green-light': '#e6f2ed',
+                        'zsts-sand': '#C5A572',
+                        'zsts-sand-light': '#f5efe6',
+                        'zsts-dark': '#1a1a2e',
+                        'zsts-gray': '#f8f9fa',
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'Noto Sans SC', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+        }
+        // QR Code Modal functions
+        function openQrModal() {
+            const modal = document.getElementById('qr-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeQrModal() {
+            const modal = document.getElementById('qr-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // Material list switcher
+        // 读取结构化 groups 数组：[{title, items:[{title, desc}], tip}, ...]
+        // 优先从 window.CMS_PAGE_DATA.mat[type].content 读取（CMS 注入），
+        // 否则从 window.i18n[lang]['mat.' + type + '.content'] 读取（向后兼容旧字符串格式）
+        function renderMatContent(type) {
+            var lang = document.documentElement.lang === 'en' ? 'en' : 'zh';
+            var container = document.getElementById('materials-' + type);
+            if (!container) return;
+            container.innerHTML = '';
+
+            var groups = null;
+            // 1) CMS 注入（数组）
+            if (window.CMS_PAGE_DATA && window.CMS_PAGE_DATA.mat && window.CMS_PAGE_DATA.mat[type]) {
+                var c = window.CMS_PAGE_DATA.mat[type].content;
+                if (c) groups = (c[lang] || c.zh || []);
+            }
+            // 2) i18n 字典（新格式：数组）
+            if (!groups && window.i18n && window.i18n[lang]) {
+                var raw = window.i18n[lang]['mat.' + type + '.content'];
+                if (Array.isArray(raw)) {
+                    groups = raw;
+                } else if (typeof raw === 'string' && raw) {
+                    // 3) 兼容旧字符串格式
+                    groups = parseMatString(raw);
+                }
+            }
+            if (!groups || !groups.length) return;
+
+            var wrapper = document.createElement('div');
+            wrapper.className = 'grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8';
+            groups.forEach(function(g, gi) {
+                var col = document.createElement('div');
+                var headingHtml = '<div class="flex items-center space-x-2 mb-5">' +
+                    (gi % 2 === 0
+                        ? '<div class="w-6 h-6 rounded-full bg-zsts-green flex items-center justify-center"><i data-lucide="check" class="w-3.5 h-3.5 text-white"></i></div>'
+                        : '<div class="w-6 h-6 rounded-full bg-zsts-sand flex items-center justify-center"><i data-lucide="sparkles" class="w-3.5 h-3.5 text-white"></i></div>') +
+                    '<h3 class="font-bold text-gray-900">' + escapeHtml(g.title || '') + '</h3></div>';
+                var itemsHtml = (g.items || []).map(function(it) {
+                    var cls = (gi % 2 === 0) ? 'material-item' : 'material-item-optional';
+                    return '<div class="' + cls + ' rounded-lg p-4"><div class="font-semibold text-gray-900 text-sm mb-1">' + escapeHtml(it.title || '') + '</div><div class="text-gray-500 text-xs">' + escapeHtml(it.desc || '') + '</div></div>';
+                }).join('');
+                col.innerHTML = headingHtml + '<div class="space-y-3">' + itemsHtml + '</div>';
+                if (g.tip) {
+                    col.innerHTML += '<div class="mt-5 bg-zsts-green-light rounded-xl p-4 flex items-start space-x-3"><i data-lucide="info" class="w-5 h-5 text-zsts-green flex-shrink-0 mt-0.5"></i><p class="text-zsts-green text-xs leading-relaxed">' + escapeHtml(g.tip) + '</p></div>';
+                }
+                wrapper.appendChild(col);
+            });
+            container.appendChild(wrapper);
+            if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
+        }
+
+        // 兼容旧字符串格式（【组标题】/[组标题]/项目|描述）
+        function parseMatString(raw) {
+            var groups = [];
+            var current = null;
+            raw.split('\n').forEach(function(line) {
+                var t = line.trim();
+                if (!t) return;
+                if (/^TIP[:：]/.test(t)) {
+                    if (current) current.tip = t.replace(/^TIP[:：]\s*/, '');
+                    return;
+                }
+                if (/^[\[【].+[\]】]\s*$/.test(t)) {
+                    if (current) groups.push(current);
+                    current = { title: t.replace(/^[\[【]|[\]】]\s*$/g, ''), items: [], tip: null };
+                    return;
+                }
+                var parts = t.split('|');
+                if (!current) current = { title: '', items: [], tip: null };
+                current.items.push({ title: parts[0] || '', desc: parts[1] || '' });
+            });
+            if (current) groups.push(current);
+            return groups;
+        }
+        function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+        window.renderMatContent = renderMatContent;
+        window.escapeHtml = escapeHtml;
+
+                function switchMaterials(type) {
+            const types = ['business', 'work', 'family', 'tourist', 'student', 'residence'];
+            types.forEach(function(t) {
+                var btn = document.getElementById('btn-mat-' + t);
+                var mat = document.getElementById('materials-' + t);
+                if (!btn || !mat) return;
+                if (t === type) {
+                    btn.classList.remove('bg-gray-100', 'text-gray-600');
+                    btn.classList.add('bg-zsts-green', 'text-white');
+                    mat.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('bg-zsts-green', 'text-white');
+                    btn.classList.add('bg-gray-100', 'text-gray-600');
+                    mat.classList.add('hidden');
+                }
+            });
+            var title = document.getElementById('materials-title');
+            if (window.renderMatContent) window.renderMatContent(type);
+            if (title) {
+                // 切换标题属性 + 内容到对应 tab
+                var lang = document.documentElement.lang === 'en' ? 'en' : 'zh';
+                var dict = (window.i18n && window.i18n[lang]) || null;
+                var labelKey = 'mat.' + type + '.title';
+                if (dict && dict[labelKey]) {
+                    title.textContent = dict[labelKey];
+                } else {
+                    // 退化：使用 i18n 系统中 6 个 tab title 的中文默认值
+                    var defaults = {
+                        zh: {business:'商务签证申请材料', work:'工作签证申请材料', family:'探亲签证申请材料', tourist:'旅游签证（电子签）申请材料', student:'留学签证申请材料', residence:'居住签证申请材料'},
+                        en: {business:'Business Visa Materials', work:'Work Visa Materials', family:'Family Visit Visa Materials', tourist:'Tourist (eVisa) Materials', student:'Student Visa Materials', residence:'Residence Visa Materials'}
+                    };
+                    title.textContent = (defaults[lang] && defaults[lang][type]) || type;
+                }
+            }
+        }
+
+        // Bind consult buttons to open QR modal
+        document.querySelectorAll('a[href="#contact"], .consult-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                openQrModal();
+            });
+        });
+    </script>
+    <style>
+        html { scroll-behavior: smooth; }
+        .hero-overlay { background: linear-gradient(135deg, rgba(0,99,65,0.88) 0%, rgba(26,26,46,0.80) 100%); }
+        .card-hover { transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-6px); box-shadow: 0 20px 40px -12px rgba(0,99,65,0.18); }
+        .btn-primary { background: linear-gradient(135deg, #006341 0%, #004d33 100%); transition: all 0.3s ease; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 30px -10px rgba(0,99,65,0.5); }
+        .nav-scrolled { background: rgba(255,255,255,0.98); backdrop-filter: blur(20px); box-shadow: 0 1px 20px rgba(0,0,0,0.08); }
+        .nav-transparent { background: transparent; }
+        .service-icon-bg { background: linear-gradient(135deg, #006341 0%, #004d33 100%); }
+        .gradient-line { height: 3px; background: linear-gradient(90deg, #006341, #C5A572); }
+        .step-connector { position: absolute; top: 28px; left: calc(50% + 28px); right: calc(-50% + 28px); height: 2px; background: linear-gradient(90deg, #006341, #C5A572); }
+        @media (max-width: 768px) { .step-connector { display: none; } }
+        .visa-card-featured { border: 2px solid #006341; position: relative; overflow: hidden; }
+        .visa-card-featured::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #006341, #C5A572); }
+        .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.4s ease, padding 0.3s ease; }
+        .faq-answer.open { max-height: 400px; }
+        .faq-item.open .faq-icon { transform: rotate(45deg); }
+        .faq-icon { transition: transform 0.3s ease; }
+        .fade-in-section { opacity: 0; transform: translateY(24px); transition: all 0.7s ease-out; }
+        .fade-in-section.visible { opacity: 1; transform: none; }
+        .lang-btn { transition: all 0.3s ease; }
+        .lang-btn.active { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.5); }
+        .lang-btn:not(.active) { opacity: 0.6; }
+        .lang-btn:hover { opacity: 1; }
+        .material-item { border-left: 3px solid #006341; background: #f8fffe; }
+        .material-item-optional { border-left: 3px solid #C5A572; background: #fdfaf6; }
+        /* Mobile table optimization */
+        @media (max-width: 767px) {
+            .overflow-x-auto {
+                position: relative;
+                -webkit-overflow-scrolling: touch;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .overflow-x-auto::after {
+                display: none !important;
+            }
+            .overflow-x-auto table {
+                min-width: 640px;
+                border-collapse: collapse;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .overflow-x-auto th,
+            .overflow-x-auto td {
+                white-space: nowrap;
+                font-size: 13px;
+                padding: 12px 14px;
+                border-radius: 0 !important;
+            }
+            .overflow-x-auto thead th {
+                border-radius: 0 !important;
+            }
+            .overflow-x-auto table tbody tr {
+                background-color: #ffffff !important;
+                border-bottom: 1px solid #f5f5f5 !important;
+            }
+            .overflow-x-auto table tbody tr:last-child {
+                border-bottom: none !important;
+            }
+            .overflow-x-auto table tbody tr td {
+                background-color: #ffffff !important;
+            }
+            .overflow-x-auto table tbody tr:nth-child(even),
+            .overflow-x-auto table tbody tr:nth-child(odd) {
+                background-color: #ffffff !important;
+            }
+            .overflow-x-auto table tbody tr * {
+                background-color: #ffffff !important;
+            }
+        }
+            .overflow-x-auto::after {
+                content: '';
+                position: absolute;
+                right: 0; top: 0; bottom: 0;
+                width: 24px;
+                background: linear-gradient(to right, transparent, rgba(0,0,0,0.06));
+                pointer-events: none;
+                border-radius: 0 16px 16px 0;
+            }
+            .overflow-x-auto table {
+                min-width: 640px;
+                border-collapse: collapse;
+            }
+            .overflow-x-auto th,
+            .overflow-x-auto td {
+                white-space: nowrap;
+                font-size: 13px;
+                padding: 12px 14px;
+            }
+            .overflow-x-auto table tbody tr {
+                background-color: #ffffff !important;
+                border-bottom: none !important;
+            }
+            .overflow-x-auto table tbody tr:last-child {
+                border-bottom: none !important;
+            }
+            .overflow-x-auto table tbody tr td {
+                background-color: #ffffff !important;
+                border-bottom: none !important;
+            }
+            .overflow-x-auto table tbody tr:nth-child(even) {
+                background-color: #ffffff !important;
+            }
+            .overflow-x-auto table tbody tr:nth-child(odd) {
+                background-color: #ffffff !important;
+            }
+            .overflow-x-auto table tbody tr * {
+                background-color: #ffffff !important;
+            }
+            .overflow-x-auto {
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .overflow-x-auto table {
+                box-shadow: none !important;
+            }
+        }
+</style>
+</head>
+<body class="font-sans text-gray-800 antialiased">
+
+    <!-- Navigation -->
+    <nav id="navbar" class="fixed top-0 left-0 right-0 z-50 nav-transparent transition-all duration-500">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <a href="index.html" class="flex items-center space-x-3">
+                    <img src="images/logo-dark.png" alt="ZSTS Logo" class="h-10 w-auto" id="nav-logo-img">
+                    </a>
+                <div class="hidden xl:flex items-center space-x-6">
+                    <a href="index.html" class="nav-link text-white hover:text-zsts-sand transition-colors font-medium text-sm" data-i18n="nav.home">首页</a>
+                    <a href="saudi-visa.html" class="nav-link text-white font-semibold text-sm border-b-2 border-zsts-sand pb-0.5 hover:text-zsts-sand transition-colors" data-i18n="nav.saudiVisa">沙特签证</a>
+                    <a href="visa.html" class="nav-link text-white hover:text-zsts-sand transition-colors font-medium text-sm" data-i18n="nav.visa">全球签证</a>
+                    <a href="transport.html" class="nav-link text-white hover:text-zsts-sand transition-colors font-medium text-sm" data-i18n="nav.transport">境外交通住宿</a>
+                    <a href="insurance.html" class="nav-link text-white hover:text-zsts-sand transition-colors font-medium text-sm" data-i18n="nav.insurance">境外保险</a>
+                    <a href="enterprise.html" class="nav-link text-white hover:text-zsts-sand transition-colors font-medium text-sm" data-i18n="nav.enterprise">企业出海</a>
+                    <a href="inspection.html" class="nav-link text-white hover:text-zsts-sand transition-colors font-medium text-sm" data-i18n="nav.inspection">企业考察</a>
+                    <a href="news.html" class="nav-link text-white hover:text-zsts-sand transition-colors font-medium text-sm" data-i18n="nav.news">沙特资讯</a>
+                    <a href="about.html" class="nav-link text-white hover:text-zsts-sand transition-colors font-medium text-sm" data-i18n="nav.about">关于我们</a>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div class="hidden sm:flex items-center space-x-1 border border-white/30 rounded-lg overflow-hidden" id="lang-switcher">
+                        <button onclick="setLang('zh')" class="lang-btn active px-3 py-1.5 text-xs font-semibold text-white" data-lang="zh">中</button>
+                        <button onclick="setLang('en')" class="lang-btn px-3 py-1.5 text-xs font-semibold text-white" data-lang="en">EN</button>
+                    </div>
+                    <button onclick="openQrModal()" class="hidden md:inline-flex btn-primary text-white px-5 py-2.5 rounded-lg font-medium text-sm cursor-pointer" data-i18n="nav.consult">立即咨询</button>
+                    <button id="mobile-menu-btn" class="xl:hidden text-white p-2">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div id="mobile-menu" class="hidden xl:hidden bg-white shadow-lg max-h-[80vh] overflow-y-auto">
+            <div class="px-4 py-4 space-y-1">
+                <a href="index.html" class="block py-3 text-gray-800 hover:text-zsts-green font-medium border-b border-gray-100" data-i18n="nav.home">首页</a>
+            <a href="saudi-visa.html" class="block py-3 text-zsts-green font-semibold border-b border-gray-100" data-i18n="nav.saudiVisa">沙特签证</a>
+                <a href="visa.html" class="block py-3 text-gray-800 hover:text-zsts-green font-medium border-b border-gray-100" data-i18n="nav.visa">全球签证</a>
+                <a href="transport.html" class="block py-3 text-gray-800 hover:text-zsts-green font-medium border-b border-gray-100" data-i18n="nav.transport">境外交通住宿</a>
+                <a href="insurance.html" class="block py-3 text-gray-800 hover:text-zsts-green font-medium border-b border-gray-100" data-i18n="nav.insurance">境外保险</a>
+                <a href="enterprise.html" class="block py-3 text-gray-800 hover:text-zsts-green font-medium border-b border-gray-100" data-i18n="nav.enterprise">企业出海</a>
+                <a href="inspection.html" class="block py-3 text-gray-800 hover:text-zsts-green font-medium border-b border-gray-100" data-i18n="nav.inspection">企业考察</a>
+                <a href="news.html" class="block py-3 text-gray-800 hover:text-zsts-green font-medium border-b border-gray-100" data-i18n="nav.news">沙特资讯</a>
+                <a href="about.html" class="block py-3 text-gray-800 hover:text-zsts-green font-medium" data-i18n="nav.about">关于我们</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative h-[70vh] min-h-[500px] flex items-center justify-center overflow-hidden">
+        <div class="absolute inset-0">
+            <img src="images/jeddah-tower.jpg" alt="吉达塔" class="w-full h-full object-cover" data-i18n="hero.bgImage">
+            <div class="hero-overlay absolute inset-0"></div>
+        </div>
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full text-center">
+            <div class="flex flex-col items-center justify-center">
+                    <div class="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-5 border border-white/20">
+                        <i data-lucide="badge-check" class="w-4 h-4 text-zsts-sand"></i>
+                        <span class="text-white/90 text-sm font-medium" data-i18n="hero.badge">沙特阿拉伯驻华大使馆 · 官方授权代办</span>
+                    </div>
+                    <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-tight mb-4">
+                        <span data-i18n="hero.title">沙特签证</span><br>
+                        <span class="text-zsts-sand" data-i18n="hero.subtitle">专业办理 · 极速出签</span>
+                    </h1>
+                    <p class="text-white/80 text-lg max-w-xl mx-auto" data-i18n="hero.desc">商务、工作、探亲、旅游、居住、留学签证专业代办</p>
+                </div>
+            </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+    <div class="flex flex-col lg:flex-row gap-12">
+
+        <!-- Left: Main Content -->
+        <div class="flex-1 min-w-0">
+
+            <!-- Section 2: Process Steps -->
+            <div class="fade-in-section mb-20 bg-zsts-gray rounded-3xl p-8 md:p-12" id="process">
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="w-1 h-7 rounded-full bg-gradient-to-b from-zsts-green to-zsts-sand"></div>
+                    <span class="text-zsts-green font-semibold text-sm uppercase tracking-wider" data-i18n="section.process.tag">办理流程</span>
+                </div>
+                <h2 class="text-3xl font-bold text-gray-900 mb-2" data-i18n="section.process.title">简单5步，轻松出签</h2>
+                <p class="text-gray-500 mb-12" data-i18n="section.process.subtitle">从咨询到取签，全程专业顾问协助指引，覆盖商务、工作、探亲、旅游、居住、留学全类型签证</p>
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-6 md:gap-4">
+                    <div class="flex flex-col items-center text-center relative">
+                        <div class="w-14 h-14 rounded-full service-icon-bg flex items-center justify-center mb-4 shadow-lg"><span class="text-white font-bold text-lg">1</span></div>
+                        <div class="step-connector hidden md:block"></div>
+                        <h4 class="font-bold text-gray-900 mb-2" data-i18n="step.1.title">在线咨询</h4>
+                        <p class="text-gray-500 text-xs leading-relaxed" data-i18n="step.1.desc">联系专属顾问，告知出行目的和时间，获取个性化签证方案</p>
+                    </div>
+                    <div class="flex flex-col items-center text-center relative">
+                        <div class="w-14 h-14 rounded-full bg-white border-2 border-zsts-green flex items-center justify-center mb-4 shadow-md"><span class="text-zsts-green font-bold text-lg">2</span></div>
+                        <div class="step-connector hidden md:block"></div>
+                        <h4 class="font-bold text-gray-900 mb-2" data-i18n="step.2.title">准备材料</h4>
+                        <p class="text-gray-500 text-xs leading-relaxed" data-i18n="step.2.desc">按清单准备申请材料，顾问免费审核，确保材料合规完整</p>
+                    </div>
+                    <div class="flex flex-col items-center text-center relative">
+                        <div class="w-14 h-14 rounded-full bg-white border-2 border-zsts-green flex items-center justify-center mb-4 shadow-md"><span class="text-zsts-green font-bold text-lg">3</span></div>
+                        <div class="step-connector hidden md:block"></div>
+                        <h4 class="font-bold text-gray-900 mb-2" data-i18n="step.3.title">提交申请</h4>
+                        <p class="text-gray-500 text-xs leading-relaxed" data-i18n="step.3.desc">材料审核通过后，代为向沙特驻华使馆提交正式签证申请</p>
+                    </div>
+                    <div class="flex flex-col items-center text-center relative">
+                        <div class="w-14 h-14 rounded-full bg-white border-2 border-zsts-green flex items-center justify-center mb-4 shadow-md"><span class="text-zsts-green font-bold text-lg">4</span></div>
+                        <div class="step-connector hidden md:block"></div>
+                        <h4 class="font-bold text-gray-900 mb-2" data-i18n="step.4.title">审核跟进</h4>
+                        <p class="text-gray-500 text-xs leading-relaxed" data-i18n="step.4.desc">全程跟进使馆审核进度，第一时间反馈最新状态，保证透明</p>
+                    </div>
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-14 h-14 rounded-full bg-zsts-sand flex items-center justify-center mb-4 shadow-lg"><i data-lucide="check" class="w-7 h-7 text-white"></i></div>
+                        <h4 class="font-bold text-gray-900 mb-2" data-i18n="step.5.title">取签出发</h4>
+                        <p class="text-gray-500 text-xs leading-relaxed" data-i18n="step.5.desc">出签成功后通知取签，顺利踏上沙特之旅</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Materials Checklist -->
+            <div class="fade-in-section mb-20" id="materials">
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="w-1 h-7 rounded-full bg-gradient-to-b from-zsts-green to-zsts-sand"></div>
+                    <span class="text-zsts-green font-semibold text-sm uppercase tracking-wider" data-i18n="section.materials.tag">材料清单</span>
+                </div>
+                <div class="flex flex-wrap items-center justify-between gap-4 mb-2">
+                    <h2 class="text-3xl font-bold text-gray-900" data-i18n="mat.business.title" id="materials-title">商务签证申请材料</h2>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="switchMaterials('business')" id="btn-mat-business" class="px-4 py-2 rounded-lg text-sm font-semibold bg-zsts-green text-white transition-colors" data-i18n="mat.business.label">商务签证</button>
+                        <button onclick="switchMaterials('work')" id="btn-mat-work" class="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors" data-i18n="mat.work.label">工作签证</button>
+                        <button onclick="switchMaterials('family')" id="btn-mat-family" class="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors" data-i18n="mat.family.label">探亲签证</button>
+                        <button onclick="switchMaterials('tourist')" id="btn-mat-tourist" class="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors" data-i18n="mat.tourist.label">旅游签证</button>
+                        <button onclick="switchMaterials('student')" id="btn-mat-student" class="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors" data-i18n="mat.student.label">留学签证</button>
+                        <button onclick="switchMaterials('residence')" id="btn-mat-residence" class="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors" data-i18n="mat.residence.label">居住签证</button>
+                    </div>
+                </div>
+                <p class="text-gray-500 mb-8" data-i18n="section.materials.subtitle">以下为标准材料清单，具体要求以最新使馆通知为准，顾问将免费核查</p>
+
+                <!-- 商务签证材料 - 由 renderMatContent 动态生成 -->
+                <div id="materials-business"></div>
+
+                <!-- 工作签证材料 - 由 renderMatContent 动态生成 -->
+                <div class="hidden" id="materials-work"></div>
+
+                <!-- 探亲签证材料 - 由 renderMatContent 动态生成 -->
+                <div class="hidden" id="materials-family"></div>
+
+                <!-- 旅游签证（电子签）材料 - 由 renderMatContent 动态生成 -->
+                <div class="hidden" id="materials-tourist"></div>
+
+                <!-- 留学签证材料 - 由 renderMatContent 动态生成 -->
+                <div class="hidden" id="materials-student"></div>
+
+                <!-- 居住签证材料 - 由 renderMatContent 动态生成 -->
+                <div class="hidden" id="materials-residence"></div>
+            </div>
+
+            <!-- Section 5: FAQ -->
+            <div class="fade-in-section mb-20" id="faq">
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="w-1 h-7 rounded-full bg-gradient-to-b from-zsts-green to-zsts-sand"></div>
+                    <span class="text-zsts-green font-semibold text-sm uppercase tracking-wider" data-i18n="section.faq.tag">常见问题</span>
+                </div>
+                <h2 class="text-3xl font-bold text-gray-900 mb-8" data-i18n="section.faq.title">FAQ · 您最关心的问题</h2>
+                <div class="space-y-4" id="faq-container">
+                    <div class="faq-item bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                        <button class="faq-toggle w-full flex items-center justify-between p-6 text-left"><span class="font-semibold text-gray-900 pr-4" data-i18n="faq.q1">中国公民申请沙特签证需要提前多久？</span><i data-lucide="plus" class="w-5 h-5 text-zsts-green faq-icon flex-shrink-0"></i></button>
+                        <div class="faq-answer px-6"><p class="text-gray-600 text-sm leading-relaxed pb-6" data-i18n="faq.a1">不同签证类型的办理周期有所差异：旅游电子签通常24-48小时；商务签证约5-7个工作日；探亲签证约7-10个工作日；工作、留学、居住签证因涉及材料公证和认证，一般需要15-30个工作日。建议出发前尽早咨询，预留充足时间。节假日前后办理周期可能延长。</p></div>
+                    </div>
+                    <div class="faq-item bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                        <button class="faq-toggle w-full flex items-center justify-between p-6 text-left"><span class="font-semibold text-gray-900 pr-4" data-i18n="faq.q2">沙特旅游电子签和商务签证有什么区别？</span><i data-lucide="plus" class="w-5 h-5 text-zsts-green faq-icon flex-shrink-0"></i></button>
+                        <div class="faq-answer px-6"><p class="text-gray-600 text-sm leading-relaxed pb-6" data-i18n="faq.a2">旅游电子签（eVisa）手续最简便，仅需护照和证件照即可在线申请，无需邀请函，24-48小时出签，适合纯旅游目的。商务签证需要沙特当地公司的正式邀请函、中方派遣材料等，适用于商务考察、谈判等商业活动。两者在停留期限和入境次数上也有所不同，请根据实际出行目的选择。</p></div>
+                    </div>
+                    <div class="faq-item bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                        <button class="faq-toggle w-full flex items-center justify-between p-6 text-left"><span class="font-semibold text-gray-900 pr-4" data-i18n="faq.q3">申请工作或留学签证需要准备哪些特殊材料？</span><i data-lucide="plus" class="w-5 h-5 text-zsts-green faq-icon flex-shrink-0"></i></button>
+                        <div class="faq-answer px-6"><p class="text-gray-600 text-sm leading-relaxed pb-6" data-i18n="faq.a3">工作和留学签证的材料要求相对复杂，除基础护照、身份证外，还需要：无犯罪记录公证书（需海牙认证）、健康证（红本+黄本，由指定国际旅行卫生保健中心办理）、最高学历证书公证书（留学签证还需通过教育部留学服务中心认证）。工作签证还需雇主劳动合同及QVP认证；留学签证需校方录取通知书。我司提供全程材料辅导服务。</p></div>
+                    </div>
+                    <div class="faq-item bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                        <button class="faq-toggle w-full flex items-center justify-between p-6 text-left"><span class="font-semibold text-gray-900 pr-4" data-i18n="faq.q4">没有沙特邀请函怎么办？哪些签证不需要邀请函？</span><i data-lucide="plus" class="w-5 h-5 text-zsts-green faq-icon flex-shrink-0"></i></button>
+                        <div class="faq-answer px-6"><p class="text-gray-600 text-sm leading-relaxed pb-6" data-i18n="faq.a4">旅游电子签不需要邀请函，在线即可申请，是最便捷的选择。商务签证、工作签证、探亲签证、留学签证和居住签证都需要沙特当地的相关邀请文件（如公司邀请函、亲属邀请函、学校录取通知等）。如您没有当地合作方或亲属，请提前咨询我们，我们会根据您的实际情况给出最优方案。</p></div>
+                    </div>
+                    <div class="faq-item bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                        <button class="faq-toggle w-full flex items-center justify-between p-6 text-left"><span class="font-semibold text-gray-900 pr-4" data-i18n="faq.q5">赴沙特需要注意哪些入境规定？</span><i data-lucide="plus" class="w-5 h-5 text-zsts-green faq-icon flex-shrink-0"></i></button>
+                        <div class="faq-answer px-6"><p class="text-gray-600 text-sm leading-relaxed pb-6" data-i18n="faq.a5">沙特海关对入境物品有明确规定：禁止携带酒精制品、猪肉类食品；女性游客建议着装得体；公众场合请尊重当地文化习惯和宗教礼仪。斋月期间白天避免在公开场合饮食。建议出发前充分了解海关政策和当地法规，我们可提供详细的赴沙指南供参考。</p></div>
+                    </div>
+                    <div class="faq-item bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                        <button class="faq-toggle w-full flex items-center justify-between p-6 text-left"><span class="font-semibold text-gray-900 pr-4" data-i18n="faq.q6">签证费用如何支付？签约前会告知所有费用吗？</span><i data-lucide="plus" class="w-5 h-5 text-zsts-green faq-icon flex-shrink-0"></i></button>
+                        <div class="faq-answer px-6"><p class="text-gray-600 text-sm leading-relaxed pb-6" data-i18n="faq.a6">支持银行转账、支付宝、微信等多种支付方式。具体费用因签证类型而异——旅游电子签费用较低，工作/留学/居住签证因涉及公证认证环节费用相对较高。具体报价请咨询客服顾问，签约前所有费用项目将明确列入合同条款。</p></div>
+                    </div>
+                    <div class="faq-item bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                        <button class="faq-toggle w-full flex items-center justify-between p-6 text-left"><span class="font-semibold text-gray-900 pr-4" data-i18n="faq.q7">签证被拒后可以重新申请吗？</span><i data-lucide="plus" class="w-5 h-5 text-zsts-green faq-icon flex-shrink-0"></i></button>
+                        <div class="faq-answer px-6"><p class="text-gray-600 text-sm leading-relaxed pb-6" data-i18n="faq.a7">可以重新申请。中盛启瀚会协助分析被拒原因，针对性补充或调整材料后重新提交。我们的专业团队在提交前会进行严格的材料审核与预审，将拒签风险降至最低。</p></div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- end left col -->
+
+        <!-- Right: Sticky Sidebar -->
+        <div class="lg:w-80 xl:w-96 flex-shrink-0">
+            <div class="sticky-sidebar space-y-6" style="position:sticky;top:100px;">
+
+                <!-- Contact Card -->
+                <div class="bg-zsts-dark rounded-2xl p-7 text-white" id="contact-section">
+                    <div class="flex items-center space-x-3 mb-5">
+                        <div class="w-10 h-10 rounded-xl service-icon-bg flex items-center justify-center"><i data-lucide="headphones" class="w-5 h-5 text-white"></i></div>
+                        <div><div class="font-bold" data-i18n="sidebar.contact.title">专属签证顾问</div><div class="text-white/60 text-xs" data-i18n="sidebar.contact.sub">快速响应</div></div>
+                    </div>
+                    <div class="space-y-3 mb-6">
+                        <a href="tel:010-85656995 / 010-53670397 / 17190016075" class="flex items-center space-x-3 bg-white/10 rounded-xl p-3 hover:bg-white/20 transition-colors">
+                            <i data-lucide="phone" class="w-5 h-5 text-zsts-sand flex-shrink-0"></i><div><div class="text-xs text-white/60" data-i18n="sidebar.phone.label">电话咨询</div><div class="font-bold text-sm">010-85656995 / 010-53670397 / 17190016075</div></div>
+                        </a>
+                        <a href="mailto:info@zsts.group" class="flex items-center space-x-3 bg-white/10 rounded-xl p-3 hover:bg-white/20 transition-colors">
+                            <i data-lucide="mail" class="w-5 h-5 text-zsts-sand flex-shrink-0"></i><div><div class="text-xs text-white/60" data-i18n="sidebar.email.label">邮件咨询</div><div class="font-bold text-sm">info@zsts.group</div></div>
+                        </a>
+                    </div>
+                    <div class="bg-white rounded-xl p-3 text-center mb-4">
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="flex flex-col items-center">
+                                <img src="images/qr-personal.png" data-i18n="sidebar.qr.personal" alt="微信客服一" class="w-full aspect-square rounded-lg object-contain bg-white">
+                                <span class="text-zsts-dark text-[10px] font-medium mt-1" data-i18n="sidebar.qr.personal">微信客服一</span>
+                            </div>
+                            <div class="flex flex-col items-center">
+                                <img src="images/qr-enterprise.png" data-i18n="sidebar.qr.enterprise" alt="微信客服二" class="w-full aspect-square rounded-lg object-contain bg-white">
+                                <span class="text-zsts-dark text-[10px] font-medium mt-1" data-i18n="sidebar.qr.enterprise">微信客服二</span>
+                            </div>
+                            <div class="flex flex-col items-center">
+                                <img src="images/qr-whatsapp.png" data-i18n="sidebar.qr.whatsapp" alt="WhatsApp" class="w-full aspect-square rounded-lg object-contain bg-white">
+                                <span class="text-zsts-dark text-[10px] font-medium mt-1" data-i18n="sidebar.qr.whatsapp">WhatsApp</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Trust Badges -->
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                    <h4 class="font-bold text-gray-900 mb-4" data-i18n="sidebar.trust.title">为什么选择中盛启瀚？</h4>
+                    <div class="space-y-3">
+                        <div class="flex items-center space-x-3"><div class="w-9 h-9 rounded-lg bg-zsts-green-light flex items-center justify-center flex-shrink-0"><i data-lucide="badge-check" class="w-4 h-4 text-zsts-green"></i></div><div class="text-sm text-gray-700" data-i18n="sidebar.trust.p1">沙特使馆官方授权代办</div></div>
+                        <div class="flex items-center space-x-3"><div class="w-9 h-9 rounded-lg bg-zsts-green-light flex items-center justify-center flex-shrink-0"><i data-lucide="trending-up" class="w-4 h-4 text-zsts-green"></i></div><div class="text-sm text-gray-700" data-i18n="sidebar.trust.p2">98% 历史出签成功率</div></div>
+                        <div class="flex items-center space-x-3"><div class="w-9 h-9 rounded-lg bg-zsts-green-light flex items-center justify-center flex-shrink-0"><i data-lucide="users" class="w-4 h-4 text-zsts-green"></i></div><div class="text-sm text-gray-700" data-i18n="sidebar.trust.p3">5000+ 客户信任选择</div></div>
+                        <div class="flex items-center space-x-3"><div class="w-9 h-9 rounded-lg bg-zsts-green-light flex items-center justify-center flex-shrink-0"><i data-lucide="shield" class="w-4 h-4 text-zsts-green"></i></div><div class="text-sm text-gray-700" data-i18n="sidebar.trust.p4">专业团队全程跟进</div></div>
+                        <div class="flex items-center space-x-3"><div class="w-9 h-9 rounded-lg bg-zsts-green-light flex items-center justify-center flex-shrink-0"><i data-lucide="clock" class="w-4 h-4 text-zsts-green"></i></div><div class="text-sm text-gray-700" data-i18n="sidebar.trust.p5">全程进度透明可追踪</div></div>
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+
+    </div>
+    </div>
+    </div>
+
+    <!-- CTA Section -->
+    <section class="py-24 relative overflow-hidden">
+        <div class="absolute inset-0">
+            <img src="images/riyadh-skyline.jpg" 
+                 alt="利雅得城市天际线" 
+                 class="w-full h-full object-cover" data-i18n="hero.bgImage">
+            <div class="absolute inset-0 bg-zsts-dark/90"></div>
+        </div>
+        <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl md:text-5xl font-bold text-white mb-6" data-i18n="cta.title">开启您的沙特商务之旅</h2>
+            <p class="text-white/70 text-lg mb-10 max-w-2xl mx-auto" data-i18n="cta.subtitle">
+                无论您是计划商务考察、参展参会，还是企业出海落地，<br class="hidden sm:block">
+                中盛启瀚都将为您提供专业、高效的一站式服务。
+            </p>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="#contact" class="bg-white text-zsts-dark px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-100 transition-all flex items-center space-x-2">
+                    <i data-lucide="phone" class="w-5 h-5"></i>
+                    <span data-i18n="cta.btn1">立即咨询</span>
+                </a>
+                <a href="#contact" class="bg-white/10 backdrop-blur-sm text-white border border-white/30 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white/20 transition-all flex items-center space-x-2">
+                    <i data-lucide="message-circle" class="w-5 h-5"></i>
+                    <span data-i18n="cta.btn2">微信咨询</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact" class="bg-zsts-dark text-white pt-20 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-3 gap-12 mb-16">
+                <!-- Company Info -->
+                <div class="md:col-span-1">
+                    <div class="flex items-center space-x-3 mb-6">
+                            <img src="images/logo-dark.png" alt="ZSTS Logo" class="h-10 w-auto">
+                        </div>
+                        <p class="text-white/60 text-sm leading-relaxed mb-6" data-i18n="footer.desc">
+                        依托沙特阿拉伯授权签证中心，聚焦沙特市场的综合商业服务公司，致力于构筑中沙两国高质量发展桥梁。
+                    </p>
+                </div>
+                
+                <!-- Quick Links -->
+                <div>
+                    <h4 class="font-bold text-lg mb-6" data-i18n="footer.navTitle">快速导航</h4>
+                    <ul class="grid grid-cols-2 gap-x-6 gap-y-3 text-white/60 text-sm">
+                        <li><a href="saudi-visa.html" class="hover:text-zsts-sand transition-colors" data-i18n="nav.saudiVisa">沙特签证</a></li>
+                        <li><a href="visa.html" class="hover:text-zsts-sand transition-colors" data-i18n="nav.visa">全球签证</a></li>
+                        <li><a href="transport.html" class="hover:text-zsts-sand transition-colors" data-i18n="nav.transport">境外交通住宿</a></li>
+                        <li><a href="insurance.html" class="hover:text-zsts-sand transition-colors" data-i18n="nav.insurance">境外保险</a></li>
+                        <li><a href="enterprise.html" class="hover:text-zsts-sand transition-colors" data-i18n="nav.enterprise">企业出海</a></li>
+                        <li><a href="inspection.html" class="hover:text-zsts-sand transition-colors" data-i18n="nav.inspection">企业考察</a></li>
+                        <li><a href="news.html" class="hover:text-zsts-sand transition-colors" data-i18n="nav.news">沙特资讯</a></li>
+                        <li><a href="about.html" class="hover:text-zsts-sand transition-colors" data-i18n="nav.about">关于我们</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Contact Info -->
+                <div>
+                    <h4 class="font-bold text-lg mb-6" data-i18n="footer.contactTitle">联系方式</h4>
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-3">
+                            <i data-lucide="phone" class="w-5 h-5 text-zsts-sand flex-shrink-0"></i>
+                            <span class="text-white/60 text-sm">010-85656995 / 010-53670397 / 17190016075</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i data-lucide="mail" class="w-5 h-5 text-zsts-sand flex-shrink-0"></i>
+                            <span class="text-white/60 text-sm">info@zsts.group</span>
+                        </div>
+                        <div class="mt-4 grid grid-cols-3 gap-3">
+                            <div class="bg-white/10 rounded-xl p-3 text-center">
+                                <img src="images/qr-personal.png" data-i18n="sidebar.qr.personal" alt="微信客服一" class="w-16 h-16 rounded-lg mx-auto mb-1 object-contain bg-white">
+                                <span class="text-white/60 text-xs">微信客服一</span>
+                            </div>
+                            <div class="bg-white/10 rounded-xl p-3 text-center">
+                                <img src="images/qr-enterprise.png" data-i18n="sidebar.qr.enterprise" alt="微信客服二" class="w-16 h-16 rounded-lg mx-auto mb-1 object-contain bg-white">
+                                <span class="text-white/60 text-xs">微信客服二</span>
+                            </div>
+                            <div class="bg-white/10 rounded-xl p-3 text-center">
+                                <img src="images/qr-whatsapp.png" data-i18n="sidebar.qr.whatsapp" alt="WhatsApp" class="w-16 h-16 rounded-lg mx-auto mb-1 object-contain bg-white">
+                                <span class="text-white/60 text-xs">WhatsApp</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bottom Bar -->
+            <div class="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between">
+                <p class="text-white/40 text-sm mb-4 md:mb-0">
+                    <span data-i18n="footer.copyright">中盛启瀚（ZSTS）国际商务发展有限公司</span>. All rights reserved.
+                </p>
+                <div class="flex items-center space-x-6 text-white/40 text-sm">
+                    <a href="privacy-policy.html" class="hover:text-white transition-colors" data-i18n="footer.privacy">隐私政策</a>
+                    <a href="terms.html" class="hover:text-white transition-colors" data-i18n="footer.terms">服务条款</a>
+                    <a href="sitemap.html" class="hover:text-white transition-colors" data-i18n="footer.sitemap">网站地图</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scroll to top -->
+    <button id="scroll-top" class="fixed bottom-8 right-8 w-12 h-12 bg-zsts-green text-white rounded-full shadow-lg flex items-center justify-center opacity-0 invisible transition-all duration-300 hover:bg-zsts-green-dark z-50">
+        <i data-lucide="chevron-up" class="w-6 h-6"></i>
+    </button>
+
+    <!-- QR Code Modal -->
+    <div id="qr-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/60 backdrop-blur-sm" onclick="closeQrModal()">
+        <div class="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 text-center shadow-2xl relative" onclick="event.stopPropagation()">
+            <button onclick="closeQrModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <h3 class="text-lg font-bold text-gray-900 mb-2" data-i18n="modal.title">扫码咨询</h3>
+            <p class="text-gray-500 text-sm mb-6" data-i18n="modal.desc">选择您方便的方式联系我们</p>
+            <div class="grid grid-cols-3 gap-6">
+                <div class="flex flex-col items-center">
+                    <img src="images/qr-personal.png" data-i18n="sidebar.qr.personal" alt="微信客服一二维码" class="w-36 h-36 rounded-lg shadow-md mb-3 object-contain">
+                    <span class="text-sm font-semibold text-gray-700">微信客服一</span>
+                </div>
+                <div class="flex flex-col items-center">
+                    <img src="images/qr-enterprise.png" data-i18n="sidebar.qr.enterprise" alt="微信客服二二维码" class="w-36 h-36 rounded-lg shadow-md mb-3 object-contain">
+                    <span class="text-sm font-semibold text-gray-700">微信客服二</span>
+                </div>
+                <div class="flex flex-col items-center">
+                    <img src="images/qr-whatsapp.png" data-i18n="sidebar.qr.whatsapp" alt="WhatsApp二维码" class="w-36 h-36 rounded-lg shadow-md mb-3 object-contain">
+                    <span class="text-sm font-semibold text-gray-700">WhatsApp</span>
+                </div>
+            </div>
+            <p class="text-sm text-gray-500 mt-6" data-i18n="modal.phone">客服电话：010-85656995 / 010-53670397 / 17190016075</p>
+        </div>
+    </div>
+
+    <!-- i18n Script -->
+    <script>
+    (function() {
+        const i18n = window.i18n = {
+            zh: {
+                'page.title': '沙特签证办理 | 中盛启瀚 ZSTS',
+                'nav.home': '首页',
+                'nav.brand': '中盛启瀚', 'nav.saudiVisa': '沙特签证', 'nav.visa': '全球签证', 'nav.transport': '境外交通住宿',
+                'nav.enterprise': '企业出海', 'nav.inspection': '企业考察', 'nav.insurance': '境外保险',
+                'nav.news': '沙特资讯', 'nav.about': '关于我们', 'nav.consult': '立即咨询',
+                'hero.badge': '沙特阿拉伯驻华大使馆 · 官方授权代办',
+                'hero.title': '沙特签证', 'hero.subtitle': '专业办理 · 极速出签',
+                'hero.desc': '商务、工作、探亲、旅游、居住、留学签证专业代办',
+                'hero.ctaCard.title': '免费咨询签证方案', 'hero.ctaCard.p1': '专属顾问1小时内回复', 'hero.ctaCard.p2': '免费评估材料合规性', 'hero.ctaCard.p3': '无隐形收费透明报价', 'hero.ctaCard.btn': '咨询签证方案',
+                'section.process.tag': '办理流程', 'section.process.title': '简单5步，轻松出签', 'section.process.subtitle': '从咨询到取签，全程专业顾问协助指引，覆盖商务、工作、探亲、旅游、居住、留学全类型签证',
+                'step.1.title': '在线咨询', 'step.1.desc': '联系专属顾问，告知出行目的和时间，获取个性化签证方案',
+                'step.2.title': '准备材料', 'step.2.desc': '按清单准备申请材料，顾问免费审核，确保材料合规完整',
+                'step.3.title': '提交申请', 'step.3.desc': '材料审核通过后，代为向沙特驻华使馆提交正式签证申请',
+                'step.4.title': '审核跟进', 'step.4.desc': '全程跟进使馆审核进度，第一时间反馈最新状态，保证透明',
+                'step.5.title': '取签出发', 'step.5.desc': '出签成功后通知取签，顺利踏上沙特之旅',
+                'section.materials.tag': '材料清单', 'section.materials.title': '商务签证申请材料', 'section.materials.subtitle': '以下为标准材料清单，具体要求以最新使馆通知为准，顾问将免费核查',
+                'materials.required.title': '必备材料', 'materials.optional.title': '加分材料（酌情提供）',
+                                'mat.business.label': '商务签证',
+                'mat.business.title': '商务签证申请材料',
+                'mat.business.content': '【申请人个人材料】\n护照原件及首页复印件|有效期6个月以上，至少2页空白签证页\n身份证正反面复印件|清晰可辨，信息完整\n详细个人简历|包含工作经历、教育背景等信息\n中英文行程单|含抵沙日期、离沙日期、活动安排\n护照照片|白色背景，近3个月拍摄，2寸\n\n【中方通道公司材料】\n中文派遣函|抬头打印并加盖公司公章\n公司营业执照复印件|加盖公司公章\n劳动合同复印件|公司与申请人间的劳动合同\n合作协议|公司与沙特商洽的合作协议或意向书\n\n【沙特邀请公司材料】\n正式邀请函|由沙特当地公司出具，发往北京领馆，含访问目的和日期\n公司营业执照/商业登记|沙特公司营业执照或商业登记复印件\n商会认证（如需）|部分情况下需沙特商会认证文件',
+                'mat.work.label': '工作签证',
+                'mat.work.title': '工作签证申请材料',
+                'mat.work.content': '【必备材料】\n护照原件及首页复印件|有效期6个月以上，至少2页空白签证页\n身份证正反面复印件|清晰完整\n无犯罪记录公证书|由户籍所在地公安机关出具，原件+复印件，需海牙认证\n健康证（红本）及疫苗证（黄本）|指定国际旅行卫生保健中心办理，原件及复印件\n学历/资格证书公证书|最高学历证书、职业资格证书，需公证和海牙认证\n\n【雇主/入境特殊要求】\n沙特雇主邀请函|经沙特外交部认证，含雇佣职位和期限\n劳动合同（认证件）|与沙特雇主签订的正式劳动合同，需特别批准或认证\nQVP认证|雇佣本地以上学历公证及沙特QVP认证\n工作经历证明|前雇主出具的工作证明，展示相关领域经验',
+                'mat.family.label': '探亲签证',
+                'mat.family.title': '探亲签证申请材料',
+                'mat.family.content': '【申请人个人材料】\n护照原件及复印件|有效期6个月以上，留有足够复印页\n身份证复印件|清晰可辨\n关系证明文件|申请人与邀请人关系证明文件复印件\n\n【沙特邀请人材料 + 亲属关系公证】\n正式邀请函|注明"访问目的为探亲/团聚"\n居住证复印件（Iqama）|邀请人在沙特的居留证件\n邀请人居留证件/身份证件|邀请人居民身份证件或居留证件复印件\n亲属关系公证书|结婚证、出生证等关系文件，需中外文对照并办理海牙认证',
+                'mat.tourist.label': '旅游签证',
+                'mat.tourist.title': '旅游签证（电子签）申请材料',
+                'mat.tourist.content': '【必备申请材料】\n有效护照原件|护照有效期计划入境日期的至少6个月以上\n标准白底证件照|电子版规格要求 3.5cm×4.5cm，清晰可见五官\n\n【电子签优势】\n无需邀请函|旅游签证不需要沙特当地邀请函\n全球线上申请（eVisa）|随时随地在线提交申请\n极速出签 24-48小时|高效处理流程，最快次日收到电子签证\n1年多次入境有效|每次停留不超过90天',
+                'mat.student.label': '留学签证',
+                'mat.student.title': '留学签证申请材料',
+                'mat.student.content': '【申请人个人必备材料】\n护照原件及首页复印件|有效期6个月以上\n身份证复印件|清晰完整\n无犯罪记录公证书|原件及复印件，需海牙认证\n最高学历/毕业证书公证书|需海牙认证\n健康证（红本）及疫苗证（黄本）|原件及复印件\n\n【沙特校方提供材料】\n学校邀请函|发往北京领馆，明确注明为"北京"\n录取通知书/录取邮件|学位正式录取通知书或校方录取邮件',
+                'mat.residence.label': '居住签证',
+                'mat.residence.title': '居住签证申请材料',
+                'mat.residence.content': '【申请人个人必备材料】\n护照原件及首页复印件|有效期6个月以上\n身份证正反面复印件|清晰完整\n亲属关系中英文公证书|需办理海牙认证\n健康证（红本）及疫苗证（黄本）|原件及复印件\n\n【沙特邀请人所需材料】\n正式邀请函|发往地为"北京"，注明生效时间\n邀请人居留证件或居住证|Iqama 居留证件复印件',
+            },
+            en: {
+                'page.title': 'Saudi Visa | ZSTS',
+                'nav.home': 'Home',
+                'nav.brand': 'ZSTS', 'nav.saudiVisa': 'Saudi Visa', 'nav.visa': 'Global Visa', 'nav.transport': 'Overseas Transport & Stay',
+                'nav.enterprise': 'Enterprise', 'nav.inspection': 'Inspection', 'nav.insurance': 'Overseas Insurance',
+                'nav.news': 'News', 'nav.about': 'About', 'nav.consult': 'Contact Us',
+                'hero.badge': 'Royal Embassy of Saudi Arabia · Official Authorized Agency',
+                'hero.title': 'Saudi Arabia Visa', 'hero.subtitle': 'Official Authorized · Fast Processing',
+                'hero.desc': 'Business, work, family visit, tourist, residence, and student visa one-stop service',
+                'hero.ctaCard.title': 'Free Visa Consultation', 'hero.ctaCard.p1': 'Dedicated advisor replies within 1 hour', 'hero.ctaCard.p2': 'Free document compliance review', 'hero.ctaCard.p3': 'Transparent pricing, no hidden fees', 'hero.ctaCard.btn': 'Free Consultation',
+                'section.process.tag': 'Process', 'section.process.title': '5 Simple Steps to Your Visa', 'section.process.subtitle': 'From consultation to visa collection, guided by professional advisors for all 6 visa types',
+                'step.1.title': 'Consult', 'step.1.desc': 'Contact your dedicated advisor with your travel purpose and dates to get a personalized visa plan',
+                'step.2.title': 'Prepare Docs', 'step.2.desc': 'Prepare documents per checklist; advisor reviews for free to ensure full compliance',
+                'step.3.title': 'Submit', 'step.3.desc': 'After document approval, we submit the formal application to the Saudi Embassy on your behalf',
+                'step.4.title': 'Track Progress', 'step.4.desc': 'We monitor Embassy review progress and provide timely transparent status updates',
+                'step.5.title': 'Collect & Go', 'step.5.desc': 'Upon approval, collect your visa and embark on your Saudi journey',
+                'section.materials.tag': 'Documents', 'section.materials.title': 'Business Visa Document Checklist', 'section.materials.subtitle': 'Standard checklist below; our advisor will provide a free pre-review',
+                'materials.required.title': 'Required Documents', 'materials.optional.title': 'Supporting Documents (Optional)',
+                                'mat.business.label': 'Business Visa',
+                'mat.business.title': 'Business Visa Document Checklist',
+                'mat.business.content': '【Applicant Personal Documents】\nOriginal passport + first page copy|Valid 6+ months, at least 2 blank visa pages\nID card (front/back) copy|Clear and complete\nDetailed CV|Including work history and education\nBilingual itinerary|Arrival, departure dates, activity schedule\nPassport photo|White background, taken within 3 months, 2-inch\n\n【Chinese Sending Company Documents】\nDispatch letter|Printed on company letterhead with company seal\nBusiness license copy|Stamped with company seal\nLabor contract copy|Contract between company and applicant\nCooperation agreement|Company\'s cooperation agreement or MOU with Saudi partner\n\n【Saudi Inviting Company Documents】\nFormal invitation letter|Issued by Saudi company, addressed to Beijing embassy, with visit purpose and dates\nBusiness license/registration|Saudi company business license or registration copy\nChamber of commerce attestation (if needed)|Saudi chamber of commerce attestation document in some cases',
+                'mat.work.label': 'Work Visa',
+                'mat.work.title': 'Work Visa Document Checklist',
+                'mat.work.content': '【Required Documents】\nOriginal passport + first page copy|Valid 6+ months, at least 2 blank visa pages\nID card (front/back) copy|Clear and complete\nCriminal record certificate|Issued by local public security authority, original + copy, apostille required\nHealth certificate (Red Book) + vaccination certificate (Yellow Book)|Issued by designated international travel health centers, original + copy\nEducation/qualification certificate apostilled|Highest degree certificate, professional qualification, notarization and apostille required\n\n【Employer / Entry Special Requirements】\nSaudi employer invitation letter|Attested by Saudi Ministry of Foreign Affairs, with position and term of employment\nLabor contract (attested)|Formal labor contract with Saudi employer, special approval or attestation required\nQVP certification|Local degree certificate and Saudi QVP certification\nWork experience certificate|Issued by previous employer, showing relevant experience',
+                'mat.family.label': 'Family Visit Visa',
+                'mat.family.title': 'Family Visit Visa Document Checklist',
+                'mat.family.content': '【Applicant Personal Documents】\nOriginal passport + copy|Valid 6+ months, with sufficient copy pages\nID card copy|Clear and complete\nRelationship proof documents|Copy of relationship proof with inviter\n\n【Saudi Inviter Documents + Kinship Attestation】\nFormal invitation letter|Stating \'visit purpose is family visit/reunion\'\nIqama copy|Inviter\'s residence permit in Saudi Arabia\nInviter\'s residence permit/ID copy|Inviter\'s ID or residence permit copy\nKinship attestation|Marriage certificate, birth certificate, etc. with bilingual translation and apostille',
+                'mat.tourist.label': 'Tourist Visa',
+                'mat.tourist.title': 'Tourist (eVisa) Document Checklist',
+                'mat.tourist.content': '【Required Application Documents】\nValid passport|Valid at least 6 months from planned entry date\nStandard white-background ID photo|Electronic specification 3.5cm×4.5cm, clear facial features\n\n【eVisa Advantages】\nNo invitation letter required|Tourist visa does not require Saudi local invitation\nGlobal online application (eVisa)|Apply online anytime, anywhere\nFast processing 24-48 hours|Efficient processing, electronic visa received as soon as next day\n1-year multiple entry|Each stay no more than 90 days',
+                'mat.student.label': 'Student Visa',
+                'mat.student.title': 'Student Visa Document Checklist',
+                'mat.student.content': '【Applicant Personal Required Documents】\nOriginal passport + first page copy|Valid 6+ months\nID card copy|Clear and complete\nCriminal record certificate|Original + copy, apostille required\nHighest degree/graduation certificate apostilled|Apostille required\nHealth certificate (Red Book) + vaccination certificate (Yellow Book)|Original + copy\n\n【Saudi School Provided Documents】\nSchool invitation letter|Addressed to Beijing embassy, clearly marked as \'Beijing\'\nAdmission letter/email|Official admission letter or admission email from the school',
+                'mat.residence.label': 'Residence Visa',
+                'mat.residence.title': 'Residence Visa Document Checklist',
+                'mat.residence.content': '【Applicant Personal Required Documents】\nOriginal passport + first page copy|Valid 6+ months\nID card (front/back) copy|Clear and complete\nKinship certificate (bilingual)|Apostille required\nHealth certificate (Red Book) + vaccination certificate (Yellow Book)|Original + copy\n\n【Saudi Inviter Required Documents】\nFormal invitation letter|Addressed to \'Beijing\', with effective date noted\nInviter\'s residence permit or Iqama|Iqama residence permit copy',
+            }
+        };
+
+        let currentLang = localStorage.getItem('zsts-lang') || 'zh';
+
+        function setLang(lang) {
+            currentLang = lang;
+            localStorage.setItem('zsts-lang', lang);
+            document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+            if (!window.CMS_PREVIEW) applyTranslations();
+            updateLangButtons();
+        }
+
+        function applyTranslations() {
+            const dict = i18n[currentLang];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key]) {
+                    if (el.tagName === 'TITLE') document.title = dict[key];
+                    else el.textContent = dict[key];
+                }
+            });
+        }
+
+        function updateLangButtons() {
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-lang') === currentLang);
+            });
+        }
+
+        window.setLang = setLang;
+        // 记录当前激活的 tab type，供 CMS 数据到达后重渲染
+        window._currentMatTab = 'business';
+        // CMS 数据到达后的回调：刷新所有 6 个 tab 内容
+        window.onCmsPageData = function() {
+            ['business','work','family','tourist','student','residence'].forEach(function(t){
+                if (window.renderMatContent) window.renderMatContent(t);
+            });
+        };
+        document.addEventListener('DOMContentLoaded', () => { if (!window.CMS_PREVIEW) applyTranslations(); updateLangButtons(); if (window.renderMatContent) window.renderMatContent('business'); });
+        // 若 CMS 客户端已加载完数据（preview 模式且 script 顺序在 CMS 客户端之后），立即渲染
+        if (window.CMS_PAGE_DATA && window.onCmsPageData) window.onCmsPageData();
+    })();
+        // QR Code Modal functions
+        function openQrModal() {
+            const modal = document.getElementById('qr-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeQrModal() {
+            const modal = document.getElementById('qr-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // Material list switcher
+        function switchMaterials(type) {
+            const types = ['business', 'work', 'family', 'tourist', 'student', 'residence'];
+            types.forEach(function(t) {
+                var btn = document.getElementById('btn-mat-' + t);
+                var mat = document.getElementById('materials-' + t);
+                if (!btn || !mat) return;
+                if (t === type) {
+                    btn.classList.remove('bg-gray-100', 'text-gray-600');
+                    btn.classList.add('bg-zsts-green', 'text-white');
+                    mat.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('bg-zsts-green', 'text-white');
+                    btn.classList.add('bg-gray-100', 'text-gray-600');
+                    mat.classList.add('hidden');
+                }
+            });
+            var title = document.getElementById('materials-title');
+            if (window.renderMatContent) window.renderMatContent(type);
+            if (title) {
+                // 切换标题属性 + 内容到对应 tab
+                var lang = document.documentElement.lang === 'en' ? 'en' : 'zh';
+                var dict = (window.i18n && window.i18n[lang]) || null;
+                var labelKey = 'mat.' + type + '.title';
+                if (dict && dict[labelKey]) {
+                    title.textContent = dict[labelKey];
+                } else {
+                    // 退化：使用 i18n 系统中 6 个 tab title 的中文默认值
+                    var defaults = {
+                        zh: {business:'商务签证申请材料', work:'工作签证申请材料', family:'探亲签证申请材料', tourist:'旅游签证（电子签）申请材料', student:'留学签证申请材料', residence:'居住签证申请材料'},
+                        en: {business:'Business Visa Materials', work:'Work Visa Materials', family:'Family Visit Visa Materials', tourist:'Tourist (eVisa) Materials', student:'Student Visa Materials', residence:'Residence Visa Materials'}
+                    };
+                    title.textContent = (defaults[lang] && defaults[lang][type]) || type;
+                }
+            }
+        }
+
+        // Bind consult buttons to open QR modal
+        document.querySelectorAll('a[href="#contact"], .consult-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                openQrModal();
+            });
+        });
+    </script>
+
+    <!-- Main JS -->
+    <script>
+        lucide.createIcons();
+
+        // Navbar scroll
+        const navbar = document.getElementById('navbar');
+
+        const navLinks = document.querySelectorAll('.nav-link');
+        const langSwitcher = document.getElementById('lang-switcher');
+        const langBtns = document.querySelectorAll('.lang-btn');
+
+        window.addEventListener('scroll', () => {
+            const scrolled = window.scrollY > 50;
+            navbar.classList.toggle('nav-transparent', !scrolled);
+            navbar.classList.toggle('nav-scrolled', scrolled);
+                const logoImg = document.getElementById('nav-logo-img');
+                if (logoImg) { logoImg.src = scrolled ? 'images/logo-new.png' : 'images/logo-dark.png'; }
+
+            navLinks.forEach(link => {
+                link.classList.toggle('text-white', !scrolled);
+                link.classList.toggle('text-gray-700', scrolled);
+            });
+            if (langSwitcher) {
+                langSwitcher.classList.toggle('border-white/30', !scrolled);
+                langSwitcher.classList.toggle('border-gray-200', scrolled);
+            }
+            langBtns.forEach(btn => {
+                if (!btn.classList.contains('active')) {
+                    btn.classList.toggle('text-white', !scrolled);
+                    btn.classList.toggle('text-gray-500', scrolled);
+                } else {
+                    btn.classList.toggle('text-white', !scrolled);
+                    btn.classList.toggle('text-zsts-green', scrolled);
+                }
+            });
+        });
+
+        // Mobile menu
+        document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        });
+
+        // Scroll to top
+        const scrollTopBtn = document.getElementById('scroll-top');
+        window.addEventListener('scroll', () => {
+            scrollTopBtn.classList.toggle('opacity-0', window.scrollY <= 500);
+            scrollTopBtn.classList.toggle('invisible', window.scrollY <= 500);
+            scrollTopBtn.classList.toggle('opacity-100', window.scrollY > 500);
+            scrollTopBtn.classList.toggle('visible', window.scrollY > 500);
+        });
+        scrollTopBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+        // FAQ accordion
+        document.querySelectorAll('.faq-toggle').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const item = btn.closest('.faq-item');
+                const answer = item.querySelector('.faq-answer');
+                const isOpen = item.classList.contains('open');
+
+                document.querySelectorAll('.faq-item').forEach(i => {
+                    i.classList.remove('open');
+                    i.querySelector('.faq-answer').classList.remove('open');
+                });
+
+                if (!isOpen) {
+                    item.classList.add('open');
+                    answer.classList.add('open');
+                }
+            });
+        });
+
+        // Intersection Observer: fade-in sections
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('visible');
+            });
+        }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+        document.querySelectorAll('.fade-in-section').forEach(el => observer.observe(el));
+        // QR Code Modal functions
+        function openQrModal() {
+            const modal = document.getElementById('qr-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeQrModal() {
+            const modal = document.getElementById('qr-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // Material list switcher
+        function switchMaterials(type) {
+            const types = ['business', 'work', 'family', 'tourist', 'student', 'residence'];
+            types.forEach(function(t) {
+                var btn = document.getElementById('btn-mat-' + t);
+                var mat = document.getElementById('materials-' + t);
+                if (!btn || !mat) return;
+                if (t === type) {
+                    btn.classList.remove('bg-gray-100', 'text-gray-600');
+                    btn.classList.add('bg-zsts-green', 'text-white');
+                    mat.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('bg-zsts-green', 'text-white');
+                    btn.classList.add('bg-gray-100', 'text-gray-600');
+                    mat.classList.add('hidden');
+                }
+            });
+            var title = document.getElementById('materials-title');
+            if (window.renderMatContent) window.renderMatContent(type);
+            if (title) {
+                var lang = document.documentElement.lang === 'en' ? 'en' : 'zh';
+                var dict = (window.i18n && window.i18n[lang]) || null;
+                var labelKey = 'mat.' + type + '.title';
+                if (dict && dict[labelKey]) {
+                    title.textContent = dict[labelKey];
+                } else {
+                    var defaults = {
+                        zh: {business:'商务签证申请材料', work:'工作签证申请材料', family:'探亲签证申请材料', tourist:'旅游签证（电子签）申请材料', student:'留学签证申请材料', residence:'居住签证申请材料'},
+                        en: {business:'Business Visa Materials', work:'Work Visa Materials', family:'Family Visit Visa Materials', tourist:'Tourist (eVisa) Materials', student:'Student Visa Materials', residence:'Residence Visa Materials'}
+                    };
+                    title.textContent = (defaults[lang] && defaults[lang][type]) || type;
+                }
+            }
+        }
+
+        // Bind consult buttons to open QR modal
+        document.querySelectorAll('a[href="#contact"], .consult-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                openQrModal();
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="page.title">全球签证办理 | 中盛启瀚 ZSTS</title>
+    <meta name="description" content="中盛启瀚ZSTS提供全球200+国家签证代办服务。专业团队一对一服务，98%出签率保障。">
+    <link rel="stylesheet" href="local-cdn/tailwind.css">
+    <script src="local-cdn/lucide.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        if(typeof tailwind!=='undefined') {
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'zsts-green': '#006341',
+                        'zsts-green-dark': '#004d33',
+                        'zsts-green-light': '#e6f2ed',
+                        'zsts-sand': '#C5A572',
+                        'zsts-sand-light': '#f5efe6',
+                        'zsts-dark': '#1a1a2e',
+                        'zsts-gray': '#f8f9fa',
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'Noto Sans SC', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+        }
+        // QR Code Modal functions
+        function openQrModal() {
+            const modal = document.getElementById('qr-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeQrModal() {
+            const modal = document.getElementById('qr-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // 读取数据的工具：从 CMS 注入或 i18n 字典
+        function getRegionData() {
+            var d = (window.CMS_PAGE_DATA && window.CMS_PAGE_DATA.region) || null;
+            if (!d && window.i18n) {
+                var lang = document.documentElement.lang === 'en' ? 'en' : 'zh';
+                d = window.i18n[lang] && window.i18n[lang].region;
+            }
+            return d;
+        }
+        function getBilingual(obj) {
+            if (!obj) return { zh: '', en: '' };
+            if (typeof obj === 'string') return { zh: obj, en: '' };
+            return { zh: obj.zh || '', en: obj.en || '' };
+        }
+        function currentLang() {
+            return document.documentElement.lang === 'en' ? 'en' : 'zh';
+        }
+        function getField(obj) {
+            if (!obj) return '';
+            var b = getBilingual(obj);
+            return b[currentLang()] || b.zh || '';
+        }
+        function getItems(arrObj) {
+            if (!arrObj) return [];
+            if (Array.isArray(arrObj)) return arrObj;
+            if (typeof arrObj === 'object') {
+                return arrObj[currentLang()] || arrObj.zh || [];
+            }
+            return [];
+        }
+        function escapeHtml(s) {
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // 当前激活的 region key
+        var _currentRegion = null;
+        var _regionKeys = [];
+
+        // 渲染 region tabs 按钮组（CMS 驱动，可增删）
+        function renderRegionTabs() {
+            var data = getRegionData();
+            var tabsContainer = document.getElementById('region-tabs');
+            if (!tabsContainer) return;
+            tabsContainer.innerHTML = '';
+            _regionKeys = [];
+            if (!data) return;
+            // tabs 形如 [{key, label: {zh, en}}] 或 [{key, label}]（来自 i18n 字典）
+            var tabsList = null;
+            if (data.tabs) {
+                if (Array.isArray(data.tabs)) {
+                    tabsList = data.tabs;
+                } else if (data.tabs[currentLang()]) {
+                    tabsList = data.tabs[currentLang()];
+                } else if (data.tabs.zh) {
+                    tabsList = data.tabs.zh;
+                }
+            }
+            if (!tabsList || !tabsList.length) {
+                // 回退：直接从 panels 的 key
+                tabsList = data.panels ? Object.keys(data.panels).map(function(k){ return { key: k, label: k }; }) : [];
+            }
+            tabsList.forEach(function(t, i) {
+                var key = t.key || t;
+                var label = typeof t.label === 'object' ? getField(t.label) : (t.label || key);
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.id = 'tab-' + key;
+                btn.className = 'region-tab px-5 py-2.5 rounded-t-lg text-sm font-semibold transition-colors ' +
+                    (i === 0 ? 'bg-zsts-green text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200');
+                btn.onclick = function() { switchRegion(key); };
+                btn.textContent = label;
+                tabsContainer.appendChild(btn);
+                _regionKeys.push(key);
+            });
+        }
+
+        // 渲染某个 region 的 panel
+        function renderRegionPanel(key) {
+            var data = getRegionData();
+            var container = document.getElementById('region-panels');
+            if (!container) return;
+            if (!data || !data.panels || !data.panels[key]) return;
+            var p = data.panels[key];
+            // 找到/创建 panel div
+            var panel = document.getElementById('region-' + key);
+            if (!panel) {
+                panel = document.createElement('div');
+                panel.id = 'region-' + key;
+                panel.className = 'region-panel';
+                container.appendChild(panel);
+            }
+            // 隐藏其他 panel
+            container.querySelectorAll('.region-panel').forEach(function(el) { el.classList.add('hidden'); });
+            panel.classList.remove('hidden');
+            panel.innerHTML = '';
+
+            // 标题与介绍
+            var html = '<div class="bg-zsts-gray rounded-2xl p-8">';
+            html += '<h3 class="text-xl font-bold text-gray-900 mb-2">' + escapeHtml(getField(p.title)) + '</h3>';
+            if (p.intro) html += '<p class="text-gray-500 text-sm mb-6">' + escapeHtml(getField(p.intro)) + '</p>';
+
+            // types 与 travel 用 grid 2 列
+            var typesItems = getItems(p.types && p.types.items);
+            var travelItems = getItems(p.travel && p.travel.items);
+            if (typesItems.length || travelItems.length) {
+                html += '<div class="grid md:grid-cols-2 gap-6">';
+                if (typesItems.length) {
+                    html += '<div><h4 class="font-semibold text-gray-900 mb-3">' + escapeHtml(getField(p.types.title) || '签证种类与特点') + '</h4>';
+                    html += '<ul class="space-y-2 text-sm text-gray-700">';
+                    typesItems.forEach(function(it) {
+                        html += '<li class="flex items-start space-x-2"><i data-lucide="check-circle" class="w-4 h-4 text-zsts-green flex-shrink-0 mt-0.5"></i><span>' + escapeHtml(getField(it.title)) + '</span></li>';
+                    });
+                    html += '</ul></div>';
+                }
+                if (travelItems.length) {
+                    html += '<div><h4 class="font-semibold text-gray-900 mb-3">' + escapeHtml(getField(p.travel.title) || '旅游特色') + '</h4>';
+                    html += '<ul class="space-y-2 text-sm text-gray-700">';
+                    travelItems.forEach(function(it) {
+                        html += '<li class="flex items-start space-x-2"><i data-lucide="map-pin" class="w-4 h-4 text-zsts-sand flex-shrink-0 mt-0.5"></i><span>' + escapeHtml(getField(it.title)) + '</span></li>';
+                    });
+                    html += '</ul></div>';
+                }
+                html += '</div>';
+            }
+
+            // services 列表
+            var serviceItems = getItems(p.services && p.services.items);
+            if (serviceItems.length || p.note) {
+                html += '<div class="mt-6 bg-white rounded-xl p-5">';
+                if (serviceItems.length) {
+                    html += '<h4 class="font-semibold text-gray-900 mb-3 text-sm">' + escapeHtml(getField(p.services.title) || '可办理签证业务') + '</h4>';
+                    html += '<div class="flex flex-wrap gap-2">';
+                    serviceItems.forEach(function(it, idx) {
+                        var sand = idx % 4 >= 2; // 简单交替
+                        var cls = sand ? 'bg-zsts-sand-light text-zsts-sand' : 'bg-zsts-green-light text-zsts-green';
+                        html += '<span class="px-3 py-1 ' + cls + ' text-xs rounded-full">' + escapeHtml(getField(it.title)) + '</span>';
+                    });
+                    html += '</div>';
+                }
+                if (p.note) {
+                    html += '<p class="text-gray-500 text-xs mt-3">' + escapeHtml(getField(p.note)) + '</p>';
+                }
+                html += '</div>';
+            }
+
+            html += '</div>';
+            panel.innerHTML = html;
+            if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
+        }
+
+        // 切换 region（兼容旧 API）
+        function switchRegion(key) {
+            if (typeof key === 'string' && key) {
+                _currentRegion = key;
+            }
+            if (!_currentRegion && _regionKeys.length) _currentRegion = _regionKeys[0];
+            if (!_currentRegion) return;
+            // 更新 tab 样式
+            _regionKeys.forEach(function(k) {
+                var btn = document.getElementById('tab-' + k);
+                if (!btn) return;
+                if (k === _currentRegion) {
+                    btn.classList.remove('bg-gray-100', 'text-gray-600');
+                    btn.classList.add('bg-zsts-green', 'text-white');
+                } else {
+                    btn.classList.remove('bg-zsts-green', 'text-white');
+                    btn.classList.add('bg-gray-100', 'text-gray-600');
+                }
+            });
+            renderRegionPanel(_currentRegion);
+        }
+
+        // CMS 注入后重新渲染
+        window.onCmsPageData = function() {
+            renderRegionTabs();
+            if (_regionKeys.length) switchRegion(_regionKeys[0]);
+            if (typeof visaRenderAll === 'function') visaRenderAll();
+        };
+
+        // CTA enabled 控制
+        function applyCtaVisibility() {
+            var d = window.CMS_PAGE_DATA || {};
+            var en = d.cta && d.cta.enabled;
+            if (en && typeof en === 'object') en = (en.zh === 'true' || en.zh === true);
+            if (en === undefined && window.i18n) {
+                var lang = currentLang();
+                en = window.i18n[lang] && window.i18n[lang].cta && window.i18n[lang].cta.enabled;
+                if (en && typeof en === 'object') en = (en.zh === 'true' || en.zh === true);
+            }
+            var cta = document.getElementById('cta-section');
+            if (cta) {
+                if (en === 'true' || en === true) cta.style.display = '';
+                else cta.style.display = 'none';
+            }
+        }
+
+        // ===== C-2 repeater 渲染函数（纯 DOM createElement + appendChild）=====
+
+        // 5 步办理流程 repeater
+        function renderStep() {
+            var d = window.CMS_PAGE_DATA;
+            if (!d || !d.step) return;
+            var items = (d.step.items && d.step.items[currentLang()]) || [];
+            var container = document.getElementById('step-grid');
+            if (!container) return;
+            container.innerHTML = '';
+            items.forEach(function(s, i) {
+                if (!s || !s.title) return;
+                var wrap = document.createElement('div');
+                wrap.className = 'flex flex-col items-center text-center relative fade-in-section';
+                var num = i + 1;
+                var isLast = (i === items.length - 1);
+                // 圆圈：第 1 个 + 最后一个用 zsts-sand（特殊），其他用白底绿边
+                var circle = document.createElement('div');
+                if (i === 0) {
+                    circle.className = 'w-14 h-14 rounded-full service-icon-bg flex items-center justify-center mb-4 shadow-lg';
+                    var t1 = document.createElement('span');
+                    t1.className = 'text-white font-bold text-lg';
+                    t1.textContent = String(num);
+                    circle.appendChild(t1);
+                } else if (isLast) {
+                    circle.className = 'w-14 h-14 rounded-full bg-zsts-sand flex items-center justify-center mb-4 shadow-lg';
+                    var icon = document.createElement('i');
+                    icon.setAttribute('data-lucide', 'check');
+                    icon.className = 'w-7 h-7 text-white';
+                    circle.appendChild(icon);
+                } else {
+                    circle.className = 'w-14 h-14 rounded-full bg-white border-2 border-zsts-green flex items-center justify-center mb-4 shadow-md';
+                    var t2 = document.createElement('span');
+                    t2.className = 'text-zsts-green font-bold text-lg';
+                    t2.textContent = String(num);
+                    circle.appendChild(t2);
+                }
+                wrap.appendChild(circle);
+                // 连接线（非最后一个）
+                if (!isLast) {
+                    var line = document.createElement('div');
+                    line.className = 'step-connector hidden md:block';
+                    wrap.appendChild(line);
+                }
+                var h4 = document.createElement('h4');
+                h4.className = 'font-bold text-gray-900 mb-2';
+                h4.textContent = s.title;
+                wrap.appendChild(h4);
+                var p = document.createElement('p');
+                p.className = 'text-gray-500 text-xs leading-relaxed';
+                p.textContent = s.desc || '';
+                wrap.appendChild(p);
+                container.appendChild(wrap);
+            });
+        }
+
+        // FAQ repeater
+        function renderFaq() {
+            var d = window.CMS_PAGE_DATA;
+            if (!d || !d.faq) return;
+            var items = (d.faq.items && d.faq.items[currentLang()]) || [];
+            var container = document.getElementById('faq-container');
+            if (!container) return;
+            container.innerHTML = '';
+            items.forEach(function(item) {
+                if (!item || !item.q) return;
+                var box = document.createElement('div');
+                box.className = 'faq-item bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden';
+                var btn = document.createElement('button');
+                btn.className = 'faq-toggle w-full flex items-center justify-between p-6 text-left';
+                var span = document.createElement('span');
+                span.className = 'font-semibold text-gray-900 pr-4';
+                span.textContent = item.q;
+                btn.appendChild(span);
+                var ico = document.createElement('i');
+                ico.setAttribute('data-lucide', 'plus');
+                ico.className = 'w-5 h-5 text-zsts-green faq-icon flex-shrink-0';
+                btn.appendChild(ico);
+                var ans = document.createElement('div');
+                ans.className = 'faq-answer px-6';
+                var pp = document.createElement('p');
+                pp.className = 'text-gray-600 text-sm leading-relaxed pb-6';
+                pp.textContent = item.a || '';
+                ans.appendChild(pp);
+                box.appendChild(btn);
+                box.appendChild(ans);
+                container.appendChild(box);
+            });
+        }
+
+        // 侧边栏信任点 repeater
+        function renderTrust() {
+            var d = window.CMS_PAGE_DATA;
+            if (!d || !d.sidebar || !d.sidebar.trust) return;
+            var items = (d.sidebar.trust.items && d.sidebar.trust.items[currentLang()]) || [];
+            var container = document.getElementById('trust-items');
+            if (!container) return;
+            container.innerHTML = '';
+            items.forEach(function(t) {
+                if (!t || !t.text) return;
+                var row = document.createElement('div');
+                row.className = 'flex items-center space-x-3';
+                var dot = document.createElement('div');
+                dot.className = 'w-9 h-9 rounded-lg bg-zsts-green-light flex items-center justify-center flex-shrink-0';
+                var c = document.createElement('i');
+                c.setAttribute('data-lucide', 'check');
+                c.className = 'w-4 h-4 text-zsts-green';
+                dot.appendChild(c);
+                row.appendChild(dot);
+                var txt = document.createElement('div');
+                txt.className = 'text-sm text-gray-700';
+                txt.textContent = t.text;
+                row.appendChild(txt);
+                container.appendChild(row);
+            });
+        }
+
+        // CMS 注入完成后立即渲染
+        var _visaFirstRender = true;
+        function visaRenderAll() {
+            renderStep();
+            renderFaq();
+            renderTrust();
+            if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
+        }
+
+        window.renderStep = renderStep;
+        window.renderFaq = renderFaq;
+        window.renderTrust = renderTrust;
+        window.visaRenderAll = visaRenderAll;
+        window.renderRegionTabs = renderRegionTabs;
+        window.renderRegionPanel = renderRegionPanel;
+        window.switchRegion = switchRegion;
+        window.applyCtaVisibility = applyCtaVisibility;
+    </script>
+    <style>
+        html { scroll-behavior: smooth; }
+        .hero-overlay { background: linear-gradient(135deg, rgba(0,99,65,0.88) 0%, rgba(26,26,46,0.80) 100%); }
+        .card-hover { transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-6px); box-shadow: 0 20px 40px -12px rgba(0,99,65,0.18); }
+        .btn-primary { background: linear-gradient(135deg, #006341 0%, #004d33 100%); transition: all 0.3s ease; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 30px -10px rgba(0,99,65,0.5); }
+        .nav-scrolled { background: rgba(255,255,255,0.98); backdrop-filter: blur(20px); box-shadow: 0 1px 20px rgba(0,0,0,0.08); }
+        .nav-transparent { background: transparent; }
+        .service-icon-bg { background: linear-gradient(135deg, #006341 0%, #004d33 100%); }
+        .gradient-line { height: 3px; background: linear-gradient(90deg, #006341, #C5A572); }
+        .step-connector { position: absolute; top: 28px; left: calc(50% + 28px); right: calc(-50% + 28px); height: 2px; background: linear-gradient(90deg, #006341, #C5A572); }
+        @media (max-width: 768px) { .step-connector { display: none; } }
+        .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.4s ease, padding 0.3s ease; }
+        .faq-answer.open { max-height: 400px; }
+        .faq-item.open .faq-icon { transform: rotate(45deg); }
+        .faq-icon { transition: transform 0.3s ease; }
+        .fade-in-section { opacity: 0; transform: translateY(24px); transition: all 0.7s ease-out; }
+        .fade-in-section.visible { opacity: 1; transform: none; }
+        .lang-btn { transition: all 0.3s ease; }
+        .lang-btn.active { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.5); }
+        .lang-btn:not(.active) { opacity: 0.6; }
+        .lang-btn:hover { opacity: 1; }
+        .material-item { border-left: 3px solid #006341; background: #f8fffe; }
+        .material-item-optional { border-left: 3px solid #C5A572; background: #fdfaf6; }
+        /* Mobile table optimization */
+        @media (max-width: 767px) {
+            .overflow-x-auto {
+                position: relative;
+                -webkit-overflow-scrolling: touch;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .overflow-x-auto::after {
+                display: none !important;
+            }
+            .overflow-x-auto table {
+                min-width: 640px;
+                border-collapse: collapse;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .overflow-x-auto th,
+            .overflow-x-auto td {
+                white-space: nowrap;
+                font-size: 13px;
+                padding: 12px 14px;
+                border-radius: 0 !important;
+            }
+            .overflow-x-auto thead th {
+                border-radius: 0 !important;
+            }
+            .overflow-x-auto table tbody tr {
+                background-color: #ffffff !important;
+                border-bottom: 1px solid #f5f5f5 !important;
+            }
+            .overflow-x-auto table tbody tr:last-child {
+                border-bottom: none !important;
+            }
+            .overflow-x-auto table tbody tr td {
+                background-color: #ffffff !important;
+            }
+            .overflow-x-auto table tbody tr:nth-child(even),
+            .overflow-x-auto table tbody tr:nth-child(odd) {
+                background-color: #ffffff !important;
+            }
+            .overflow-x-auto table tbody tr * {
+                background-color: #ffffff !important;
+            }
+        }
+            .overflow-x-auto::after {
+                content: '';
+                position: absolute;
+                right: 0; top: 0; bottom: 0;
+                width: 24px;
+                background: linear-gradient(to right, transparent, rgba(0,0,0,0.06));
+                pointer-events: none;
+                border-radius: 0 16px 16px 0;
+            }
+            .overflow-x-auto table {
+                min-width: 640px;
+                border-collapse: collapse;
+            }
+            .overflow-x-auto th,
+            .overflow-x-auto td {
+                white-space: nowrap;
+                font-size: 13px;
+                padding: 12px 14px;
+            }
+            .overflow-x-auto table tbody tr {
+                background-color: #ffffff !important;
+                border-bottom: none !important;
+            }
+            .overflow-x-auto table tbody tr:last-child {
+                border-bottom: none !important;
+            }
+            .overflow-x-auto table tbody tr td {
+                background-color: #ffffff !important;
+                border-bottom: none !important;
+            }
+            .overflow-x-auto table tbody tr:nth-child(even) {
+                background-color: #ffffff !important;
+            }
+            .overflow-x-auto table tbody tr:nth-child(odd) {
+                background-color: #ffffff !important;
+            }
+            .overflow-x-auto table tbody tr * {
+                background-color: #ffffff !important;
+            }
+            .overflow-x-auto {
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .overflow-x-auto table {
+                box-shadow: none !important;
+            }
+        }
+</style>
+</head>
+<body class="font-sans text-gray-800 antialiased">
+
+    <!-- Navigation -->
+    <nav id="navbar" class="fixed top-0 left-0 right-0 z-50 nav-transparent transition-all duration-500">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <a href="index.html" class="flex items-center space-x-3">
+                    <img src="images/logo-dark.png" alt="ZSTS Logo" class="h-10 w-auto" id="nav-logo-img">
+                    </a>
+                <div class="hidden xl:flex items-center space-x-6">
+                    <a href="index.html" class="nav-link text-white hover:text-zsts-sand transition-colors font-medium text-sm" data-i18n="nav.home">首页</a>
+                    <a href="saudi-visa.html" class="nav-link text-white hover:text-zsts-sand transition-colors font-medium text-sm" data-i18n="nav.saudiVisa">沙特签证</a>
+                    <a href="visa.html" class="nav-link text-white font-semibold text-sm border-b-2 border-zsts-sand pb-0.5 hover:text-zsts-sand transition-colors" data-i18n="nav.visa">全球签证</a>
+                    <a href="transport.html" class="nav-link text-white hover:text-zsts-sand transition-colors font-medium text-sm" data-i18n="nav.transport">境外交通住宿</a>
+                    <a href="insurance.html" class="nav-link text-white hover:text-zsts-sand transition-colors font-medium text-sm" data-i18n="nav.insurance">境外保险</a>
+                    <a href="enterprise.html" class="nav-link text-white hover:text-zsts-sand transition-colors font-medium text-sm" data-i18n="nav.enterprise">企业出海</a>
+                    <a href="inspection.html" class="nav-link text-white hover:text-zsts-sand transition-colors font-medium text-sm" data-i18n="nav.inspection">企业考察</a>
+                    <a href="news.html" class="nav-link text-white hover:text-zsts-sand transition-colors font-medium text-sm" data-i18n="nav.news">沙特资讯</a>
+                    <a href="about.html" class="nav-link text-white hover:text-zsts-sand transition-colors font-medium text-sm" data-i18n="nav.about">关于我们</a>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div class="hidden sm:flex items-center space-x-1 border border-white/30 rounded-lg overflow-hidden" id="lang-switcher">
+                        <button onclick="setLang('zh')" class="lang-btn active px-3 py-1.5 text-xs font-semibold text-white" data-lang="zh">中</button>
+                        <button onclick="setLang('en')" class="lang-btn px-3 py-1.5 text-xs font-semibold text-white" data-lang="en">EN</button>
+                    </div>
+                    <button onclick="openQrModal()" class="hidden md:inline-flex btn-primary text-white px-5 py-2.5 rounded-lg font-medium text-sm cursor-pointer" data-i18n="nav.consult">立即咨询</button>
+                    <button id="mobile-menu-btn" class="xl:hidden text-white p-2">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div id="mobile-menu" class="hidden xl:hidden bg-white shadow-lg max-h-[80vh] overflow-y-auto">
+            <div class="px-4 py-4 space-y-1">
+                <a href="index.html" class="block py-3 text-gray-800 hover:text-zsts-green font-medium border-b border-gray-100" data-i18n="nav.home">首页</a>
+            <a href="saudi-visa.html" class="block py-3 text-gray-800 hover:text-zsts-green font-medium border-b border-gray-100" data-i18n="nav.saudiVisa">沙特签证</a>
+                <a href="visa.html" class="block py-3 text-zsts-green font-semibold border-b border-gray-100" data-i18n="nav.visa">全球签证</a>
+                <a href="transport.html" class="block py-3 text-gray-800 hover:text-zsts-green font-medium border-b border-gray-100" data-i18n="nav.transport">境外交通住宿</a>
+                <a href="insurance.html" class="block py-3 text-gray-800 hover:text-zsts-green font-medium border-b border-gray-100" data-i18n="nav.insurance">境外保险</a>
+                <a href="enterprise.html" class="block py-3 text-gray-800 hover:text-zsts-green font-medium border-b border-gray-100" data-i18n="nav.enterprise">企业出海</a>
+                <a href="inspection.html" class="block py-3 text-gray-800 hover:text-zsts-green font-medium border-b border-gray-100" data-i18n="nav.inspection">企业考察</a>
+                <a href="news.html" class="block py-3 text-gray-800 hover:text-zsts-green font-medium border-b border-gray-100" data-i18n="nav.news">沙特资讯</a>
+                <a href="about.html" class="block py-3 text-gray-800 hover:text-zsts-green font-medium" data-i18n="nav.about">关于我们</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative h-[70vh] min-h-[500px] flex items-center justify-center overflow-hidden">
+        <div class="absolute inset-0">
+            <img src="images/riyadh-skyline.jpg" alt="全球签证 护照 旅行" class="w-full h-full object-cover" data-i18n="hero.bgImage">
+            <div class="hero-overlay absolute inset-0"></div>
+        </div>
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full text-center">
+            <div class="flex flex-col items-center justify-center">
+                <div class="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-5 border border-white/20">
+                    <i data-lucide="globe" class="w-4 h-4 text-zsts-sand"></i>
+                    <span class="text-white/90 text-sm font-medium" data-i18n="hero.badge">全球签证服务 · 一站式办理</span>
+                </div>
+                <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-tight mb-4">
+                    <span data-i18n="hero.title">全球签证</span><br>
+                    <span class="text-zsts-sand" data-i18n="hero.subtitle">极速办理 · 全程服务</span>
+                </h1>
+                <p class="text-white/80 text-lg max-w-xl mx-auto" data-i18n="hero.desc">覆盖全球200+国家签证代办，专业团队一对一服务，98%出签率保障</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+    <div class="flex flex-col lg:flex-row gap-12">
+
+        <!-- Left: Main Content -->
+        <div class="flex-1 min-w-0">
+
+            <!-- Section 1: Process Steps -->
+            <div class="fade-in-section mb-20 bg-zsts-gray rounded-3xl p-8 md:p-12" id="process">
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="w-1 h-7 rounded-full bg-gradient-to-b from-zsts-green to-zsts-sand"></div>
+                    <span class="text-zsts-green font-semibold text-sm uppercase tracking-wider" data-i18n="section.process.tag">办理流程</span>
+                </div>
+                <h2 class="text-3xl font-bold text-gray-900 mb-2" data-i18n="section.process.title">简单5步，轻松出签</h2>
+                <p class="text-gray-500 mb-12" data-i18n="section.process.subtitle">从提交材料到拿到签证，全程专业顾问陪同指引</p>
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-6 md:gap-4" id="step-grid"></div>
+            </div>
+
+            <!-- Section 2: Global Visa Regions -->
+            <div class="fade-in-section mb-20" id="regions">
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="w-1 h-7 rounded-full bg-gradient-to-b from-zsts-green to-zsts-sand"></div>
+                    <span class="text-zsts-green font-semibold text-sm uppercase tracking-wider" data-i18n="section.regions.tag">全球签证</span>
+                </div>
+                <h2 class="text-3xl font-bold text-gray-900 mb-2" data-i18n="section.regions.title">全球签证 · 按区域选择目的地</h2>
+                <p class="text-gray-500 mb-8" data-i18n="section.regions.subtitle">覆盖六大热门区域，提供旅游、商务及加急等多种签证类型服务</p>
+
+                <!-- Region Tabs: 由 renderRegionTabs() 动态生成 -->
+                <div class="flex flex-wrap gap-2 mb-8 border-b border-gray-200 pb-1" id="region-tabs"></div>
+
+                <!-- Region Panels: 由 renderRegionPanel() 动态生成 -->
+                <div id="region-panels"></div>
+            </div>
+
+
+            <div class="fade-in-section mb-20" id="faq">
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="w-1 h-7 rounded-full bg-gradient-to-b from-zsts-green to-zsts-sand"></div>
+                    <span class="text-zsts-green font-semibold text-sm uppercase tracking-wider" data-i18n="section.faq.tag">常见问题</span>
+                </div>
+                <h2 class="text-3xl font-bold text-gray-900 mb-8" data-i18n="section.faq.title">FAQ · 您最关心的问题</h2>
+                <div class="space-y-4" id="faq-container"></div>
+            </div>
+
+        </div><!-- end left col -->
+
+        <!-- Right: Sticky Sidebar -->
+        <div class="lg:w-80 xl:w-96 flex-shrink-0">
+            <div class="sticky-sidebar space-y-6" style="position:sticky;top:100px;">
+
+                <!-- Contact Card -->
+                <div class="bg-zsts-dark rounded-2xl p-7 text-white" id="contact-section">
+                    <div class="flex items-center space-x-3 mb-5">
+                        <div class="w-10 h-10 rounded-xl service-icon-bg flex items-center justify-center"><i data-lucide="headphones" class="w-5 h-5 text-white"></i></div>
+                        <div><div class="font-bold" data-i18n="sidebar.contact.title">专属签证顾问</div><div class="text-white/60 text-xs" data-i18n="sidebar.contact.sub">快速响应</div></div>
+                    </div>
+                    <div class="space-y-3 mb-6">
+                        <a href="tel:010-85656995 / 010-53670397 / 17190016075" class="flex items-center space-x-3 bg-white/10 rounded-xl p-3 hover:bg-white/20 transition-colors">
+                            <i data-lucide="phone" class="w-5 h-5 text-zsts-sand flex-shrink-0"></i><div><div class="text-xs text-white/60" data-i18n="sidebar.phone.label">电话咨询</div><div class="font-bold text-sm">010-85656995 / 010-53670397 / 17190016075</div></div>
+                        </a>
+                        <a href="mailto:info@zsts.group" class="flex items-center space-x-3 bg-white/10 rounded-xl p-3 hover:bg-white/20 transition-colors">
+                            <i data-lucide="mail" class="w-5 h-5 text-zsts-sand flex-shrink-0"></i><div><div class="text-xs text-white/60" data-i18n="sidebar.email.label">邮件咨询</div><div class="font-bold text-sm">info@zsts.group</div></div>
+                        </a>
+                    </div>
+                    <div class="bg-white rounded-xl p-3 text-center mb-4">
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="flex flex-col items-center">
+                                <img src="images/qr-personal.png" alt="微信客服一" class="w-full aspect-square rounded-lg object-contain bg-white" data-i18n="sidebar.qr.personal">
+                                <span class="text-zsts-dark text-[10px] font-medium mt-1" data-i18n="sidebar.qr.personal">微信客服一</span>
+                            </div>
+                            <div class="flex flex-col items-center">
+                                <img src="images/qr-enterprise.png" alt="微信客服二" class="w-full aspect-square rounded-lg object-contain bg-white" data-i18n="sidebar.qr.enterprise">
+                                <span class="text-zsts-dark text-[10px] font-medium mt-1" data-i18n="sidebar.qr.enterprise">微信客服二</span>
+                            </div>
+                            <div class="flex flex-col items-center">
+                                <img src="images/qr-whatsapp.png" alt="WhatsApp" class="w-full aspect-square rounded-lg object-contain bg-white" data-i18n="sidebar.qr.whatsapp">
+                                <span class="text-zsts-dark text-[10px] font-medium mt-1" data-i18n="sidebar.qr.whatsapp">WhatsApp</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trust Badges -->
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                    <h4 class="font-bold text-gray-900 mb-4" data-i18n="sidebar.trust.title">为什么选择中盛启瀚？</h4>
+                    <div class="space-y-3" id="trust-items"></div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+    </div>
+    </div>
+
+    <!-- CTA Section (consistent with index.html) -->
+    <section id="cta-section" class="py-24 relative overflow-hidden">
+        <div class="absolute inset-0">
+            <img src="images/riyadh-skyline.jpg"
+                 alt="利雅得城市天际线"
+                 class="w-full h-full object-cover" data-i18n="hero.bgImage">
+            <div class="absolute inset-0 bg-zsts-dark/90"></div>
+        </div>
+        <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl md:text-5xl font-bold text-white mb-6" data-i18n="cta.title">开启您的全球旅程</h2>
+            <p class="text-white/70 text-lg mb-10 max-w-2xl mx-auto" data-i18n="cta.subtitle">
+                无论您是计划出国旅游、商务考察，还是探亲访友，<br class="hidden sm:block">
+                中盛启瀚都将为您提供专业、高效的一站式签证服务。
+            </p>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="#contact" class="bg-white text-zsts-dark px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-100 transition-all flex items-center space-x-2">
+                    <i data-lucide="phone" class="w-5 h-5"></i>
+                    <span data-i18n="cta.btn1">立即咨询</span>
+                </a>
+                <a href="#contact" class="bg-white/10 backdrop-blur-sm text-white border border-white/30 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white/20 transition-all flex items-center space-x-2">
+                    <i data-lucide="message-circle" class="w-5 h-5"></i>
+                    <span data-i18n="cta.btn2">微信咨询</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer (3-column grid consistent with index.html) -->
+    <footer id="contact" class="bg-zsts-dark text-white pt-20 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-3 gap-12 mb-16">
+                <!-- Company Info -->
+                <div class="md:col-span-1">
+                    <div class="flex items-center space-x-3 mb-6">
+                            <img src="images/logo-dark.png" alt="ZSTS Logo" class="h-10 w-auto">
+                        </div>
+                        <p class="text-white/60 text-sm leading-relaxed mb-6" data-i18n="footer.desc">
+                        依托沙特阿拉伯授权签证中心，聚焦沙特市场的综合商业服务公司，致力于构筑中沙两国高质量发展桥梁。
+                    </p>
+                </div>
+
+                <!-- Quick Links -->
+                <div>
+                    <h4 class="font-bold text-lg mb-6" data-i18n="footer.navTitle">快速导航</h4>
+                    <ul class="grid grid-cols-2 gap-x-6 gap-y-3 text-white/60 text-sm">
+                        <li><a href="saudi-visa.html" class="hover:text-zsts-sand transition-colors" data-i18n="nav.saudiVisa">沙特签证</a></li>
+                        <li><a href="visa.html" class="hover:text-zsts-sand transition-colors" data-i18n="nav.visa">全球签证</a></li>
+                        <li><a href="transport.html" class="hover:text-zsts-sand transition-colors" data-i18n="nav.transport">境外交通住宿</a></li>
+                        <li><a href="insurance.html" class="hover:text-zsts-sand transition-colors" data-i18n="nav.insurance">境外保险</a></li>
+                        <li><a href="enterprise.html" class="hover:text-zsts-sand transition-colors" data-i18n="nav.enterprise">企业出海</a></li>
+                        <li><a href="inspection.html" class="hover:text-zsts-sand transition-colors" data-i18n="nav.inspection">企业考察</a></li>
+                        <li><a href="news.html" class="hover:text-zsts-sand transition-colors" data-i18n="nav.news">沙特资讯</a></li>
+                        <li><a href="about.html" class="hover:text-zsts-sand transition-colors" data-i18n="nav.about">关于我们</a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact Info -->
+                <div>
+                    <h4 class="font-bold text-lg mb-6" data-i18n="footer.contactTitle">联系方式</h4>
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-3">
+                            <i data-lucide="phone" class="w-5 h-5 text-zsts-sand flex-shrink-0"></i>
+                            <span class="text-white/60 text-sm">010-85656995 / 010-53670397 / 17190016075</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i data-lucide="mail" class="w-5 h-5 text-zsts-sand flex-shrink-0"></i>
+                            <span class="text-white/60 text-sm">info@zsts.group</span>
+                        </div>
+                        <div class="mt-4 grid grid-cols-3 gap-3">
+                            <div class="bg-white/10 rounded-xl p-3 text-center">
+                                <img src="images/qr-personal.png" alt="微信客服一" class="w-16 h-16 rounded-lg mx-auto mb-1 object-contain bg-white" data-i18n="sidebar.qr.personal">
+                                <span class="text-white/60 text-xs">微信客服一</span>
+                            </div>
+                            <div class="bg-white/10 rounded-xl p-3 text-center">
+                                <img src="images/qr-enterprise.png" alt="微信客服二" class="w-16 h-16 rounded-lg mx-auto mb-1 object-contain bg-white" data-i18n="sidebar.qr.enterprise">
+                                <span class="text-white/60 text-xs">微信客服二</span>
+                            </div>
+                            <div class="bg-white/10 rounded-xl p-3 text-center">
+                                <img src="images/qr-whatsapp.png" alt="WhatsApp" class="w-16 h-16 rounded-lg mx-auto mb-1 object-contain bg-white" data-i18n="sidebar.qr.whatsapp">
+                                <span class="text-white/60 text-xs">WhatsApp</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Bar -->
+            <div class="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between">
+                <p class="text-white/40 text-sm mb-4 md:mb-0">
+                    <span data-i18n="footer.copyright">中盛启瀚（ZSTS）国际商务发展有限公司</span>. All rights reserved.
+                </p>
+                <div class="flex items-center space-x-6 text-white/40 text-sm">
+                    <a href="privacy-policy.html" class="hover:text-white transition-colors" data-i18n="footer.privacy">隐私政策</a>
+                    <a href="terms.html" class="hover:text-white transition-colors" data-i18n="footer.terms">服务条款</a>
+                    <a href="sitemap.html" class="hover:text-white transition-colors" data-i18n="footer.sitemap">网站地图</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scroll to top -->
+    <button id="scroll-top" class="fixed bottom-8 right-8 w-12 h-12 bg-zsts-green text-white rounded-full shadow-lg flex items-center justify-center opacity-0 invisible transition-all duration-300 hover:bg-zsts-green-dark z-50">
+        <i data-lucide="chevron-up" class="w-6 h-6"></i>
+    </button>
+
+    <!-- QR Code Modal -->
+<div id="qr-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/60 backdrop-blur-sm" onclick="closeQrModal()">
+    <div class="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 text-center shadow-2xl relative" onclick="event.stopPropagation()">
+        <button onclick="closeQrModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+        <h3 class="text-lg font-bold text-gray-900 mb-2" data-i18n="modal.title">扫码咨询</h3>
+        <p class="text-gray-500 text-sm mb-6" data-i18n="modal.desc">选择您方便的方式联系我们</p>
+        <div class="grid grid-cols-3 gap-6">
+            <div class="flex flex-col items-center">
+                <img src="images/qr-personal.png" alt="微信客服一二维码" class="w-36 h-36 rounded-lg shadow-md mb-3 object-contain" data-i18n="sidebar.qr.personal">
+                <span class="text-sm font-semibold text-gray-700">微信客服一</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <img src="images/qr-enterprise.png" alt="微信客服二二维码" class="w-36 h-36 rounded-lg shadow-md mb-3 object-contain" data-i18n="sidebar.qr.enterprise">
+                <span class="text-sm font-semibold text-gray-700">微信客服二</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <img src="images/qr-whatsapp.png" alt="WhatsApp二维码" class="w-36 h-36 rounded-lg shadow-md mb-3 object-contain" data-i18n="sidebar.qr.whatsapp">
+                <span class="text-sm font-semibold text-gray-700">WhatsApp</span>
+            </div>
+        </div>
+        <p class="text-sm text-gray-500 mt-6" data-i18n="modal.phone">客服电话：010-85656995 / 010-53670397 / 17190016075</p>
+    </div>
+</div>
+
+    <!-- i18n Script -->
+    <script>
+    (function() {
+        const i18n = {
+            zh: {
+                'page.title': '全球签证办理 | 中盛启瀚 ZSTS',
+                'nav.home': '首页',
+                'nav.brand': '中盛启瀚', 'nav.saudiVisa': '沙特签证', 'nav.visa': '全球签证', 'nav.transport': '境外交通住宿',
+                'nav.enterprise': '企业出海', 'nav.inspection': '企业考察', 'nav.insurance': '境外保险',
+                'nav.news': '沙特资讯', 'nav.about': '关于我们', 'nav.consult': '立即咨询',
+                'hero.badge': '全球签证服务 · 一站式办理',
+                'hero.title': '全球签证', 'hero.subtitle': '极速办理 · 全程服务',
+                'hero.desc': '覆盖全球200+国家签证代办，专业团队一对一服务，98%出签率保障',
+                'section.process.tag': '办理流程', 'section.process.title': '简单5步，轻松出签', 'section.process.subtitle': '从提交材料到拿到签证，全程专业顾问陪同指引',
+                'step.1.title': '在线咨询', 'step.1.desc': '联系专属顾问，告知出行目的和国家，获取个性化签证方案',
+                'step.2.title': '准备材料', 'step.2.desc': '按目标国家清单准备申请材料，顾问免费审核，确保材料合规完整',
+                'step.3.title': '提交申请', 'step.3.desc': '材料审核通过后，代为向对应国家大使馆/签证中心提交正式申请',
+                'step.4.title': '审核跟进', 'step.4.desc': '全程跟进使馆/签证中心审核进度，第一时间反馈最新状态',
+                'step.5.title': '出签寄回', 'step.5.desc': '出签成功后通知取签或快递寄回，顺利踏上旅程',
+
+                'section.faq.tag': '常见问题', 'section.faq.title': 'FAQ · 您最关心的问题',
+                'sidebar.contact.title': '专属签证顾问', 'sidebar.contact.sub': '快速响应',
+                'sidebar.phone.label': '电话咨询', 'sidebar.wechat.label': '微信咨询', 'sidebar.email.label': '邮件咨询',
+                'sidebar.qr.hint': '扫码添加微信客服',
+                'sidebar.trust.title': '为什么选择中盛启瀚？',
+                'footer.desc': '沙特阿拉伯驻华使馆官方授权代办机构，致力于构筑中沙商业服务桥梁。',
+                'footer.navTitle': '快速导航', 'footer.contactTitle': '联系方式',
+                'footer.copyright': '中盛启瀚（ZSTS）国际商务发展有限公司', 'footer.privacy': '隐私政策', 'footer.terms': '服务条款', 'footer.qrHint': '扫码添加微信客服', 'footer.sitemap': '网站地图',
+                'cta.title': '开启您的全球旅程',
+                'cta.subtitle': '无论您是计划出国旅游、商务考察，还是探亲访友，中盛启瀚都将为您提供专业、高效的一站式签证服务。',
+                'cta.btn1': '立即咨询',
+                'cta.btn2': '微信咨询',
+                'modal.title': '扫码咨询', 'modal.desc': '选择您方便的方式联系我们', 'modal.phone': '客服电话：010-85656995 / 010-53670397 / 17190016075',
+            },
+            en: {
+                'page.title': 'Global Visa | ZSTS',
+                'nav.home': 'Home',
+                'nav.brand': 'ZSTS', 'nav.saudiVisa': 'Saudi Visa', 'nav.visa': 'Global Visa', 'nav.transport': 'Overseas Transport & Stay',
+                'nav.enterprise': 'Enterprise', 'nav.inspection': 'Inspection', 'nav.insurance': 'Overseas Insurance',
+                'nav.news': 'News', 'nav.about': 'About', 'nav.consult': 'Contact Us',
+                'hero.badge': 'Global Visa Service · One-Stop Solution',
+                'hero.title': 'Global Visa', 'hero.subtitle': 'Fast Processing · Full-Service',
+                'hero.desc': 'Visa agency for 200+ countries, dedicated consultant, 98% approval rate',
+                'section.process.tag': 'Process', 'section.process.title': '5 Simple Steps to Your Visa', 'section.process.subtitle': 'From document submission to visa collection, guided by professional advisors',
+                'section.regions.tag': 'Global Visa', 'section.regions.title': 'Global Visa · Choose by Region', 'section.regions.subtitle': 'Six major regions covered, with tourist, business, training, and expedited visa services available',
+                'region.tab.mea': 'Middle East & Africa', 'region.tab.eu': 'Europe', 'region.tab.na': 'North America', 'region.tab.sa': 'South America', 'region.tab.jpkr': 'Japan & Korea', 'region.tab.aunz': 'Australia & NZ',
+                'region.mea.title': 'Middle East & Africa Visas', 'region.mea.intro': 'MEA region offers a wide range of visa types. Most countries have e-visa or visa-on-arrival options for Chinese citizens, making the process relatively convenient.',
+                'region.mea.types.title': 'Visa Types & Features', 'region.mea.types.t1': 'Saudi Arabia: business, work, tourist, family visit visas and more', 'region.mea.types.t2': 'UAE: tourist and business visas, e-visa available', 'region.mea.types.t3': 'Türkiye: e-visa available with simplified documents', 'region.mea.types.t4': 'Egypt, Morocco, South Africa, Kenya: e-visa or sticker visa available',
+                'region.mea.travel.title': 'Travel Highlights', 'region.mea.travel.p1': 'Desert landscapes, seaside resorts, world heritage sites, and modern metropolises', 'region.mea.travel.p2': 'Shopping festivals, cruise routes, and abundant outdoor adventure resources',
+                'region.mea.services.title': 'Visa Services Available', 'region.mea.services.s1': 'Tourist Visa', 'region.mea.services.s2': 'Business Visa', 'region.mea.services.s3': 'Expedited Service', 'region.mea.services.s4': 'Expedited', 'region.mea.services.s5': 'E-visa Service',
+                'region.mea.note': 'Specific visa types and document requirements are subject to the latest embassy policy; please consult our advisor for a tailored plan.',
+                'region.eu.title': 'Europe Visas', 'region.eu.intro': 'European visas are dominated by Schengen countries, allowing one visa to cover multiple countries. Suitable for business visits, cultural exchange, and leisure travel.',
+                'region.eu.types.title': 'Visa Types & Features', 'region.eu.types.t1': 'Schengen short-stay (Type C): for tourism, business, family visit, short-term training, etc.', 'region.eu.types.t2': 'UK visa: independent application system, document requirements differ from Schengen', 'region.eu.types.t3': 'Ireland and Russia: each has its own visa policy',
+                'region.eu.travel.title': 'Travel Highlights', 'region.eu.travel.p1': 'Schengen one-visa multi-country, history, culture, nature, shopping, and cuisine', 'region.eu.travel.p2': 'In-depth cultural experiences, art exhibitions, and festival events',
+                'region.eu.services.title': 'Visa Services Available', 'region.eu.services.s1': 'Tourist Visa', 'region.eu.services.s2': 'Business Visa', 'region.eu.services.s3': 'Expedited Service', 'region.eu.services.s4': 'Expedited', 'region.eu.services.s5': 'Schengen Insurance',
+                'region.eu.note': 'For Schengen visas, the application country must be selected based on your itinerary. Please consult our advisor to avoid any negative impact from choosing the wrong one.',
+                'region.na.title': 'North America Visas', 'region.na.intro': 'US and Canada visas require advance preparation with long interview appointment lead times. We recommend starting the application process as early as possible based on your travel plan.',
+                'region.na.types.title': 'Visa Types & Features', 'region.na.types.t1': 'US B1/B2: combined business/tourist visa, interview required', 'region.na.types.t2': 'Canada: tourist and business visas, multi-year/multi-entry available', 'region.na.types.t3': 'Mexico: US visa holders may enter visa-free, or apply for a separate Mexican visa',
+                'region.na.travel.title': 'Travel Highlights', 'region.na.travel.p1': 'National parks, city landmarks, and cross-city road trip routes', 'region.na.travel.p2': 'Business exhibitions, academic exchanges, study abroad, and family visits',
+                'region.na.services.title': 'Visa Services Available', 'region.na.services.s1': 'Tourist Visa', 'region.na.services.s2': 'Business Visa', 'region.na.services.s3': 'Expedited Service', 'region.na.services.s4': 'Expedited', 'region.na.services.s5': 'Interview Coaching',
+                'region.na.note': 'US and Canada visa interview preparation is complex. We recommend starting 2-3 months in advance, as both document preparation and interview responses affect the outcome.',
+                'region.sa.title': 'South America Visas', 'region.sa.intro': 'Many South American countries have implemented conditional visa-free or e-visa policies for Chinese citizens, with simple application processes suitable for business and leisure travel.',
+                'region.sa.types.title': 'Visa Types & Features', 'region.sa.types.t1': 'Brazil, Argentina, Chile: conditional visa-free or e-visa', 'region.sa.types.t2': 'Peru, Colombia, Ecuador: tourist or business visa available', 'region.sa.types.t3': 'Bolivia, Venezuela: sticker visa required with detailed document requirements',
+                'region.sa.travel.title': 'Travel Highlights', 'region.sa.travel.p1': 'Amazon rainforest, Andes mountains, Easter Island, and other natural wonders', 'region.sa.travel.p2': 'Tango, football culture, festivals, and distinctive cuisine',
+                'region.sa.services.title': 'Visa Services Available', 'region.sa.services.s1': 'Tourist Visa', 'region.sa.services.s2': 'Business Visa', 'region.sa.services.s3': 'Expedited Service', 'region.sa.services.s4': 'Expedited',
+                'region.sa.note': 'Some South American countries allow visa-free entry for US/Schengen visa holders. We recommend selecting the optimal plan based on your itinerary.',
+                'region.jpkr.title': 'Japan & Korea Visas', 'region.jpkr.intro': 'Japan and Korea have transparent and stable visa policies with short processing times, making them popular destinations for Chinese tourists and business travelers.',
+                'region.jpkr.types.title': 'Visa Types & Features', 'region.jpkr.types.t1': 'Japan: tourist (single/3-year/5-year multi-entry), business, and visit visas', 'region.jpkr.types.t2': 'Korea: tourist (C-3-9), business, and training visas', 'region.jpkr.types.t3': 'Multi-entry Japan/Korea visas: subject to financial or travel history criteria',
+                'region.jpkr.travel.title': 'Travel Highlights', 'region.jpkr.travel.p1': 'Cherry blossoms, autumn leaves, hot springs, cuisine, anime culture, and modern cities', 'region.jpkr.travel.p2': 'Shopping, medical tourism, and family study tours',
+                'region.jpkr.services.title': 'Visa Services Available', 'region.jpkr.services.s1': 'Tourist Visa', 'region.jpkr.services.s2': 'Business Visa', 'region.jpkr.services.s3': 'Expedited Service', 'region.jpkr.services.s4': 'Expedited', 'region.jpkr.services.s5': 'Multi-entry Consult',
+                'region.jpkr.note': 'Japan and Korea visa documents are relatively simple, but income and occupation may affect outcomes. Please consult our advisor.',
+                'region.aunz.title': 'Australia & NZ Visas', 'region.aunz.intro': 'Australia and New Zealand both operate e-visa systems with online application processes, supporting multiple visa types.',
+                'region.aunz.types.title': 'Visa Types & Features', 'region.aunz.types.t1': 'Australia: tourist (subclass 600), business, and family visit visas', 'region.aunz.types.t2': 'New Zealand: tourist and visit visas, mostly e-visa', 'region.aunz.types.t3': '3-year/5-year multi-entry visas available subject to travel history',
+                'region.aunz.travel.title': 'Travel Highlights', 'region.aunz.travel.p1': 'Great Barrier Reef, tropical rainforests, snow mountains, and ranch landscapes', 'region.aunz.travel.p2': 'Family study tours, outdoor sports, and winery experiences',
+                'region.aunz.services.title': 'Visa Services Available', 'region.aunz.services.s1': 'Tourist Visa', 'region.aunz.services.s2': 'Business Visa', 'region.aunz.services.s3': 'Expedited Service', 'region.aunz.services.s4': 'Expedited', 'region.aunz.services.s5': 'E-visa Guidance',
+                'region.aunz.note': 'AU/NZ visas require completing an English application form online and providing supporting documents. Document authenticity is the key review focus.',
+
+                'section.faq.tag': 'FAQ', 'section.faq.title': 'Frequently Asked Questions',
+                'sidebar.contact.title': 'Dedicated Visa Advisor', 'sidebar.contact.sub': 'Quick Response',
+                'sidebar.phone.label': 'Call Us', 'sidebar.wechat.label': 'WeChat', 'sidebar.email.label': 'Email Us',
+                'sidebar.qr.hint': 'Scan to add WeChat',
+                'sidebar.trust.title': 'Why Choose ZSTS?',
+                'footer.desc': 'Official authorized agency of the Saudi Embassy in China, dedicated to China-Saudi business services.',
+                'footer.navTitle': 'Quick Links', 'footer.contactTitle': 'Contact',
+                'footer.copyright': 'ZSTS International Business Development Co., Ltd.', 'footer.privacy': 'Privacy Policy', 'footer.terms': 'Terms', 'footer.qrHint': 'Scan to add WeChat', 'footer.sitemap': 'Sitemap',
+                'cta.title': 'Start Your Global Journey',
+                'cta.subtitle': 'Whether you are planning international travel, business inspection, or visiting friends and family, ZSTS will provide you with professional and efficient one-stop visa services.',
+                'cta.btn1': 'Contact Us',
+                'cta.btn2': 'WeChat',
+                'modal.title': 'Scan to Consult', 'modal.desc': 'Choose the most convenient way to contact us', 'modal.phone': 'Tel: 010-85656995 / 010-53670397 / 17190016075',
+            }
+        };
+
+        let currentLang = localStorage.getItem('zsts-lang') || 'zh';
+
+        function setLang(lang) {
+            currentLang = lang;
+            localStorage.setItem('zsts-lang', lang);
+            document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+            if (!window.CMS_PREVIEW) applyTranslations();
+            updateLangButtons();
+            // 重新渲染 region 模块（语言切换后用对应语言渲染）
+            if (typeof renderRegionTabs === 'function') {
+                renderRegionTabs();
+                if (typeof switchRegion === 'function' && _regionKeys.length) switchRegion(_currentRegion || _regionKeys[0]);
+            }
+            // 重新渲染 step / faq / trust（C-2 repeater）
+            if (typeof window.visaRenderAll === 'function') window.visaRenderAll();
+            if (typeof applyCtaVisibility === 'function') applyCtaVisibility();
+        }
+
+        function applyTranslations() {
+            const dict = i18n[currentLang];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key]) {
+                    if (el.tagName === 'TITLE') document.title = dict[key];
+                    else el.textContent = dict[key];
+                }
+            });
+        }
+
+        function updateLangButtons() {
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-lang') === currentLang);
+            });
+        }
+
+        window.setLang = setLang;
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!window.CMS_PREVIEW) applyTranslations();
+            updateLangButtons();
+            if (!window.CMS_PAGE_DATA) {
+                // 非 CMS 模式：手动渲染一次（从 i18n 字典）
+                renderRegionTabs();
+                if (_regionKeys.length) switchRegion(_regionKeys[0]);
+            }
+            // C-2 repeater 首次渲染（用 i18n 字典作为兜底：CMS 模式下 visaRenderAll 由 onCmsPageData 调）
+            if (typeof window.visaRenderAll === 'function') window.visaRenderAll();
+            applyCtaVisibility();
+        });
+
+        // CMS 注入完成后立即渲染
+        if (window.CMS_PAGE_DATA && window.onCmsPageData) window.onCmsPageData();
+    })();
+    </script>
+
+    <!-- Main JS -->
+    <script>
+        lucide.createIcons();
+
+        // Navbar scroll
+        const navbar = document.getElementById('navbar');
+
+        const navLinks = document.querySelectorAll('.nav-link');
+        const langSwitcher = document.getElementById('lang-switcher');
+        const langBtns = document.querySelectorAll('.lang-btn');
+
+        window.addEventListener('scroll', () => {
+            const scrolled = window.scrollY > 50;
+            navbar.classList.toggle('nav-transparent', !scrolled);
+            navbar.classList.toggle('nav-scrolled', scrolled);
+                const logoImg = document.getElementById('nav-logo-img');
+                if (logoImg) { logoImg.src = scrolled ? 'images/logo-new.png' : 'images/logo-dark.png'; }
+
+            navLinks.forEach(link => {
+                link.classList.toggle('text-white', !scrolled);
+                link.classList.toggle('text-gray-700', scrolled);
+            });
+            if (langSwitcher) {
+                langSwitcher.classList.toggle('border-white/30', !scrolled);
+                langSwitcher.classList.toggle('border-gray-200', scrolled);
+            }
+            langBtns.forEach(btn => {
+                if (!btn.classList.contains('active')) {
+                    btn.classList.toggle('text-white', !scrolled);
+                    btn.classList.toggle('text-gray-500', scrolled);
+                } else {
+                    btn.classList.toggle('text-white', !scrolled);
+                    btn.classList.toggle('text-zsts-green', scrolled);
+                }
+            });
+        });
+
+        // Mobile menu
+        document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        });
+
+        // Scroll to top
+        const scrollTopBtn = document.getElementById('scroll-top');
+        window.addEventListener('scroll', () => {
+            scrollTopBtn.classList.toggle('opacity-0', window.scrollY <= 500);
+            scrollTopBtn.classList.toggle('invisible', window.scrollY <= 500);
+            scrollTopBtn.classList.toggle('opacity-100', window.scrollY > 500);
+            scrollTopBtn.classList.toggle('visible', window.scrollY > 500);
+        });
+        scrollTopBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+        // FAQ accordion
+        document.querySelectorAll('.faq-toggle').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const item = btn.closest('.faq-item');
+                const answer = item.querySelector('.faq-answer');
+                const isOpen = item.classList.contains('open');
+
+                document.querySelectorAll('.faq-item').forEach(i => {
+                    i.classList.remove('open');
+                    i.querySelector('.faq-answer').classList.remove('open');
+                });
+
+                if (!isOpen) {
+                    item.classList.add('open');
+                    answer.classList.add('open');
+                }
+            });
+        });
+
+        // Intersection Observer: fade-in sections
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('visible');
+            });
+        }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+        document.querySelectorAll('.fade-in-section').forEach(el => observer.observe(el));
+
+        // Bind consult buttons to open QR modal
+        document.querySelectorAll('a[href="#contact"], .consult-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                openQrModal();
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,261 @@
+<!-- 全局配置编辑器 -->
+<div class="max-w-5xl mx-auto">
+  <div class="mb-8">
+    <h1 class="text-2xl font-bold text-gray-900">全局配置</h1>
+    <p class="text-gray-500 mt-1">编辑网站全局导航、页脚和咨询弹窗内容</p>
+  </div>
+
+  <!-- Tab 切换 -->
+  <div class="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-8 w-fit">
+    <button onclick="switchGlobalTab('nav')" id="tab-nav" class="tab-btn px-5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 bg-white text-zsts-green shadow-sm">导航菜单</button>
+    <button onclick="switchGlobalTab('footer')" id="tab-footer" class="tab-btn px-5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 text-gray-600 hover:text-gray-900">页脚配置</button>
+    <button onclick="switchGlobalTab('consultation')" id="tab-consultation" class="tab-btn px-5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 text-gray-600 hover:text-gray-900">咨询弹窗</button>
+  </div>
+
+  <!-- Nav 编辑器 -->
+  <div id="panel-nav" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+    <h2 class="text-lg font-bold text-gray-900 mb-6">导航菜单配置</h2>
+    <form id="form-nav" onsubmit="return false;">
+      <div class="space-y-6">
+        <!-- Logo -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Logo 图片路径</label>
+          <input type="text" id="nav-logo-src" class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-zsts-green focus:border-transparent" placeholder="images/logo-dark.png">
+        </div>
+        <!-- 导航链接列表 -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">导航链接</label>
+          <div id="nav-links" class="space-y-3"></div>
+          <button type="button" onclick="addNavLink()" class="mt-3 text-sm text-zsts-green hover:underline">+ 添加链接</button>
+        </div>
+        <!-- 咨询按钮 -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">咨询按钮文案</label>
+          <div class="grid grid-cols-2 gap-3">
+            <input type="text" id="nav-consult-zh" class="px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-zsts-green focus:border-transparent" placeholder="中文">
+            <input type="text" id="nav-consult-en" class="px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-zsts-green focus:border-transparent" placeholder="English">
+          </div>
+        </div>
+      </div>
+      <div class="mt-8 flex justify-end space-x-3">
+        <button type="button" onclick="resetGlobalConfig('nav')" class="px-6 py-2.5 border border-gray-200 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50">重置</button>
+        <button type="button" onclick="saveGlobalConfig('nav')" class="px-8 py-2.5 bg-zsts-green text-white rounded-lg text-sm font-semibold hover:bg-zsts-green-dark transition-colors">保存</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Footer 编辑器 -->
+  <div id="panel-footer" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 hidden">
+    <h2 class="text-lg font-bold text-gray-900 mb-6">页脚配置</h2>
+    <form id="form-footer" onsubmit="return false;">
+      <div class="space-y-6">
+        <!-- 公司描述 -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">公司简介</label>
+          <div class="grid grid-cols-2 gap-3">
+            <textarea id="footer-desc-zh" rows="3" class="px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-zsts-green focus:border-transparent" placeholder="中文"></textarea>
+            <textarea id="footer-desc-en" rows="3" class="px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-zsts-green focus:border-transparent" placeholder="English"></textarea>
+          </div>
+        </div>
+        <!-- 联系方式 -->
+        <div class="grid grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">电话</label>
+            <input type="text" id="footer-phone" class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-zsts-green focus:border-transparent" placeholder="010-xxxxxxx">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">邮箱</label>
+            <input type="text" id="footer-email" class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-zsts-green focus:border-transparent" placeholder="info@zsts.group">
+          </div>
+        </div>
+        <!-- 快速导航链接 -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">快速导航链接</label>
+          <div id="footer-links" class="space-y-3"></div>
+        </div>
+        <!-- 二维码 -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">二维码配置</label>
+          <div id="footer-qrcodes" class="space-y-3"></div>
+        </div>
+        <!-- 底栏链接 -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">底栏链接</label>
+          <div id="footer-bottom-links" class="space-y-3"></div>
+        </div>
+      </div>
+      <div class="mt-8 flex justify-end space-x-3">
+        <button type="button" onclick="resetGlobalConfig('footer')" class="px-6 py-2.5 border border-gray-200 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50">重置</button>
+        <button type="button" onclick="saveGlobalConfig('footer')" class="px-8 py-2.5 bg-zsts-green text-white rounded-lg text-sm font-semibold hover:bg-zsts-green-dark transition-colors">保存</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Consultation 编辑器 -->
+  <div id="panel-consultation" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 hidden">
+    <h2 class="text-lg font-bold text-gray-900 mb-6">咨询弹窗配置</h2>
+    <form id="form-consultation" onsubmit="return false;">
+      <div class="space-y-6">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">弹窗标题</label>
+          <div class="grid grid-cols-2 gap-3">
+            <input type="text" id="consult-title-zh" class="px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-zsts-green focus:border-transparent" placeholder="中文">
+            <input type="text" id="consult-title-en" class="px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-zsts-green focus:border-transparent" placeholder="English">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">弹窗描述</label>
+          <div class="grid grid-cols-2 gap-3">
+            <input type="text" id="consult-desc-zh" class="px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-zsts-green focus:border-transparent" placeholder="中文">
+            <input type="text" id="consult-desc-en" class="px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-zsts-green focus:border-transparent" placeholder="English">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">客服电话</label>
+          <div class="grid grid-cols-2 gap-3">
+            <input type="text" id="consult-phone-zh" class="px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-zsts-green focus:border-transparent" placeholder="中文">
+            <input type="text" id="consult-phone-en" class="px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-zsts-green focus:border-transparent" placeholder="English">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">二维码配置</label>
+          <div id="consult-qrcodes" class="space-y-3"></div>
+        </div>
+      </div>
+      <div class="mt-8 flex justify-end space-x-3">
+        <button type="button" onclick="resetGlobalConfig('consultation')" class="px-6 py-2.5 border border-gray-200 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50">重置</button>
+        <button type="button" onclick="saveGlobalConfig('consultation')" class="px-8 py-2.5 bg-zsts-green text-white rounded-lg text-sm font-semibold hover:bg-zsts-green-dark transition-colors">保存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+let currentGlobalTab = 'nav';
+let configData = { nav: null, footer: null, consultation: null };
+
+async function switchGlobalTab(tab) {
+  currentGlobalTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.remove('bg-white', 'text-zsts-green', 'shadow-sm');
+    b.classList.add('text-gray-600');
+  });
+  document.getElementById(`tab-${tab}`).classList.add('bg-white', 'text-zsts-green', 'shadow-sm');
+  document.getElementById('panel-nav').classList.toggle('hidden', tab !== 'nav');
+  document.getElementById('panel-footer').classList.toggle('hidden', tab !== 'footer');
+  document.getElementById('panel-consultation').classList.toggle('hidden', tab !== 'consultation');
+}
+
+async function loadGlobalConfig(type) {
+  try {
+    const res = await fetch(`/api/content/${type}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('cms_token')}` }
+    });
+    if (!res.ok) throw new Error('加载失败');
+    configData[type] = await res.json();
+    renderGlobalForm(type);
+  } catch (e) {
+    showToast('加载配置失败: ' + e.message, 'error');
+  }
+}
+
+function renderGlobalForm(type) {
+  const data = configData[type];
+  if (!data) return;
+  
+  if (type === 'nav') {
+    document.getElementById('nav-logo-src').value = data.logo?.src || '';
+    document.getElementById('nav-consult-zh').value = data.consultButton?.zh || '';
+    document.getElementById('nav-consult-en').value = data.consultButton?.en || '';
+    renderNavLinks(data.links || []);
+  } else if (type === 'footer') {
+    document.getElementById('footer-desc-zh').value = data.description?.zh || '';
+    document.getElementById('footer-desc-en').value = data.description?.en || '';
+    document.getElementById('footer-phone').value = data.phone || '';
+    document.getElementById('footer-email').value = data.email || '';
+    renderFooterLinks(data.quickLinks || []);
+    renderFooterQrcodes(data.qrcodes || []);
+    renderFooterBottomLinks(data.bottomLinks || []);
+  } else if (type === 'consultation') {
+    document.getElementById('consult-title-zh').value = data.title?.zh || '';
+    document.getElementById('consult-title-en').value = data.title?.en || '';
+    document.getElementById('consult-desc-zh').value = data.desc?.zh || '';
+    document.getElementById('consult-desc-en').value = data.desc?.en || '';
+    document.getElementById('consult-phone-zh').value = data.phone?.zh || '';
+    document.getElementById('consult-phone-en').value = data.phone?.en || '';
+    renderConsultQrcodes(data.qrcodes || []);
+  }
+}
+
+function renderNavLinks(links) {
+  const container = document.getElementById('nav-links');
+  container.innerHTML = '';
+  links.forEach((link, i) => {
+    const row = document.createElement('div');
+    row.className = 'flex items-center space-x-3';
+    row.innerHTML = `
+      <span class="text-xs text-gray-400 w-6">${i+1}</span>
+      <input type="text" value="${link.zh || ''}" placeholder="中文" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm">
+      <input type="text" value="${link.en || ''}" placeholder="English" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm">
+      <input type="text" value="${link.href || ''}" placeholder="链接" class="w-40 px-3 py-2 border border-gray-200 rounded-lg text-sm">
+      <button type="button" onclick="this.parentNode.remove()" class="text-red-500 hover:text-red-700">✕</button>
+    `;
+    container.appendChild(row);
+  });
+}
+
+async function saveGlobalConfig(type) {
+  const data = configData[type];
+  if (!data) return;
+  
+  // 从表单收集数据
+  if (type === 'nav') {
+    data.logo = { src: document.getElementById('nav-logo-src').value, alt: 'ZSTS Logo' };
+    data.consultButton = {
+      zh: document.getElementById('nav-consult-zh').value,
+      en: document.getElementById('nav-consult-en').value
+    };
+    const rows = document.querySelectorAll('#nav-links > div');
+    data.links = Array.from(rows).map(row => ({
+      zh: row.children[1].value,
+      en: row.children[2].value,
+      href: row.children[3].value
+    }));
+  } else if (type === 'footer') {
+    data.description = { zh: document.getElementById('footer-desc-zh').value, en: document.getElementById('footer-desc-en').value };
+    data.phone = document.getElementById('footer-phone').value;
+    data.email = document.getElementById('footer-email').value;
+    // TODO: 收集 links/qrcodes/bottomLinks
+  } else if (type === 'consultation') {
+    data.title = { zh: document.getElementById('consult-title-zh').value, en: document.getElementById('consult-title-en').value };
+    data.desc = { zh: document.getElementById('consult-desc-zh').value, en: document.getElementById('consult-desc-en').value };
+    data.phone = { zh: document.getElementById('consult-phone-zh').value, en: document.getElementById('consult-phone-en').value };
+  }
+  
+  try {
+    const res = await fetch(`/api/content/${type}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('cms_token')}`
+      },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('保存失败');
+    showToast('保存成功', 'success');
+  } catch (e) {
+    showToast('保存失败: ' + e.message, 'error');
+  }
+}
+
+function resetGlobalConfig(type) {
+  if (confirm('确定要重置吗？未保存的修改将丢失。')) {
+    loadGlobalConfig(type);
+  }
+}
+
+// 页面加载时初始化
+document.addEventListener('DOMContentLoaded', () => {
+  loadGlobalConfig('nav');
+});
+</script>
