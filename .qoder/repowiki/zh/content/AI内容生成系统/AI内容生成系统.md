@@ -15,6 +15,8 @@
 - [data.ts](file://ai-content-project/src/lib/data.ts)
 - [route.ts](file://ai-content-project/src/app/api/fetch/route.ts)
 - [route.ts](file://ai-content-project/src/app/api/image/route.ts)
+- [route.ts](file://ai-content-project/src/app/api/generate/route.ts)
+- [route.ts](file://ai-content-project/src/app/api/publish-to-news/route.ts)
 - [button.tsx](file://ai-content-project/src/components/ui/button.tsx)
 - [input.tsx](file://ai-content-project/src/components/ui/input.tsx)
 - [use-mobile.ts](file://ai-content-project/src/hooks/use-mobile.ts)
@@ -25,13 +27,13 @@
 
 ## 更新摘要
 **所做更改**
-- 新增AI内容生成系统完整架构分析
-- 更新前端组件设计模式和UI组件库说明
-- 完善AI功能模块详细实现分析
-- 增强代理服务配置和认证机制说明
-- 补充数据模型和API路由设计文档
-- 更新性能优化策略和视频处理系统
-- 新增故障排除指南和开发脚本说明
+- 新增内容解析能力提升功能分析（自动提取标题、摘要、标签）
+- 新增沙特新闻管理功能集成说明
+- 新增海报编辑器增强功能说明
+- 新增网络故障时的模拟响应机制
+- 更新AI代理服务配置和认证机制
+- 完善数据模型和API路由设计文档
+- 增强性能优化策略和视频处理系统
 
 ## 目录
 1. [简介](#简介)
@@ -73,17 +75,19 @@ C --> J[ui组件]
 C --> K[token-persister.tsx]
 D --> L[api/fetch/route.ts]
 D --> M[api/image/route.ts]
+D --> N[api/generate/route.ts]
+D --> O[api/publish-to-news/route.ts]
 end
 subgraph "业务核心"
-N[business-core] --> O[cms-server]
-N --> P[cms-server-go]
-N --> Q[content]
-N --> R[uploads]
+N --> P[cms-server]
+N --> Q[cms-server-go]
+N --> R[content]
+N --> S[uploads]
 end
 subgraph "配置文件"
-S[package.json] --> T[依赖管理]
-U[next.config.ts] --> V[Next.js配置]
-W[tsconfig.json] --> X[TypeScript配置]
+T[package.json] --> U[依赖管理]
+V[next.config.ts] --> W[Next.js配置]
+X[tsconfig.json] --> Y[TypeScript配置]
 end
 ```
 
@@ -310,6 +314,35 @@ P --> N
 **图表来源**
 - [create/page.tsx:154-374](file://ai-content-project/src/app/create/page.tsx#L154-L374)
 
+#### 内容解析能力提升
+
+系统新增了强大的内容解析能力，能够自动提取标题、摘要和标签：
+
+```mermaid
+flowchart TD
+A[AI回复内容] --> B[标题提取]
+A --> C[摘要提取]
+A --> D[标签提取]
+B --> E[正则表达式匹配]
+B --> F[内容结构分析]
+C --> G[字符截取]
+C --> H[上下文理解]
+D --> I[关键词识别]
+D --> J[语义分析]
+E --> K[extractTitle函数]
+F --> K
+G --> L[extractSummary函数]
+H --> L
+I --> M[extractTags函数]
+J --> M
+K --> N[结构化数据]
+L --> N
+M --> N
+```
+
+**图表来源**
+- [create/page.tsx:376-412](file://ai-content-project/src/app/create/page.tsx#L376-L412)
+
 **章节来源**
 - [create/page.tsx:1-761](file://ai-content-project/src/app/create/page.tsx#L1-L761)
 
@@ -366,6 +399,24 @@ ArticleEditorInner --> BlockRenderer : "使用"
 | tip | 提示 | textarea | 警告卡片 |
 | quote | 引用 | textarea | 引用块 |
 
+#### 沙特新闻管理功能集成
+
+系统集成了专门的沙特新闻管理功能，支持内容发布到沙特资讯平台：
+
+```mermaid
+flowchart TD
+A[文章内容] --> B[HTML转换]
+B --> C[沙特新闻API]
+C --> D[saudi-news.json]
+D --> E[新闻列表更新]
+D --> F[热门资讯更新]
+E --> G[链接重新计算]
+F --> H[内容同步]
+```
+
+**图表来源**
+- [article/page.tsx:308-382](file://ai-content-project/src/app/article/page.tsx#L308-L382)
+
 **章节来源**
 - [article/page.tsx:38-183](file://ai-content-project/src/app/article/page.tsx#L38-L183)
 
@@ -412,6 +463,32 @@ PosterEditorInner --> BGMGenerator : "使用"
 
 **图表来源**
 - [poster/page.tsx:203-694](file://ai-content-project/src/app/poster/page.tsx#L203-L694)
+
+#### 海报编辑器增强功能
+
+系统新增了多项海报编辑器增强功能：
+
+```mermaid
+flowchart TD
+A[海报编辑器] --> B[沙特主题背景]
+A --> C[阿拉伯音乐BGM]
+A --> D[智能标签生成]
+A --> E[批量导出功能]
+B --> F[沙漠金丘]
+B --> G[利雅得天际线]
+B --> H[麦加夜景]
+C --> I[Hijaz音阶]
+C --> J[传统乌德琴]
+C --> K[沙漠驼铃]
+D --> L[自动标签提取]
+D --> M[主题标签建议]
+E --> N[PNG批量导出]
+E --> O[ZIP压缩打包]
+```
+
+**图表来源**
+- [poster/page.tsx:43-54](file://ai-content-project/src/app/poster/page.tsx#L43-L54)
+- [data.ts:86-128](file://ai-content-project/src/lib/data.ts#L86-L128)
 
 #### 视频处理系统
 
@@ -486,6 +563,31 @@ P->>C : 转发请求
 | is_default | boolean | 是否默认渠道 |
 | created_by | number | 创建者ID |
 
+#### 网络故障模拟响应机制
+
+系统实现了智能的网络故障检测和模拟响应机制：
+
+```mermaid
+flowchart TD
+A[API调用] --> B{网络状态检查}
+B --> |正常| C[真实API调用]
+B --> |异常| D[模拟响应生成]
+C --> E[真实数据返回]
+D --> F[simulateAiResponse函数]
+F --> G[结构化模拟数据]
+G --> H[标题提取]
+G --> I[摘要提取]
+G --> J[标签提取]
+H --> K[内容解析]
+I --> K
+J --> K
+K --> L[用户界面更新]
+E --> L
+```
+
+**图表来源**
+- [create/page.tsx:487-495](file://ai-content-project/src/app/create/page.tsx#L487-L495)
+
 **章节来源**
 - [ai-channels.js:25-36](file://cms-server/routes/ai-channels.js#L25-L36)
 
@@ -541,6 +643,36 @@ CONTENT_ITEM ||--|| LOG_ENTRY : "产生"
 **图表来源**
 - [data.ts:5-23](file://ai-content-project/src/lib/data.ts#L5-L23)
 
+#### 沙特新闻数据模型
+
+系统新增了专门的沙特新闻数据模型：
+
+```mermaid
+erDiagram
+SAUDI_NEWS_ARTICLE {
+string title
+string desc
+string image
+string imageAlt
+string tag
+string tagColor
+string category
+string author
+string content
+string date
+string link
+boolean reverse
+}
+SAUDI_NEWS_DATA {
+array articles
+array sidebar
+}
+SAUDI_NEWS_DATA ||--|| SAUDI_NEWS_ARTICLE : "包含"
+```
+
+**图表来源**
+- [publish-to-news/route.ts:7-17](file://ai-content-project/src/app/api/publish-to-news/route.ts#L7-L17)
+
 **章节来源**
 - [data.ts:1-218](file://ai-content-project/src/lib/data.ts#L1-L218)
 
@@ -560,15 +692,46 @@ F[POST /api/image] --> G[Coze SDK图片生成]
 G --> H[Prompt验证]
 H --> I[图片生成]
 I --> J[URL返回]
+K[POST /api/generate] --> L[AI渠道配置]
+L --> M[内容安全审核]
+M --> N[AI内容生成]
+N --> O[输出安全审核]
+O --> P[响应返回]
+Q[POST /api/publish-to-news] --> R[沙特新闻发布]
+R --> S[JSON文件更新]
 ```
 
 **图表来源**
 - [route.ts:1-25](file://ai-content-project/src/app/api/fetch/route.ts#L1-L25)
 - [route.ts:1-36](file://ai-content-project/src/app/api/image/route.ts#L1-L36)
+- [route.ts:1-312](file://ai-content-project/src/app/api/generate/route.ts#L1-L312)
+- [route.ts:1-82](file://ai-content-project/src/app/api/publish-to-news/route.ts#L1-L82)
+
+#### 内容安全防护机制
+
+系统实现了双层内容安全防护机制：
+
+```mermaid
+flowchart TD
+A[输入内容] --> B[关键词过滤]
+A --> C[正则模式匹配]
+B --> D[敏感词检测]
+C --> E[违规模式识别]
+D --> F{是否安全}
+E --> F
+F --> |是| G[通过审核]
+F --> |否| H[内容拦截]
+H --> I[安全提示返回]
+```
+
+**图表来源**
+- [generate/route.ts:72-120](file://ai-content-project/src/app/api/generate/route.ts#L72-L120)
 
 **章节来源**
 - [route.ts:1-25](file://ai-content-project/src/app/api/fetch/route.ts#L1-L25)
 - [route.ts:1-36](file://ai-content-project/src/app/api/image/route.ts#L1-L36)
+- [route.ts:1-312](file://ai-content-project/src/app/api/generate/route.ts#L1-L312)
+- [route.ts:1-82](file://ai-content-project/src/app/api/publish-to-news/route.ts#L1-L82)
 
 ## 依赖关系分析
 
@@ -690,6 +853,7 @@ F --> K[用户体验提升]
 | 内容质量差 | 提示词不明确 | 优化提示词结构和细节描述 |
 | 图片加载失败 | Pexels API限制 | 使用备用图片源或本地上传 |
 | 视频生成失败 | 浏览器兼容性 | 检查MediaRecorder支持情况 |
+| 内容安全拦截 | 敏感内容检测 | 调整输入内容或提示词 |
 
 #### 性能问题
 
@@ -699,6 +863,14 @@ F --> K[用户体验提升]
 | 内存泄漏 | 组件未清理 | 检查事件监听器和定时器清理 |
 | 视频处理卡顿 | CPU占用过高 | 降低视频分辨率或帧率 |
 | 并发请求过多 | 服务器压力大 | 实现请求节流和缓存机制 |
+
+#### 网络故障模拟响应
+
+| 问题症状 | 可能原因 | 解决方案 |
+|----------|----------|----------|
+| API调用失败 | 网络不稳定 | 系统自动回退到模拟响应 |
+| 模拟响应延迟 | 本地处理耗时 | 优化simulateAiResponse函数 |
+| 标题提取错误 | 内容格式变化 | 更新extractTitle函数逻辑 |
 
 **章节来源**
 - [token-persister.tsx:15-34](file://ai-content-project/src/components/token-persister.tsx#L15-L34)
@@ -710,6 +882,7 @@ F --> K[用户体验提升]
 2. **日志系统**: 实现详细的错误日志记录
 3. **性能分析**: 使用React DevTools分析组件性能
 4. **网络监控**: 监控AI服务的响应时间和成功率
+5. **模拟响应测试**: 验证handleSend函数的错误处理逻辑
 
 ### 开发脚本说明
 
@@ -726,7 +899,7 @@ F --> K[用户体验提升]
 
 ## 结论
 
-AI内容生成系统是一个功能完整、架构清晰的现代化内容创作平台。系统通过合理的组件设计、完善的认证机制和高效的性能优化，为用户提供了优质的AI内容生成体验。
+AI内容生成系统是一个功能完整、架构清晰的现代化内容创作平台。系统通过合理的组件设计、完善的认证机制、高效的内容解析能力和智能的网络故障处理，为用户提供了优质的AI内容生成体验。
 
 ### 系统优势
 
@@ -734,6 +907,15 @@ AI内容生成系统是一个功能完整、架构清晰的现代化内容创作
 2. **功能完整性**: 覆盖内容生成、编辑、分发的完整流程
 3. **扩展性强**: 模块化设计便于功能扩展和维护
 4. **用户体验佳**: 智能化的AI交互和直观的操作界面
+5. **安全性强**: 多层内容安全防护和认证机制
+6. **鲁棒性强**: 网络故障时的智能模拟响应机制
+
+### 新增功能亮点
+
+1. **内容解析能力提升**: 自动提取标题、摘要、标签，提升内容质量
+2. **沙特新闻管理**: 专门的内容发布到沙特资讯平台功能
+3. **海报编辑器增强**: 沙特主题背景、阿拉伯音乐BGM、智能标签生成
+4. **网络故障处理**: 智能模拟响应机制，确保系统稳定性
 
 ### 发展方向
 
@@ -741,5 +923,6 @@ AI内容生成系统是一个功能完整、架构清晰的现代化内容创作
 2. **性能优化**: 进一步提升视频处理和内容生成效率
 3. **生态建设**: 开发插件系统和第三方集成能力
 4. **国际化**: 支持多语言和多地区内容管理
+5. **内容质量**: 增强内容审核和质量控制机制
 
 该系统为内容创作者提供了强大的技术支持，通过智能化的AI工具大大提升了内容生产的效率和质量。

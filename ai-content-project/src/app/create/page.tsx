@@ -440,7 +440,7 @@ function CreateContentInner() {
       const res = await fetch('/ai-content/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userInput, contentType, token: cmsToken }),
+        body: JSON.stringify({ message: userInput, contentType, pageCount: posterPageCount, token: cmsToken }),
       });
 
       const data = await res.json();
@@ -461,29 +461,56 @@ function CreateContentInner() {
 
       // 从 AI 回复中解析结构化结果
       const aiContent: string = data.content || '';
-      const title = extractTitle(aiContent, userInput);
-      const summary = extractSummary(aiContent);
-      const tags = extractTags(aiContent);
-      const source = detectSource(userInput);
 
-      const aiResponse: ChatMessage = {
-        id: generateId(),
-        role: 'assistant',
-        content: aiContent,
-        timestamp: Date.now(),
-        type: 'result',
-        contentType: contentType,
-        resultData: {
-          title,
-          summary,
-          tags,
-          source,
-          wordCount: aiContent.length,
-          pageCount: contentType === 'poster' ? posterPageCount : 6,
-          ratio: '9:16',
-        },
-      };
-      setMessages((prev) => [...prev, aiResponse]);
+      // 海报模式：优先使用 API 返回的结构化 pages 数据
+      if (contentType === 'poster' && data.pages && Array.isArray(data.pages)) {
+        const aiResponse: ChatMessage = {
+          id: generateId(),
+          role: 'assistant',
+          content: aiContent,
+          timestamp: Date.now(),
+          type: 'result',
+          contentType: 'poster',
+          resultData: {
+            title: data.posterTitle || extractTitle(aiContent, userInput),
+            summary: data.posterSummary || extractSummary(aiContent),
+            tags: data.posterTags || extractTags(aiContent),
+            source: detectSource(userInput),
+            wordCount: aiContent.length,
+            pageCount: data.pages.length,
+            ratio: '9:16',
+            pages: data.pages,
+          },
+        };
+        setMessages((prev) => [...prev, aiResponse]);
+      } else {
+        // 文章模式 或 海报模式无 pages 数据
+        const title = extractTitle(aiContent, userInput);
+        const summary = extractSummary(aiContent);
+        const tags = extractTags(aiContent);
+        const source = detectSource(userInput);
+
+        const aiResponse: ChatMessage = {
+          id: generateId(),
+          role: 'assistant',
+          content: aiContent,
+          timestamp: Date.now(),
+          type: 'result',
+          contentType: contentType,
+          resultData: {
+            title,
+            summary,
+            tags,
+            source,
+            wordCount: aiContent.length,
+            pageCount: contentType === 'poster' ? posterPageCount : 6,
+            ratio: '9:16',
+            // 海报模式无 API pages 时，用 mock 数据填充
+            ...(contentType === 'poster' ? { pages: generatePosterPages(source, posterPageCount) } : {}),
+          },
+        };
+        setMessages((prev) => [...prev, aiResponse]);
+      }
     } catch (err) {
       // 网络错误，回退到模拟响应
       console.warn('[handleSend] API 调用失败，回退到模拟模式', err);
