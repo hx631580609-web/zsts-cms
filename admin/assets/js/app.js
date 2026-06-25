@@ -819,6 +819,28 @@ const PAGE_FIELDS = {
     { key:'cta.btn2', label:'CTA按钮二文案', type:'text', hidden:true },
     { key:'cta.btn2_url', label:'CTA按钮二链接', type:'url', hidden:true }
   ],
+
+  // ════════════════════════════════════════════
+  //  沙特资讯
+  // ════════════════════════════════════════════
+  'saudi-news': [
+    { key:'hero.badge', label:'大图徽章标签', type:'text' },
+    { key:'hero.title', label:'大图主标题', type:'text' },
+    { key:'hero.subtitle', label:'大图副标题', type:'text' },
+    { key:'hero.bgImage', label:'大图背景图片', type:'image' },
+    { key:'categories.items', label:'分类筛选按钮列表（每条：key + 双语 label）', type:'json' },
+    { key:'sidebar.search', label:'侧边栏-搜索标题', type:'text' },
+    { key:'sidebar.hot.items', label:'侧边栏-热门资讯列表（每条：text）', type:'json' },
+    { key:'sidebar.tags.items', label:'侧边栏-标签云列表（每条：text + color）', type:'json' },
+    { key:'articles.items', label:'文章列表（由 AI 内容生成发布，请勿手动修改）', type:'json', hidden:true, readonly:true },
+    { key:'cta.enabled', label:'CTA区域-是否显示（true=显示，false=隐藏）', type:'text' },
+    { key:'cta.title', label:'CTA区域-标题', type:'text' },
+    { key:'cta.subtitle', label:'CTA区域-副标题', type:'textarea' },
+    { key:'cta.btn1', label:'CTA按钮一文案', type:'text' },
+    { key:'cta.btn1_url', label:'CTA按钮一链接', type:'url' },
+    { key:'cta.btn2', label:'CTA按钮二文案', type:'text' },
+    { key:'cta.btn2_url', label:'CTA按钮二链接', type:'url' }
+  ],
 };
 
 function getPageFields(pageKey) { return PAGE_FIELDS[pageKey] || []; }
@@ -931,6 +953,196 @@ function getModuleName(key) {
 function getModuleIcon(key) {
   const firstSeg = key.split('.')[0];
   return (MODULE_META[firstSeg] || {}).icon || '📦';
+}
+
+// ══════════════════════════════════════════════
+//  沙特资讯文章管理页面
+// ══════════════════════════════════════════════
+let _saudiNewsData = null;
+
+async function renderSaudiNewsPage(container) {
+  container.innerHTML = '<div class="bg-white rounded-xl p-8 text-center text-gray-400">加载中...</div>';
+  try {
+    const r = await fetch(`${API}/content/saudi-news`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('cms_token')}` }
+    });
+    if (!r.ok) { container.innerHTML = '<div class="bg-red-50 p-4 rounded text-red-600">加载失败</div>'; return; }
+    _saudiNewsData = await r.json();
+  } catch(e) {
+    container.innerHTML = '<div class="bg-red-50 p-4 rounded text-red-600">网络错误: ' + e.message + '</div>';
+    return;
+  }
+
+  const articles = (_saudiNewsData.articles && _saudiNewsData.articles.items && _saudiNewsData.articles.items.zh) || [];
+
+  const articleCards = articles.length === 0
+    ? '<div class="bg-white rounded-xl p-12 text-center text-gray-400">暂无已发布文章，请通过 AI 内容生成功能发布文章</div>'
+    : articles.map((a, i) => `
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+        <div class="flex">
+          <div class="w-32 h-32 bg-gray-100 shrink-0 overflow-hidden">
+            <img src="${esc(a.image || 'images/riyadh-skyline.jpg')}" alt="${esc(a.imageAlt || '')}" class="w-full h-full object-cover" onerror="this.src='images/riyadh-skyline.jpg'">
+          </div>
+          <div class="flex-1 p-4 min-w-0">
+            <div class="flex items-start justify-between gap-2">
+              <h3 class="text-sm font-semibold text-gray-800 line-clamp-2">${esc(a.title || '无标题')}</h3>
+              <div class="flex items-center gap-1 shrink-0">
+                <button onclick="editSaudiNewsArticle(${i})" class="px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors">编辑</button>
+                <button onclick="deleteSaudiNewsArticle(${i})" class="px-2.5 py-1 rounded-md text-xs font-medium bg-red-50 text-red-500 hover:bg-red-100 transition-colors">删除</button>
+              </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-1.5 line-clamp-2">${esc(a.desc || '')}</p>
+            <div class="flex items-center gap-3 mt-3 text-xs text-gray-400">
+              <span class="px-2 py-0.5 rounded-full bg-zsts-green-light text-zsts-green font-medium">${esc(a.tag || '')}</span>
+              <span>📅 ${esc(a.date || '')}</span>
+              <span>👤 ${esc(a.author || '')}</span>
+              <span class="ml-auto text-gray-300">#${i}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+  container.innerHTML = `
+    <div class="max-w-5xl mx-auto">
+      <div class="mb-6 flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">沙特资讯</h1>
+          <p class="text-sm text-gray-500 mt-1">管理已发布到官网沙特资讯页面的文章 · 共 <strong>${articles.length}</strong> 篇</p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="loadPage('saudi-news')" class="px-4 py-2 rounded-lg text-sm font-medium bg-white border border-gray-200 hover:bg-gray-50 transition-colors">🔄 刷新</button>
+          <button onclick="window.open('/preview/news.html', '_blank')" class="px-4 py-2 rounded-lg text-sm font-medium bg-white border border-gray-200 hover:bg-gray-50 transition-colors">👁 预览官网</button>
+        </div>
+      </div>
+      <div class="space-y-3">
+        ${articleCards}
+      </div>
+    </div>`;
+}
+
+async function deleteSaudiNewsArticle(idx) {
+  if (!confirm(`确定要删除第 ${idx + 1} 篇文章吗？此操作不可撤销。`)) return;
+  try {
+    const r = await fetch(`${API}/content/saudi-news`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('cms_token')}` }
+    });
+    if (!r.ok) { showToast('❌ 读取文章数据失败', 'error'); return; }
+    const data = await r.json();
+    const zhArticles = (data.articles && data.articles.items && data.articles.items.zh) || [];
+    const removedTitle = zhArticles[idx]?.title || '';
+    zhArticles.splice(idx, 1);
+    zhArticles.forEach((item, i) => { item.link = `news-detail.html?id=${i}`; });
+    const hotItems = (data.sidebar && data.sidebar.hot && data.sidebar.hot.items && data.sidebar.hot.items.zh) || [];
+    data.sidebar.hot.items.zh = hotItems.filter(h => h.text !== removedTitle).slice(0, 5);
+    await doSave('saudi-news', data);
+    showToast('✅ 文章已删除', 'success');
+    loadPage('saudi-news');
+  } catch (e) {
+    showToast('❌ 删除失败: ' + e.message, 'error');
+  }
+}
+
+function editSaudiNewsArticle(idx) {
+  const articles = (_saudiNewsData && _saudiNewsData.articles && _saudiNewsData.articles.items && _saudiNewsData.articles.items.zh) || [];
+  const a = articles[idx];
+  if (!a) { showToast('❌ 文章不存在', 'error'); return; }
+
+  const modal = document.createElement('div');
+  modal.id = 'saudi-news-edit-modal';
+  modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50';
+  modal.innerHTML = `
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg font-bold text-gray-900">编辑文章</h2>
+        <button onclick="document.getElementById('saudi-news-edit-modal').remove()" class="p-1 rounded hover:bg-gray-100 text-gray-400">✕</button>
+      </div>
+      <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1">文章标题</label>
+          <input id="edit-na-title" value="${esc(a.title || '')}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1">摘要</label>
+          <textarea id="edit-na-desc" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green">${esc(a.desc || '')}</textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">标签</label>
+            <input id="edit-na-tag" value="${esc(a.tag || '')}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">标签颜色</label>
+            <select id="edit-na-tagColor" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green">
+              <option value="green" ${a.tagColor==='green'?'selected':''}>绿色</option>
+              <option value="blue" ${a.tagColor==='blue'?'selected':''}>蓝色</option>
+              <option value="sand" ${a.tagColor==='sand'?'selected':''}>沙色</option>
+              <option value="purple" ${a.tagColor==='purple'?'selected':''}>紫色</option>
+              <option value="pink" ${a.tagColor==='pink'?'selected':''}>粉色</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">封面图 URL</label>
+            <input id="edit-na-image" value="${esc(a.image || '')}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">分类</label>
+            <select id="edit-na-category" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green">
+              <option value="all" ${a.category==='all'?'selected':''}>全部</option>
+              <option value="visa" ${a.category==='visa'?'selected':''}>签证政策</option>
+              <option value="market" ${a.category==='market'?'selected':''}>市场洞察</option>
+              <option value="travel" ${a.category==='travel'?'selected':''}>商旅指南</option>
+              <option value="culture" ${a.category==='culture'?'selected':''}>文化交流</option>
+              <option value="policy" ${a.category==='policy'?'selected':''}>政策法规</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1">作者</label>
+          <input id="edit-na-author" value="${esc(a.author || '')}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1">正文内容 (HTML)</label>
+          <textarea id="edit-na-content" rows="8" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green">${esc(a.content || '')}</textarea>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-200 bg-gray-50">
+        <button onclick="document.getElementById('saudi-news-edit-modal').remove()" class="px-4 py-2 rounded-lg text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100">取消</button>
+        <button onclick="saveSaudiNewsArticle(${idx})" class="px-4 py-2 rounded-lg text-sm font-medium bg-zsts-green text-white hover:bg-zsts-green-dark">保存修改</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', () => modal.remove());
+}
+
+async function saveSaudiNewsArticle(idx) {
+  try {
+    const r = await fetch(`${API}/content/saudi-news`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('cms_token')}` }
+    });
+    if (!r.ok) { showToast('❌ 读取数据失败', 'error'); return; }
+    const data = await r.json();
+    const zhArticles = (data.articles && data.articles.items && data.articles.items.zh) || [];
+    if (!zhArticles[idx]) { showToast('❌ 文章不存在', 'error'); return; }
+
+    zhArticles[idx].title = document.getElementById('edit-na-title').value;
+    zhArticles[idx].desc = document.getElementById('edit-na-desc').value;
+    zhArticles[idx].tag = document.getElementById('edit-na-tag').value;
+    zhArticles[idx].tagColor = document.getElementById('edit-na-tagColor').value;
+    zhArticles[idx].image = document.getElementById('edit-na-image').value;
+    zhArticles[idx].category = document.getElementById('edit-na-category').value;
+    zhArticles[idx].author = document.getElementById('edit-na-author').value;
+    zhArticles[idx].content = document.getElementById('edit-na-content').value;
+
+    await doSave('saudi-news', data);
+    document.getElementById('saudi-news-edit-modal')?.remove();
+    showToast('✅ 文章已保存', 'success');
+    loadPage('saudi-news');
+  } catch(e) {
+    showToast('❌ 保存失败: ' + e.message, 'error');
+  }
 }
 
 async function renderPageEditor(container, pageKey) {
@@ -1183,6 +1395,7 @@ window.openPreview = function(pageKey) {
     'transport':'transport.html',
     'insurance':'insurance.html',
     'inspection':'inspection.html',
+    'saudi-news':'news.html',
   };
   const htmlFile = pageMap[pageKey] || `${pageKey}.html`;
   const previewUrl = `/preview/${htmlFile}?preview=1&t=${Date.now()}`;
@@ -1250,7 +1463,7 @@ window.toggleLivePreview = function(pageKey) {
     btn.dataset.active = '1';
     btn.style.background = '#006341'; btn.style.color = '#fff'; btn.style.borderColor = '#006341';
     btn.textContent = '✕ 关闭预览';
-    const pageMap = { 'home':'index.html','about':'about.html','visa':'visa.html','saudi-visa':'saudi-visa.html','enterprise':'enterprise.html','transport':'transport.html','insurance':'insurance.html','inspection':'inspection.html' };
+    const pageMap = { 'home':'index.html','about':'about.html','visa':'visa.html','saudi-visa':'saudi-visa.html','enterprise':'enterprise.html','transport':'transport.html','insurance':'insurance.html','inspection':'inspection.html','saudi-news':'news.html' };
     const htmlFile = pageMap[pageKey] || pageKey + '.html';
     if (status) { status.textContent = '加载中...'; status.style.color = '#f59e0b'; }
     frame.src = '/preview/' + htmlFile + '?live=1&t=' + Date.now();
@@ -1445,7 +1658,7 @@ async function renderAiChannelsPage(container) {
       html += '<div class="p-12 text-center text-gray-400">暂无渠道，点击"添加渠道"创建第一个</div>';
     } else {
       html += '<table class="w-full text-sm"><thead class="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"><tr>' +
-        '<th class="px-6 py-4">渠道名称</th><th class="px-6 py-4">API 地址</th><th class="px-6 py-4">模型数量</th><th class="px-6 py-4">状态</th><th class="px-6 py-4 text-right">操作</th>' +
+        '<th class="px-6 py-4">渠道名称</th><th class="px-6 py-4">API 地址</th><th class="px-6 py-4">默认模型</th><th class="px-6 py-4">模型数量</th><th class="px-6 py-4">状态</th><th class="px-6 py-4 text-right">操作</th>' +
         '</tr></thead><tbody class="divide-y divide-gray-100">';
       for (const ch of channels) {
         const models = ch.model_list || [];
@@ -1455,6 +1668,7 @@ async function renderAiChannelsPage(container) {
         html += '<tr class="hover:bg-gray-50/50 transition-colors">' +
           '<td class="px-6 py-4 font-semibold text-gray-900">' + esc(ch.name) + '</td>' +
           '<td class="px-6 py-4 text-gray-600 max-w-xs truncate font-mono text-xs">' + esc(ch.api_url) + '</td>' +
+          '<td class="px-6 py-4"><span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-green-50 text-green-700 border border-green-200">' + (ch.default_model ? '⭐ ' + esc(ch.default_model) : '<span class="text-gray-400">未设置</span>') + '</span></td>' +
           '<td class="px-6 py-4 text-gray-600">' + models.length + ' 个</td>' +
           '<td class="px-6 py-4">' + defBadge + '</td>' +
           '<td class="px-6 py-4 text-right space-x-3">' +
@@ -1477,16 +1691,21 @@ async function renderAiChannelsPage(container) {
 
   function showChannelModal(id, channel) {
     const isEdit = !!id;
-    const ch = channel || { name:'', api_url:'', api_key:'', model_list:[], is_default:0 };
+    const ch = channel || { name:'', api_url:'', api_key:'', model_list:[], default_model:'', is_default:0 };
     let models = [...(ch.model_list || [])];
+    let defaultModel = ch.default_model || '';
 
     function renderModelTags() {
       if (models.length === 0) return '<span class="text-xs text-gray-400">暂无模型，请在下方添加</span>';
       let s = '';
       for (const m of models) {
-        s += '<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">' +
-          esc(m) +
-          '<a href="javascript:void(0)" onclick="window._aiChRemoveModel(\'' + m.replace(/'/g, "\'") + '\')" class="text-blue-500 hover:text-red-500 ml-0.5 text-sm leading-none">&times;</a>' +
+        const isDef = (m === defaultModel);
+        const bg = isDef ? 'background:#dcfce7;color:#166534;border-color:#86efac;' : 'background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe;';
+        const star = isDef ? '⭐ ' : '';
+        const title = isDef ? '当前默认模型' : '点击设为默认模型';
+        s += '<span style="' + bg + 'border-width:1px;border-style:solid;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="' + title + '" onclick="window._aiChSetDefaultModel(\'' + m.replace(/'/g, "\\'") + '\')">' +
+          star + esc(m) +
+          '<a href="javascript:void(0)" onclick="event.stopPropagation();window._aiChRemoveModel(\'' + m.replace(/'/g, "\\'") + '\')" style="color:#94a3b8;margin-left:2px;font-size:14px;line-height:1;" onmouseover="this.style.color=\'#ef4444\'" onmouseout="this.style.color=\'#94a3b8\'">&times;</a>' +
         '</span> ';
       }
       return s;
@@ -1513,19 +1732,23 @@ async function renderAiChannelsPage(container) {
           '<div id="modelTags" class="flex flex-wrap gap-1.5 mb-3 p-3 bg-gray-50 rounded-xl min-h-[42px]">' + renderModelTags() + '</div>' +
           '<div class="flex gap-2"><input type="text" id="newModelInput" placeholder="输入模型名称，如 gpt-4o" class="flex-1 px-4 py-2 border border-gray-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green">' +
           '<button onclick="window._aiChAddModel()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 text-sm font-medium transition">添加</button></div>' +
-          '<p class="mt-1.5 text-xs text-gray-400">添加此渠道支持的模型，AI 内容生成时可选择指定模型</p></div>' +
+          '<p class="mt-1.5 text-xs text-gray-400">点击模型名称可设为默认模型（⭐ 标记），AI 生成内容时将使用默认模型</p></div>' +
         '<div class="flex items-center gap-3 pt-2"><input type="checkbox" id="aiChDefault" ' + (ch.is_default ? 'checked' : '') + ' class="w-4 h-4 text-zsts-green border-gray-300 rounded focus:ring-zsts-green accent-zsts-green">' +
           '<label for="aiChDefault" class="text-sm text-gray-700 font-medium">设为默认渠道</label></div>' +
       '</div>' +
       '<div class="flex justify-end gap-3 mt-8 pt-5 border-t border-gray-100">' +
         '<button onclick="document.getElementById(\'aiChModal\').remove()" class="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 text-sm font-medium transition">取消</button>' +
-        '<button onclick="window._aiChSave(' + (id || 'null') + ')" class="px-5 py-2.5 bg-zsts-green text-white rounded-xl hover:bg-green-700 text-sm font-semibold shadow-sm transition">保存</button>' +
+        '<button onclick="window._aiChSave(' + (id || 'null') + ')" style="padding:10px 22px;background:#006341;color:#fff;border:none;border-radius:12px;cursor:pointer;font-size:14px;font-weight:600;box-shadow:0 2px 8px rgba(0,99,65,.2);" onmouseover="this.style.background=\'#004d33\'" onmouseout="this.style.background=\'#006341\'">保存</button>' +
       '</div></div>';
 
     document.querySelectorAll('.fixed.inset-0.z-50').forEach(el => el.remove());
     document.body.appendChild(modal);
 
-    window._aiChToggleKey = () => { window._aiChShowKey = !window._aiChShowKey; showChannelModal(id, Object.assign({}, ch, { model_list: models })); };
+    window._aiChToggleKey = () => { window._aiChShowKey = !window._aiChShowKey; showChannelModal(id, Object.assign({}, ch, { model_list: models, default_model: defaultModel })); };
+    window._aiChSetDefaultModel = (modelName) => {
+      defaultModel = (defaultModel === modelName) ? '' : modelName;
+      document.getElementById('modelTags').innerHTML = renderModelTags();
+    };
     window._aiChAddModel = () => {
       const input = document.getElementById('newModelInput');
       const val = input.value.trim();
@@ -1538,6 +1761,7 @@ async function renderAiChannelsPage(container) {
     };
     window._aiChRemoveModel = (modelName) => {
       models = models.filter(m => m !== modelName);
+      if (defaultModel === modelName) defaultModel = '';
       document.getElementById('modelTags').innerHTML = renderModelTags();
     };
     window._aiChSave = async (saveId) => {
@@ -1546,12 +1770,13 @@ async function renderAiChannelsPage(container) {
       const api_key = document.getElementById('aiChKey').value.trim();
       const is_default = document.getElementById('aiChDefault').checked;
       if (!name || !api_url) { alert('渠道名称和 API 地址不能为空'); return; }
+      if (models.length > 0 && !defaultModel) { alert('请从模型列表中点击选择一个默认模型'); return; }
       try {
         if (saveId) {
-          await saveChannel({ name, api_url, api_key, model_list: models }, saveId);
+          await saveChannel({ name, api_url, api_key, model_list: models, default_model: defaultModel }, saveId);
           if (is_default) await setDefault(saveId);
         } else {
-          const result = await saveChannel({ name, api_url, api_key, model_list: models });
+          const result = await saveChannel({ name, api_url, api_key, model_list: models, default_model: defaultModel });
           if (is_default) await setDefault(result.id);
         }
         modal.remove();
@@ -1564,4 +1789,90 @@ async function renderAiChannelsPage(container) {
   }
 
   await renderList();
+}
+
+// ══════════════════════════════════════════════
+//  微信公众号配置页面
+// ══════════════════════════════════════════════
+async function renderWechatConfigPage(container) {
+  const API = window.API || '/api';
+  container.innerHTML = '<div class="bg-white rounded-xl p-8 text-center text-gray-400">加载中...</div>';
+
+  let config = { app_id: '', app_secret: '' };
+  try {
+    const r = await fetch(API + '/wechat-config', {
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('cms_token') }
+    });
+    if (r.ok) config = await r.json();
+  } catch(e) { /* ignore */ }
+
+  container.innerHTML = `
+    <div class="max-w-2xl mx-auto">
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">💬 微信公众号配置</h1>
+        <p class="text-sm text-gray-500 mt-1">配置微信公众号的 AppID 和 AppSecret，用于将 AI 生成的文章推送到微信草稿箱</p>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+        <div class="space-y-6">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">AppID（应用ID）</label>
+            <input type="text" id="wcAppId" value="${esc(config.app_id || '')}" placeholder="wx1234567890abcdef" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green outline-none transition font-mono">
+            <p class="mt-1.5 text-xs text-gray-400">在微信公众平台 → 设置与开发 → 基本配置中获取</p>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">AppSecret（应用密钥）</label>
+            <div class="relative">
+              <input type="${window._wcShowSecret ? 'text' : 'password'}" id="wcAppSecret" value="${esc(config.app_secret || '')}" placeholder="••••••••••••••••" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green outline-none transition pr-16 font-mono">
+              <button type="button" onclick="window._wcToggleSecret()" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded">${window._wcShowSecret ? '隐藏' : '显示'}</button>
+            </div>
+            <p class="mt-1.5 text-xs text-gray-400">生成后请妥善保存，公众平台不再显示完整密钥</p>
+          </div>
+          <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <p class="text-sm text-amber-800 font-medium">⚠️ 注意事项</p>
+            <ul class="text-xs text-amber-700 mt-2 space-y-1">
+              <li>· 确保公众号已认证（服务号或订阅号均可）</li>
+              <li>· 需在公众平台 IP 白名单中添加本服务器 IP</li>
+              <li>· AppSecret 泄露后需及时在公众平台重置</li>
+            </ul>
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 mt-8 pt-5 border-t border-gray-100">
+          <button id="wcSaveBtn" onclick="window._wcSave()" style="padding:10px 22px;background:#006341;color:#fff;border:none;border-radius:12px;cursor:pointer;font-size:14px;font-weight:600;box-shadow:0 2px 8px rgba(0,99,65,.2);" onmouseover="this.style.background='#004d33'" onmouseout="this.style.background='#006341'">保存配置</button>
+        </div>
+      </div>
+    </div>`;
+
+  window._wcToggleSecret = () => {
+    window._wcShowSecret = !window._wcShowSecret;
+    renderWechatConfigPage(container);
+  };
+
+  window._wcSave = async () => {
+    const app_id = document.getElementById('wcAppId').value.trim();
+    const app_secret = document.getElementById('wcAppSecret').value.trim();
+    if (!app_id || !app_secret) { showToast('❌ AppID 和 AppSecret 不能为空', 'error'); return; }
+
+    const btn = document.getElementById('wcSaveBtn');
+    btn.textContent = '保存中...';
+    btn.disabled = true;
+
+    try {
+      const r = await fetch(API + '/wechat-config', {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'Bearer ' + localStorage.getItem('cms_token'),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ app_id, app_secret })
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || '保存失败');
+      showToast('✅ 微信公众号配置已保存', 'success');
+    } catch(e) {
+      showToast('❌ ' + e.message, 'error');
+    }
+
+    btn.textContent = '保存配置';
+    btn.disabled = false;
+  };
 }

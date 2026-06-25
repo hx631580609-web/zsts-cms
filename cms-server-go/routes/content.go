@@ -20,6 +20,7 @@ var (
 var validPageKeys = map[string]bool{
 	"home": true, "about": true, "visa": true, "saudi-visa": true,
 	"enterprise": true, "transport": true, "insurance": true, "inspection": true,
+	"saudi-news": true,
 }
 
 // 全局配置 key

@@ -82,6 +82,7 @@ func main() {
 		routes.RegisterContentRoutes(api)
 		routes.RegisterLogRoutes(api)
 		routes.RegisterAIChannelRoutes(api)
+		routes.RegisterWechatRoutes(api)
 	}
 
 	// ── 页面快照 ─────────────────────────────────────

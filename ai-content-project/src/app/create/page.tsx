@@ -46,10 +46,10 @@ interface ChatMessage {
 }
 
 const QUICK_PROMPTS = [
-  { icon: <Link2 className="size-3.5" />, label: '读取链接内容', prompt: '帮我读取这篇文章的内容并优化成签证攻略风格：https://mp.weixin.qq.com/s/example' },
-  { icon: <FileUp className="size-3.5" />, label: '识别文件内容', prompt: '我上传了一份沙特签证材料清单的图片，请识别内容并整理成结构化清单' },
-  { icon: <Wand2 className="size-3.5" />, label: 'AI 生成文章', prompt: '请帮我写一篇关于"2026年沙特商务签证最新办理指南"的攻略文章，1500字左右' },
-  { icon: <ClipboardPaste className="size-3.5" />, label: '优化粘贴内容', prompt: '我粘贴了一段签证政策说明，请帮我改成更口语化、适合小红书发布的风格' },
+  { icon: <Link2 className="size-3.5" />, label: '读取链接内容', prompt: '帮我读取这篇文章的内容并优化成专业攻略风格：https://mp.weixin.qq.com/s/example' },
+  { icon: <FileUp className="size-3.5" />, label: '识别文件内容', prompt: '我上传了一份文件图片，请识别内容并整理成结构化清单' },
+  { icon: <Wand2 className="size-3.5" />, label: 'AI 生成文章', prompt: '请帮我写一篇关于“2026年沙特商务签证最新办理指南”的攻略文章，1500字左右' },
+  { icon: <ClipboardPaste className="size-3.5" />, label: '优化粘贴内容', prompt: '我粘贴了一段内容，请帮我改成更口语化、适合社交媒体发布的风格' },
 ];
 
 function generateId(): string {
@@ -72,9 +72,9 @@ function CreateContentInner() {
     const tab = searchParams.get('tab');
     const prompts: Record<string, string> = {
       url: '帮我读取这篇文章的内容并优化：https://mp.weixin.qq.com/s/example',
-      file: '我上传了一份沙特签证材料清单的图片，请识别并整理成清单格式',
-      ai: '请帮我写一篇关于"2026年沙特商务签证最新办理指南"的攻略文章',
-      paste: '我有一段签证政策说明需要优化，请帮我改成口语化风格',
+      file: '我上传了一份文件图片，请识别并整理成清单格式',
+      ai: '请帮我写一篇关于“2026年沙特商务签证最新办理指南”的攻略文章',
+      paste: '我有一段内容需要优化，请帮我改成口语化风格',
     };
     if (tab && prompts[tab]) {
       setInput(prompts[tab]);
@@ -373,7 +373,53 @@ function CreateContentInner() {
     };
   };
 
-  const handleSend = () => {
+  // ── 从 AI 回复中解析结构化数据的辅助函数 ──
+
+  function extractTitle(content: string, userInput: string): string {
+    // 尝试从内容中提取标题（第一行或# 开头的行）
+    const lines = content.split('\n').filter(l => l.trim());
+    for (const line of lines.slice(0, 5)) {
+      const match = line.match(/^#+\s+(.+)/);
+      if (match) return match[1].trim().substring(0, 80);
+      if (line.startsWith('标题：') || line.startsWith('标题:')) return line.replace(/^标题[：:]/, '').trim();
+    }
+    // 回退：用用户输入的前30字符
+    return lines[0]?.substring(0, 80) || userInput.substring(0, 30);
+  }
+
+  function extractSummary(content: string): string {
+    // 取前 150 字符作为摘要
+    const clean = content.replace(/^#+ .+\n/, '').replace(/\n{2,}/g, '\n').trim();
+    return clean.substring(0, 150) + (clean.length > 150 ? '...' : '');
+  }
+
+  function extractTags(content: string): string[] {
+    const tags: string[] = [];
+    // 尝试从内容中提取标签
+    const tagMatch = content.match(/(?:标签|关键字|tags)[：:]/i);
+    if (tagMatch) {
+      const idx = content.indexOf(tagMatch[0]) + tagMatch[0].length;
+      const tagLine = content.substring(idx, idx + 200).split('\n')[0];
+      const parsed = tagLine.split(/[,，、;\s]+/).filter(t => t.length > 0 && t.length < 20);
+      if (parsed.length > 0) return parsed.slice(0, 5);
+    }
+    // 回退：从内容中提取关键词
+    const keywords = ['沙特', '签证', '商务', '旅行', '攻略', '指南', '政策', '办理', '中东', '材料'];
+    for (const kw of keywords) {
+      if (content.includes(kw) && tags.length < 4) tags.push(kw);
+    }
+    return tags.length > 0 ? tags : ['AI生成'];
+  }
+
+  function detectSource(userInput: string): string {
+    const lower = userInput.toLowerCase();
+    if (lower.includes('http') || lower.includes('链接') || lower.includes('读取')) return '链接读取';
+    if (lower.includes('上传') || lower.includes('识别') || lower.includes('文件') || lower.includes('图片') || lower.includes('ocr')) return '文件识别';
+    if (lower.includes('写') || lower.includes('生成') || lower.includes('文章') || lower.includes('攻略') || lower.includes('指南')) return 'AI生成';
+    return '人工粘贴';
+  }
+
+  const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
     const userMessage: ChatMessage = {
@@ -384,14 +430,68 @@ function CreateContentInner() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const userInput = input.trim();
     setInput('');
     setIsLoading(true);
 
-    setTimeout(() => {
-      const response = simulateAiResponse(userMessage.content, contentType, posterPageCount);
-      setMessages((prev) => [...prev, response]);
-      setIsLoading(false);
-    }, 1500 + Math.random() * 1500);
+    try {
+      // 从 localStorage 读取用户 CMS token，用于鉴权访问 AI 渠道配置
+      const cmsToken = typeof window !== 'undefined' ? localStorage.getItem('cms_token') || '' : '';
+      const res = await fetch('/ai-content/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userInput, contentType, token: cmsToken }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        // 内容安全拦截或接口错误，显示友好提示
+        const errorResponse: ChatMessage = {
+          id: generateId(),
+          role: 'assistant',
+          content: data.content || data.error || '生成失败，请重试',
+          timestamp: Date.now(),
+          type: 'text',
+        };
+        setMessages((prev) => [...prev, errorResponse]);
+        setIsLoading(false);
+        return;
+      }
+
+      // 从 AI 回复中解析结构化结果
+      const aiContent: string = data.content || '';
+      const title = extractTitle(aiContent, userInput);
+      const summary = extractSummary(aiContent);
+      const tags = extractTags(aiContent);
+      const source = detectSource(userInput);
+
+      const aiResponse: ChatMessage = {
+        id: generateId(),
+        role: 'assistant',
+        content: aiContent,
+        timestamp: Date.now(),
+        type: 'result',
+        contentType: contentType,
+        resultData: {
+          title,
+          summary,
+          tags,
+          source,
+          wordCount: aiContent.length,
+          pageCount: contentType === 'poster' ? posterPageCount : 6,
+          ratio: '9:16',
+        },
+      };
+      setMessages((prev) => [...prev, aiResponse]);
+    } catch (err) {
+      // 网络错误，回退到模拟响应
+      console.warn('[handleSend] API 调用失败，回退到模拟模式', err);
+      const fallback = simulateAiResponse(userInput, contentType, posterPageCount);
+      setMessages((prev) => [...prev, fallback]);
+    }
+
+    setIsLoading(false);
   };
 
   const handleQuickPrompt = (prompt: string) => {

@@ -23,6 +23,7 @@
       'transport': 'transport',
       'insurance': 'insurance',
       'inspection': 'inspection',
+      'news': 'saudi-news',
     };
     return FILE_TO_KEY[file] || file;
   }

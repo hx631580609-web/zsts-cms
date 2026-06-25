@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <script>window.CMS_PREVIEW=1;
-window.CMS_PAGE_KEY='news';</script>
+window.CMS_PAGE_KEY='saudi-news';</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-i18n="page.title">沙特资讯 | 中盛启瀚 ZSTS</title>
@@ -569,6 +569,8 @@ window.CMS_PAGE_KEY='news';</script>
             renderTags();
             applyCtaVisibility();
             if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
+            // 动态创建的元素需手动触发 fade-in 可见
+            document.querySelectorAll('.fade-in-section').forEach(function(el) { el.classList.add('visible'); });
         }
         window.newsRenderAll = newsRenderAll;
         window.applyCtaVisibility = applyCtaVisibility;

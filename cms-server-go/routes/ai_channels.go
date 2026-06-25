@@ -25,7 +25,7 @@ func RegisterAIChannelRoutes(r *gin.RouterGroup) {
 
 // listChannels GET /api/ai-channels
 func listChannels(c *gin.Context) {
-	rows, err := db.DB.Query("SELECT id, name, api_url, api_key, model_list, is_default, created_at, created_by FROM ai_channels ORDER BY id")
+	rows, err := db.DB.Query("SELECT id, name, api_url, api_key, model_list, default_model, is_default, created_at, created_by FROM ai_channels ORDER BY id")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -35,7 +35,7 @@ func listChannels(c *gin.Context) {
 	var result []models.AIChannel
 	for rows.Next() {
 		var r models.AIChannelRow
-		if err := rows.Scan(&r.ID, &r.Name, &r.ApiURL, &r.ApiKey, &r.ModelList, &r.IsDefault, &r.CreatedAt, &r.CreatedBy); err != nil {
+		if err := rows.Scan(&r.ID, &r.Name, &r.ApiURL, &r.ApiKey, &r.ModelList, &r.DefaultModel, &r.IsDefault, &r.CreatedAt, &r.CreatedBy); err != nil {
 			continue
 		}
 
@@ -49,14 +49,15 @@ func listChannels(c *gin.Context) {
 		}
 
 		result = append(result, models.AIChannel{
-			ID:        r.ID,
-			Name:      r.Name,
-			ApiURL:    r.ApiURL,
-			ApiKey:    r.ApiKey,
-			ModelList: modelList,
-			IsDefault: r.IsDefault == 1,
-			CreatedAt: r.CreatedAt,
-			CreatedBy: r.CreatedBy,
+			ID:           r.ID,
+			Name:         r.Name,
+			ApiURL:       r.ApiURL,
+			ApiKey:       r.ApiKey,
+			ModelList:    modelList,
+			DefaultModel: r.DefaultModel,
+			IsDefault:    r.IsDefault == 1,
+			CreatedAt:    r.CreatedAt,
+			CreatedBy:    r.CreatedBy,
 		})
 	}
 
@@ -89,8 +90,8 @@ func createChannel(c *gin.Context) {
 	uid, _ := userID.(int64)
 
 	result, err := db.DB.Exec(
-		"INSERT INTO ai_channels (name, api_url, api_key, model_list, created_by) VALUES (?, ?, ?, ?, ?)",
-		req.Name, req.ApiURL, apiKey, string(modelListJSON), uid,
+		"INSERT INTO ai_channels (name, api_url, api_key, model_list, default_model, created_by) VALUES (?, ?, ?, ?, ?, ?)",
+		req.Name, req.ApiURL, apiKey, string(modelListJSON), req.DefaultModel, uid,
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -117,8 +118,8 @@ func updateChannel(c *gin.Context) {
 	}
 
 	_, err := db.DB.Exec(
-		"UPDATE ai_channels SET name = ?, api_url = ?, api_key = ?, model_list = ? WHERE id = ?",
-		req.Name, req.ApiURL, apiKey, string(modelListJSON), c.Param("id"),
+		"UPDATE ai_channels SET name = ?, api_url = ?, api_key = ?, model_list = ?, default_model = ? WHERE id = ?",
+		req.Name, req.ApiURL, apiKey, string(modelListJSON), req.DefaultModel, c.Param("id"),
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

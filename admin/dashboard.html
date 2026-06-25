@@ -185,8 +185,10 @@ const MENU_CONFIG = {
       { key:'inspection', label:'企业考察',      icon:'🔍' },
       { key:'about',      label:'关于我们',      icon:'ℹ️' },
     ]},
+    { key:'saudi-news',  label:'沙特资讯',   icon:'📰' },
     { key:'users',       label:'账号管理',   icon:'👤' },
     { key:'ai-channels', label:'AI渠道配置', icon:'🤖' },
+    { key:'wechat',      label:'微信公众号', icon:'💬' },
     { key:'ai-content', label:'AI内容生成', icon:'✨' },
     { key:'logs',        label:'操作日志',   icon:'📋' },
   ],
@@ -343,6 +345,16 @@ async function loadPage(pageKey) {
       return;
     }
 
+    //  沙特资讯文章管理
+    if (pageKey === 'saudi-news') {
+      if (typeof renderSaudiNewsPage === 'function') {
+        renderSaudiNewsPage(container);
+      } else {
+        container.innerHTML = '<div class="bg-red-50 p-4 rounded text-red-600">错误：renderSaudiNewsPage 函数未定义</div>';
+      }
+      return;
+    }
+
     //  账号管理
     if (pageKey === 'users' && currentUser.role === 'super_admin') {
       if (typeof renderUsersPage === 'function') {
@@ -356,6 +368,16 @@ async function loadPage(pageKey) {
     //  AI 渠道配置
     if (pageKey === 'ai-channels' && currentUser.role === 'super_admin') {
       renderAiChannelsPage(container);
+      return;
+    }
+
+    //  微信公众号配置
+    if (pageKey === 'wechat' && currentUser.role === 'super_admin') {
+      if (typeof renderWechatConfigPage === 'function') {
+        renderWechatConfigPage(container);
+      } else {
+        container.innerHTML = '<div class="bg-red-50 p-4 rounded text-red-600">错误：renderWechatConfigPage 函数未定义</div>';
+      }
       return;
     }
 

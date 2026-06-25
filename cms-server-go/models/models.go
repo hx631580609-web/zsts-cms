@@ -32,26 +32,28 @@ type AuditLog struct {
 
 // AIChannel AI 渠道配置
 type AIChannel struct {
-	ID        int64     `json:"id"`
-	Name      string    `json:"name"`
-	ApiURL    string    `json:"api_url"`
-	ApiKey    string    `json:"api_key,omitempty"`
-	ModelList []string  `json:"model_list"`
-	IsDefault bool      `json:"is_default"`
-	CreatedAt time.Time `json:"created_at"`
-	CreatedBy *int64    `json:"created_by,omitempty"`
+	ID           int64     `json:"id"`
+	Name         string    `json:"name"`
+	ApiURL       string    `json:"api_url"`
+	ApiKey       string    `json:"api_key,omitempty"`
+	ModelList    []string  `json:"model_list"`
+	DefaultModel string    `json:"default_model"`
+	IsDefault    bool      `json:"is_default"`
+	CreatedAt    time.Time `json:"created_at"`
+	CreatedBy    *int64    `json:"created_by,omitempty"`
 }
 
 // AIChannelRow 数据库行（model_list 为 JSON 字符串）
 type AIChannelRow struct {
-	ID        int64     `json:"id"`
-	Name      string    `json:"name"`
-	ApiURL    string    `json:"api_url"`
-	ApiKey    string    `json:"api_key"`
-	ModelList string    `json:"model_list"`
-	IsDefault int       `json:"is_default"`
-	CreatedAt time.Time `json:"created_at"`
-	CreatedBy *int64    `json:"created_by"`
+	ID           int64     `json:"id"`
+	Name         string    `json:"name"`
+	ApiURL       string    `json:"api_url"`
+	ApiKey       string    `json:"api_key"`
+	ModelList    string    `json:"model_list"`
+	DefaultModel string    `json:"default_model"`
+	IsDefault    int       `json:"is_default"`
+	CreatedAt    time.Time `json:"created_at"`
+	CreatedBy    *int64    `json:"created_by"`
 }
 
 // LoginRequest 登录请求
@@ -96,10 +98,11 @@ type UpdatePermissionsRequest struct {
 
 // AIChannelRequest 创建/更新 AI 渠道请求
 type AIChannelRequest struct {
-	Name      string   `json:"name"`
-	ApiURL    string   `json:"api_url"`
-	ApiKey    string   `json:"api_key"`
-	ModelList []string `json:"model_list"`
+	Name         string   `json:"name"`
+	ApiURL       string   `json:"api_url"`
+	ApiKey       string   `json:"api_key"`
+	ModelList    []string `json:"model_list"`
+	DefaultModel string   `json:"default_model"`
 }
 
 // LogQueryParams 日志查询参数
@@ -125,4 +128,27 @@ type PageSnapshot struct {
 	HTMLFile string                 `json:"htmlFile"`
 	Count    int                    `json:"count"`
 	Snapshot map[string]interface{} `json:"snapshot"`
+}
+
+// WechatConfig 微信公众号配置（单行记录）
+type WechatConfig struct {
+	ID        int64     `json:"id"`
+	AppID     string    `json:"app_id"`
+	AppSecret string    `json:"app_secret"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// WechatConfigRequest 更新微信公众号配置请求
+type WechatConfigRequest struct {
+	AppID     string `json:"app_id"`
+	AppSecret string `json:"app_secret"`
+}
+
+// WechatDraftRequest 推送微信草稿箱请求
+type WechatDraftRequest struct {
+	Title   string `json:"title" binding:"required"`
+	Author  string `json:"author"`
+	Content string `json:"content" binding:"required"`
+	Digest  string `json:"digest"`
+	Thumb   string `json:"thumb_media_id"`
 }

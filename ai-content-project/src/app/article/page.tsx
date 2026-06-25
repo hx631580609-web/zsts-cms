@@ -210,6 +210,8 @@ function ArticleEditorInner() {
   const [copied, setCopied] = useState(false);
   const [published, setPublished] = useState(false);
   const [distribution, setDistribution] = useState<{ cms: boolean; wechat: boolean }>({ cms: false, wechat: false });
+  const [publishing, setPublishing] = useState(false);
+  const [publishMessage, setPublishMessage] = useState('');
   const [coverImage, setCoverImage] = useState('https://images.pexels.com/photos/3727464/pexels-photo-3727464.jpeg?w=800&h=360&fit=crop');
   const [imagePickerTarget, setImagePickerTarget] = useState<{ blockId?: string; isCover?: boolean } | null>(null);
   const [imagePickerTab, setImagePickerTab] = useState<'pexels' | 'upload'>('pexels');
@@ -269,6 +271,115 @@ function ArticleEditorInner() {
   const toggleDistribution = (channel: 'cms' | 'wechat') => {
     setDistribution(prev => ({ ...prev, [channel]: !prev[channel] }));
   };
+
+  /* ── 发布到沙特资讯 ── */
+  function blocksToHtml(blocks: ContentBlock[]) {
+    return blocks.map(b => {
+      switch (b.type) {
+        case 'heading':
+          return `<h2>${escapeHtml(b.content)}</h2>`;
+        case 'paragraph':
+          return `<p>${escapeHtml(b.content)}</p>`;
+        case 'image':
+          return `<figure><img src="${escapeHtml(b.content)}" alt="${escapeHtml(b.imageDesc || '')}" class="w-full rounded-xl" /><figcaption>${escapeHtml(b.imageDesc || '')}</figcaption></figure>`;
+        case 'list':
+          return `${b.content ? `<p><strong>${escapeHtml(b.content)}</strong></p>` : ''}<ul>${(b.items || []).map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>`;
+        case 'table':
+          return `<table class="w-full text-sm border"><tbody>${(b.rows || []).map((r, ri) => `<tr${ri === 0 ? ' class="bg-zinc-800 text-white"' : ''}>${r.map(c => `<td class="border px-3 py-2">${escapeHtml(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+        case 'tip':
+          return `<div class="tip"><strong>提示：</strong>${escapeHtml(b.content)}</div>`;
+        case 'quote':
+          return `<blockquote>${escapeHtml(b.content)}</blockquote>`;
+        default:
+          return '';
+      }
+    }).join('\n');
+  }
+
+  function escapeHtml(str: string) {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  async function handlePublish() {
+    handleSave();
+    setPublishMessage('');
+
+    if (!distribution.cms && !distribution.wechat) {
+      setPublished(true);
+      return;
+    }
+
+    if (distribution.cms) {
+      setPublishing(true);
+      try {
+        const firstTag = tags.split('、')[0]?.trim() || '沙特资讯';
+        const contentHtml = blocksToHtml(blocks);
+        const res = await fetch('/ai-content/api/publish-to-news', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title,
+            desc: summary || title,
+            image: coverImage,
+            imageAlt: title,
+            tag: firstTag,
+            tagColor: 'green',
+            category: 'visa',
+            author: 'ZSTS签证通',
+            content: contentHtml,
+          }),
+        });
+        const result = await res.json();
+        if (result.success) {
+          setPublished(true);
+          setPublishMessage('已发布到沙特资讯');
+        } else {
+          setPublishMessage(result.error || '发布失败');
+        }
+      } catch (e) {
+        setPublishMessage('网络错误，发布失败');
+      } finally {
+        setPublishing(false);
+      }
+    }
+
+    if (distribution.wechat) {
+      setPublishing(true);
+      try {
+        const contentHtml = blocksToHtml(blocks);
+        const res = await fetch('/api/wechat/draft', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + (typeof window !== 'undefined' ? localStorage.getItem('cms_token') || '' : ''),
+          },
+          body: JSON.stringify({
+            title,
+            author: 'ZSTS签证通',
+            content: contentHtml,
+            digest: summary || title,
+            thumb_media_id: coverImage,
+          }),
+        });
+        const result = await res.json();
+        if (result.success) {
+          setPublished(true);
+          setPublishMessage(prev => (prev ? prev + ' | ' : '') + '已推送到微信草稿箱');
+        } else {
+          setPublishMessage(prev => (prev ? prev + ' | ' : '') + (result.error || '微信推送失败'));
+        }
+      } catch (e) {
+        setPublishMessage(prev => (prev ? prev + ' | ' : '') + '微信推送网络错误');
+      } finally {
+        setPublishing(false);
+      }
+    }
+  }
 
   /* ── 图片选择器 ── */
   const openImagePicker = (target: { blockId?: string; isCover?: boolean }) => {
@@ -861,6 +972,12 @@ function ArticleEditorInner() {
             </div>
           </div>
 
+          {publishMessage && (
+            <div className={`mt-3 rounded-lg px-4 py-2 text-xs ${publishMessage.includes('已发布') ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+              {publishMessage}
+            </div>
+          )}
+
           {/* 底部操作 */}
           <div className="mt-4 flex items-center justify-between">
             <Link href="/create">
@@ -901,8 +1018,10 @@ function ArticleEditorInner() {
                   <><Save className="size-3.5" />保存文章</>
                 )}
               </Button>
-              <Button size="sm" className="gap-1.5" onClick={() => { handleSave(); setPublished(true); }}>
-                {published ? (
+              <Button size="sm" className="gap-1.5" onClick={handlePublish} disabled={publishing}>
+                {publishing ? (
+                  <><Loader2 className="size-3.5 animate-spin" />发布中</>
+                ) : published ? (
                   <><Check className="size-3.5" />已发布</>
                 ) : (
                   <><Send className="size-3.5" />保存并发布</>

@@ -22,6 +22,7 @@ var htmlToPageKey = map[string]string{
 	"transport.html":  "transport",
 	"insurance.html":  "insurance",
 	"inspection.html": "inspection",
+	"news.html":       "saudi-news",
 }
 
 // InitPreview 设置项目根目录

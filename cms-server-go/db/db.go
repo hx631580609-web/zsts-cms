@@ -97,11 +97,34 @@ func createTables() {
 		api_url     VARCHAR(500) NOT NULL,
 		api_key     TEXT,
 		model_list  JSON,
+		default_model VARCHAR(255) DEFAULT '',
 		is_default  TINYINT NOT NULL DEFAULT 0,
 		created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		created_by  BIGINT UNSIGNED DEFAULT NULL,
 		FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
+
+	// 自动迁移：为已有表添加 default_model 列
+	var colCount int
+	DB.QueryRow("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ai_channels' AND COLUMN_NAME = 'default_model'").Scan(&colCount)
+	if colCount == 0 {
+		DB.Exec("ALTER TABLE ai_channels ADD COLUMN default_model VARCHAR(255) DEFAULT '' AFTER model_list")
+	}
+
+	// wechat_config 表（微信公众号配置）
+	DB.Exec(`CREATE TABLE IF NOT EXISTS wechat_config (
+		id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+		app_id      VARCHAR(100) NOT NULL DEFAULT '',
+		app_secret  VARCHAR(200) NOT NULL DEFAULT '',
+		updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
+
+	// 确保至少有一条记录
+	var wcCount int
+	DB.QueryRow("SELECT COUNT(*) FROM wechat_config").Scan(&wcCount)
+	if wcCount == 0 {
+		DB.Exec("INSERT INTO wechat_config (app_id, app_secret) VALUES ('', '')")
+	}
 }
 
 // seedAdmin 插入默认超级管理员

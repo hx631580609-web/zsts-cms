@@ -594,6 +594,71 @@
         });
     </script>
 
+    <!-- 沙特资讯文章详情动态渲染 -->
+    <script>
+    (function() {
+        function getParam(name) {
+            const url = new URL(window.location.href);
+            return url.searchParams.get(name);
+        }
+
+        function renderArticle(article) {
+            if (!article) return;
+
+            document.title = (article.title || '沙特资讯') + ' | 沙特资讯 | 中盛启瀚 ZSTS';
+
+            const titleEl = document.getElementById('article-title');
+            if (titleEl) titleEl.textContent = article.title || '';
+            const heroTitleEl = document.getElementById('hero-article-title');
+            if (heroTitleEl) heroTitleEl.textContent = article.title || '';
+            const breadcrumbTitleEl = document.getElementById('breadcrumb-title');
+            if (breadcrumbTitleEl) breadcrumbTitleEl.textContent = article.title || '';
+
+            document.querySelectorAll('#article-tag, #hero-article-tag').forEach(el => {
+                if (article.tag) el.textContent = article.tag;
+            });
+
+            document.querySelectorAll('#article-date, #hero-article-date').forEach(el => {
+                if (article.date) el.textContent = article.date;
+            });
+
+            const authorEl = document.getElementById('article-author');
+            if (authorEl && article.author) authorEl.textContent = article.author;
+
+            const heroImg = document.getElementById('article-hero-img');
+            if (heroImg && article.image) heroImg.src = article.image;
+
+            const contentZh = document.getElementById('content-zh');
+            if (contentZh && article.content) {
+                contentZh.innerHTML = article.content;
+            }
+        }
+
+        async function loadArticle() {
+            const id = getParam('id');
+            if (id === null) return;
+            try {
+                const res = await fetch('/api/content/saudi-news');
+                if (!res.ok) return;
+                const data = await res.json();
+                const items = data && data.articles && data.articles.items && data.articles.items.zh || [];
+                const idx = parseInt(id, 10);
+                if (idx >= 0 && idx < items.length) {
+                    renderArticle(items[idx]);
+                }
+            } catch (e) {
+                console.error('[Saudi News Detail] 加载文章失败:', e);
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadArticle);
+        } else {
+            loadArticle();
+        }
+    })();
+    </script>
+
     <script>
         lucide.createIcons();
 
