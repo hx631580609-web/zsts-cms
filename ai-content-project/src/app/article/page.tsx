@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -185,6 +185,184 @@ const INITIAL_BLOCKS: ContentBlock[] = [
 let _idCounter = 100;
 const genId = () => `b${++_idCounter}`;
 
+/* ── 将 AI 生成的文本解析为结构化 ContentBlock ── */
+function parseAiContentToBlocks(text: string): ContentBlock[] {
+  const blocks: ContentBlock[] = [];
+  const lines = text.split('\n');
+  let i = 0;
+
+  // 跳过开头的元信息行（如"已根据您的需求生成文章"、"标题："等）
+  while (i < lines.length) {
+    const line = lines[i].trim();
+    if (
+      !line ||
+      line.startsWith('已根据') || line.startsWith('已完成') ||
+      line.startsWith('已按') || line.startsWith('备选标题') ||
+      line.startsWith('标题：') || line.startsWith('标题:') ||
+      line.startsWith('正文：') || line.startsWith('正文:') ||
+      line.startsWith('内容已') || line.startsWith('自动摘要') ||
+      line.startsWith('建议标签') || line.startsWith('即将进入') ||
+      /^\d+\.\s/.test(line) && line.includes('标题') ||
+      line.startsWith('---') || line.startsWith('🖼️')
+    ) {
+      i++;
+      continue;
+    }
+    break;
+  }
+
+  // 如果第一行看起来像文章标题（与“标题：”后的内容相同），跳过
+  // 因为文章标题会单独显示在标题输入框中
+  if (i < lines.length) {
+    const firstLine = lines[i].trim();
+    // 如果第一行是纯标题（短且没有标点结尾），跳过作为 heading block
+    if (firstLine.length < 60 && !firstLine.endsWith('。') && !firstLine.endsWith('！') && !firstLine.endsWith('，')) {
+      // 不添加为 block，标题由编辑器标题字段处理
+      i++;
+    }
+  }
+
+  let currentListItems: string[] = [];
+  let currentListTitle = '';
+
+  const flushList = () => {
+    if (currentListItems.length > 0) {
+      blocks.push({
+        id: genId(),
+        type: 'list',
+        content: currentListTitle,
+        items: [...currentListItems],
+      });
+      currentListItems = [];
+      currentListTitle = '';
+    }
+  };
+
+  // 中文数字标题正则：一、 二、 三、 ... 十、
+  const cnNumHeading = /^[一二三四五六七八九十]+[、.．]\s*(.*)/;
+  // Markdown 标题
+  const mdHeading = /^#+\s+(.*)/;
+  // 带 emoji 的标题行
+  const emojiHeading = /^[📌📋⏰💡⚠✅🔔📝✨🌟🎯]+\s*(.*)/;
+
+  while (i < lines.length) {
+    const line = lines[i].trim();
+    i++;
+
+    if (!line) {
+      flushList();
+      continue;
+    }
+
+    // 跳过分隔线
+    if (line.startsWith('---')) {
+      flushList();
+      continue;
+    }
+
+    // 跳过元信息行
+    if (line.startsWith('自动摘要') || line.startsWith('建议标签') || line.startsWith('内容已根据')) {
+      flushList();
+      continue;
+    }
+
+    // 中文数字标题：一、xxx
+    const cnMatch = line.match(cnNumHeading);
+    if (cnMatch) {
+      flushList();
+      blocks.push({ id: genId(), type: 'heading', content: line });
+      continue;
+    }
+
+    // Markdown 标题
+    const mdMatch = line.match(mdHeading);
+    if (mdMatch) {
+      flushList();
+      blocks.push({ id: genId(), type: 'heading', content: mdMatch[1].trim() });
+      continue;
+    }
+
+    // 提示/注意类内容（⚠ 💡 开头）
+    if (/^[⚠💡🔔]/.test(line)) {
+      flushList();
+      blocks.push({ id: genId(), type: 'tip', content: line.replace(/^[⚠💡🔔]\s*/, '') });
+      continue;
+    }
+
+    // 列表项：数字编号 1. 2. 等
+    const numListItem = line.match(/^(\d+)[.、．]\s*(.*)/);
+    if (numListItem) {
+      currentListItems.push(numListItem[2]);
+      continue;
+    }
+
+    // 列表项：· 或 • 或 - 开头
+    const bulletListItem = line.match(/^[·•\-]\s*(.*)/);
+    if (bulletListItem) {
+      currentListItems.push(bulletListItem[1]);
+      continue;
+    }
+
+    // ✅ 开头的列表项
+    if (line.startsWith('✅')) {
+      currentListItems.push(line.replace(/^✅\s*/, ''));
+      continue;
+    }
+
+    // 如果上一行是列表标题（如“基本条件：”“材料清单”），当前行是列表内容
+    // 否则作为普通段落
+    flushList();
+
+    // 检查是否是列表标题行（以“：”结尾且下一行可能是列表项）
+    if (line.endsWith('：') || line.endsWith(':')) {
+      // 预看下一行是否是列表项
+      if (i < lines.length) {
+        const nextLine = lines[i]?.trim() || '';
+        if (/^(\d+[.、．]|·|•|-|✅)/.test(nextLine)) {
+          currentListTitle = line.replace(/[：:]$/, '');
+          continue;
+        }
+      }
+      // 不是列表标题，作为普通段落
+      blocks.push({ id: genId(), type: 'paragraph', content: line });
+    } else {
+      blocks.push({ id: genId(), type: 'paragraph', content: line });
+    }
+  }
+
+  flushList();
+
+  // 如果解析结果为空，回退到单个段落
+  if (blocks.length === 0 && text.trim()) {
+    blocks.push({ id: genId(), type: 'paragraph', content: text.trim().substring(0, 2000) });
+  }
+
+  return blocks;
+}
+
+/* ── 从 AI 内容中提取摘要 ── */
+function extractSummaryFromAiContent(text: string): string {
+  // 尝试从“自动摘要：”行提取
+  const summaryMatch = text.match(/自动摘要[：:]\s*(.*)/);
+  if (summaryMatch) return summaryMatch[1].trim().substring(0, 150);
+  // 回退：取正文第一段
+  const lines = text.split('\n').filter(l => l.trim());
+  for (const line of lines) {
+    const t = line.trim();
+    if (t.length > 30 && !t.startsWith('已根据') && !t.startsWith('标题') && !t.startsWith('正文') && !/^[一二三四五六七八九十]/.test(t)) {
+      return t.substring(0, 150);
+    }
+  }
+  return '';
+}
+
+/* ── 从 AI 内容中提取标签 ── */
+function extractTagsFromAiContent(text: string): string {
+  const tagMatch = text.match(/建议标签[：:]\s*(.*)/);
+  if (tagMatch) return tagMatch[1].trim();
+  return '';
+}
+
 const BLOCK_LABELS: Record<BlockType, string> = {
   heading: '标题',
   paragraph: '段落',
@@ -202,8 +380,8 @@ function ArticleEditorInner() {
   const sourceType = searchParams.get('source') || 'AI生成';
 
   const [title, setTitle] = useState(sourceTitle || '2026年沙特商务签证最新办理指南');
-  const [summary, setSummary] = useState('全面介绍沙特商务签证的申请条件、所需材料、办理流程及注意事项，帮助商务人士高效完成签证申请。');
-  const [tags, setTags] = useState('沙特、商务签证、2026、攻略');
+  const [summary, setSummary] = useState('');
+  const [tags, setTags] = useState('');
   const [blocks, setBlocks] = useState<ContentBlock[]>(INITIAL_BLOCKS);
   const [mode, setMode] = useState<'edit' | 'preview'>('edit');
   const [saved, setSaved] = useState(false);
@@ -218,6 +396,41 @@ function ArticleEditorInner() {
   const [imagePickerQuery, setImagePickerQuery] = useState('');
   const [imagePickerLoading, setImagePickerLoading] = useState(false);
   const [pexelsResults, setPexelsResults] = useState<{ url: string; desc: string }[]>([]);
+  const [articleId, setArticleId] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  // 从 sessionStorage 读取 AI 生成内容并解析为结构化 blocks
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('ai_result');
+      if (raw) {
+        const result = JSON.parse(raw);
+        const aiContent: string = result.content || '';
+        if (aiContent) {
+          const parsedBlocks = parseAiContentToBlocks(aiContent);
+          if (parsedBlocks.length > 0) {
+            setBlocks(parsedBlocks);
+          }
+          if (result.title) setTitle(result.title);
+          if (result.summary) {
+            setSummary(result.summary);
+          } else {
+            setSummary(extractSummaryFromAiContent(aiContent));
+          }
+          if (result.tags && Array.isArray(result.tags)) {
+            setTags(result.tags.join('、'));
+          } else {
+            const extracted = extractTagsFromAiContent(aiContent);
+            if (extracted) setTags(extracted);
+          }
+        }
+        // 读取后清除，避免下次进入时重复使用
+        sessionStorage.removeItem('ai_result');
+      }
+    } catch {
+      // 静默降级，使用默认内容
+    }
+  }, []);
 
   const totalWords = blocks.reduce((acc, b) => {
     if (b.type === 'heading' || b.type === 'paragraph' || b.type === 'tip' || b.type === 'quote') return acc + b.content.length;
@@ -263,9 +476,50 @@ function ArticleEditorInner() {
     setBlocks(newBlocks);
   };
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const contentJson = JSON.stringify(blocks);
+      const contentHtml = blocksToHtml(blocks);
+      const wordCount = totalWords;
+
+      const payload = {
+        title,
+        summary,
+        tags,
+        cover_image: coverImage,
+        content: contentJson,
+        content_html: contentHtml,
+        source: sourceType,
+        word_count: wordCount,
+      };
+
+      const token = typeof window !== 'undefined' ? localStorage.getItem('cms_token') || '' : '';
+      const url = articleId
+        ? `/api/articles/${articleId}`
+        : '/api/articles';
+      const method = articleId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await res.json();
+      if (result.id && !articleId) {
+        setArticleId(result.id);
+      }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      console.error('保存失败:', e);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const toggleDistribution = (channel: 'cms' | 'wechat') => {
@@ -774,8 +1028,10 @@ function ArticleEditorInner() {
                 预览
               </button>
             </div>
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={handleSave}>
-              {saved ? (
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={handleSave} disabled={saving}>
+              {saving ? (
+                <><Loader2 className="size-3.5 animate-spin" />保存中...</>
+              ) : saved ? (
                 <><Check className="size-3.5 text-emerald-600" />已保存</>
               ) : (
                 <><Save className="size-3.5" />保存</>
@@ -1011,8 +1267,10 @@ function ArticleEditorInner() {
                 {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
                 {copied ? '已复制' : '复制图文'}
               </Button>
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={handleSave}>
-                {saved ? (
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={handleSave} disabled={saving}>
+                {saving ? (
+                  <><Loader2 className="size-3.5 animate-spin" />保存中...</>
+                ) : saved ? (
                   <><Check className="size-3.5" />已保存</>
                 ) : (
                   <><Save className="size-3.5" />保存文章</>

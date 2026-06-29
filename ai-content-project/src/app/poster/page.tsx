@@ -165,6 +165,7 @@ interface InnerPageData {
   title: string;
   bgId: string;
   customBgUrl: string;
+  imageDesc: string;
   sections: Section[];
 }
 
@@ -173,6 +174,7 @@ function defaultInnerPage(): InnerPageData {
     title: '办理流程 & 材料清单',
     bgId: 'desert-dunes',
     customBgUrl: '',
+    imageDesc: '',
     sections: [
       {
         heading: '所需材料',
@@ -228,24 +230,71 @@ function PosterEditorInner() {
     Array.from({ length: numInnerPages }, () => defaultInnerPage()),
   );
 
-  // 从 chatbot 读取预排版数据
+  // 从 chatbot 读取预排版数据 + AI 生成结果
   useEffect(() => {
     try {
+      // 读取 AI 完整结果（由 create 页面存入）
+      const aiResultRaw = sessionStorage.getItem('ai_result');
+      let aiResult: { content?: string; title?: string; summary?: string; tags?: string[]; source?: string; slogan?: string } | null = null;
+      if (aiResultRaw) {
+        aiResult = JSON.parse(aiResultRaw);
+        sessionStorage.removeItem('ai_result');
+      }
+
+      // 读取海报分页数据
       const pagesJson = sessionStorage.getItem('poster_pages');
       const storedTitle = sessionStorage.getItem('poster_title');
+      const storedSlogan = sessionStorage.getItem('poster_slogan');
+
       if (pagesJson) {
-        const pages: Array<{ title: string; sections: Array<{ heading: string; items: string[] }> }> = JSON.parse(pagesJson);
+        const pages: Array<{ title: string; image_desc?: string; sections: Array<{ heading: string; items: string[] }> }> = JSON.parse(pagesJson);
         if (pages.length > 0) {
           setInnerPages(pages.map((p) => ({
             title: p.title,
             bgId: 'desert-dunes',
             customBgUrl: '',
+            imageDesc: p.image_desc || '',
             sections: p.sections,
           })));
         }
       }
-      if (storedTitle) {
-        setMainTitle(storedTitle);
+
+      // 用 AI 结果填充封面字段
+      if (aiResult) {
+        if (aiResult.title) {
+          setMainTitle(aiResult.title);
+        } else if (storedTitle) {
+          setMainTitle(storedTitle);
+        }
+        // 从摘要生成顶部标语（取前20字）
+        if (aiResult.summary) {
+          const shortSummary = aiResult.summary.length > 20
+            ? aiResult.summary.substring(0, 20)
+            : aiResult.summary;
+          setTopTagline(shortSummary);
+        }
+        // 从标签填充副标题标签
+        if (aiResult.tags && aiResult.tags.length > 0) {
+          setSubTitleTag1(aiResult.tags[0] || '');
+          setSubTitleTag2(aiResult.tags.length > 1 ? aiResult.tags[1] : '');
+        }
+        // 清除示例价格（AI 内容通常不包含价格信息）
+        setPrices([]);
+        // 用 AI 生成的 slogan 作为底部标语，回退到摘要
+        if (aiResult.slogan) {
+          setBottomSlogan(aiResult.slogan);
+        } else if (storedSlogan) {
+          setBottomSlogan(storedSlogan);
+        } else if (aiResult.summary) {
+          setBottomSlogan(aiResult.summary.length > 30 ? aiResult.summary.substring(0, 30) : aiResult.summary);
+        }
+        // 清除示例联系电话
+        setContactPhone('');
+      } else {
+        // 没有 AI 结果时，回退到旧逻辑
+        if (storedTitle) {
+          setMainTitle(storedTitle);
+        }
       }
     } catch {
       // 静默降级，使用默认内容
@@ -641,6 +690,13 @@ function PosterEditorInner() {
     setInnerPages(newInner);
   };
 
+  const updateInnerImageDesc = (value: string) => {
+    if (currentPage === 0) return;
+    const newInner = [...innerPages];
+    newInner[currentPage - 1] = { ...newInner[currentPage - 1], imageDesc: value };
+    setInnerPages(newInner);
+  };
+
   const updateSectionHeading = (secIdx: number, value: string) => {
     if (currentPage === 0) return;
     const newInner = [...innerPages];
@@ -783,6 +839,9 @@ function PosterEditorInner() {
           <div className="mb-4 text-center">
             <h2 className="text-lg font-bold text-white">{ip.title || '内页标题'}</h2>
             <div className="mx-auto mt-2 h-0.5 w-10" style={{ background: bg.accent }} />
+            {ip.imageDesc && (
+              <p className="mt-2 text-[10px] text-white/50 italic">🖼️ {ip.imageDesc}</p>
+            )}
           </div>
           <div className="flex-1 space-y-3 overflow-hidden">
             {ip.sections.map((section, si) => (
@@ -978,8 +1037,12 @@ function PosterEditorInner() {
             <h3 className="text-sm font-semibold">内页 {currentPage} 标题</h3>
           </div>
           <Separator />
-          <div className="px-5 py-5">
+          <div className="px-5 py-5 space-y-4">
             <Input value={ip.title} onChange={(e) => updateInnerTitle(e.target.value)} placeholder="如：办理流程 & 材料清单" />
+            <div>
+              <Label className="text-xs text-muted-foreground">🖼️ 配图描述</Label>
+              <Input value={ip.imageDesc} onChange={(e) => updateInnerImageDesc(e.target.value)} placeholder="如：沙特利雅得城市天际线日落全景" className="mt-1.5" />
+            </div>
           </div>
         </Card>
 

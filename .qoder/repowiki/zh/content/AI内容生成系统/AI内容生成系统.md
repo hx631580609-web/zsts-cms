@@ -23,17 +23,20 @@
 - [app.js](file://cms-server/app.js)
 - [auth.js](file://cms-server/middleware/auth.js)
 - [ai-channels.js](file://cms-server/routes/ai-channels.js)
+- [AGENTS.md](file://ai-content-project/AGENTS.md)
+- [DESIGN.md](file://ai-content-project/DESIGN.md)
 </cite>
 
 ## 更新摘要
 **所做更改**
-- 新增内容解析能力提升功能分析（自动提取标题、摘要、标签）
-- 新增沙特新闻管理功能集成说明
-- 新增海报编辑器增强功能说明
-- 新增网络故障时的模拟响应机制
+- 新增内容安全防护系统，包括双层关键词过滤和正则模式匹配
+- 优化系统提示词，增强了AI生成内容的约束和格式要求
+- 完善海报模式支持，新增沙特主题背景、阿拉伯音乐BGM和智能标签生成
+- 增强视频处理系统，集成完整的视频生成、转码和导出功能
+- 新增沙特新闻管理功能，支持内容发布到沙特资讯平台
+- 实现网络故障时的智能模拟响应机制
 - 更新AI代理服务配置和认证机制
 - 完善数据模型和API路由设计文档
-- 增强性能优化策略和视频处理系统
 
 ## 目录
 1. [简介](#简介)
@@ -733,6 +736,127 @@ H --> I[安全提示返回]
 - [route.ts:1-312](file://ai-content-project/src/app/api/generate/route.ts#L1-L312)
 - [route.ts:1-82](file://ai-content-project/src/app/api/publish-to-news/route.ts#L1-L82)
 
+### 系统提示词优化
+
+#### AI内容生成系统提示词
+
+系统优化了AI生成的系统提示词，增强了内容生成的约束和格式要求：
+
+```mermaid
+flowchart TD
+A[SYSTEM_PROMPT] --> B[核心能力定义]
+A --> C[写作风格要求]
+A --> D[内容安全规则]
+A --> E[回复格式规范]
+B --> F[商务签证攻略创作]
+B --> G[旅行指南撰写]
+B --> H[内容优化改写]
+B --> I[素材结构化整理]
+C --> J[专业但通俗易懂]
+C --> K[适当使用emoji]
+C --> L[列表/表格呈现]
+C --> M[清晰逻辑结构]
+D --> N[政治敏感内容禁止]
+D --> O[色情暴力禁止]
+D --> P[虚假信息禁止]
+D --> Q[歧视性内容禁止]
+E --> R[直接输出成品]
+E --> S[不要建议大纲]
+```
+
+**图表来源**
+- [generate/route.ts:126-154](file://ai-content-project/src/app/api/generate/route.ts#L126-L154)
+
+#### 海报模式系统提示词
+
+系统为海报模式专门设计了系统提示词，要求AI返回JSON结构化数据：
+
+```mermaid
+flowchart TD
+A[POSTER_SYSTEM_PROMPT] --> B[任务定义]
+A --> C[内容安全规则]
+A --> D[输出格式要求]
+A --> E[海报内容规则]
+B --> F[生成结构化海报内容]
+C --> G[商务旅行相关内容]
+C --> H[禁止敏感内容]
+C --> I[禁止虚假信息]
+C --> J[禁止歧视内容]
+D --> K[严格JSON格式]
+D --> L[标题摘要标签]
+D --> M[多页结构]
+D --> N[每页要点控制]
+E --> O[页面数量要求]
+E --> P[要点数量控制]
+E --> Q[内容精炼要求]
+E --> R[主题一致性要求]
+```
+
+**图表来源**
+- [generate/route.ts:158-195](file://ai-content-project/src/app/api/generate/route.ts#L158-L195)
+
+**章节来源**
+- [generate/route.ts:126-195](file://ai-content-project/src/app/api/generate/route.ts#L126-L195)
+
+### 内容安全防护系统
+
+#### 双层内容安全审核
+
+系统实现了双层内容安全防护机制，确保生成内容的安全性：
+
+```mermaid
+flowchart TD
+A[内容输入] --> B[输入内容安全审核]
+B --> C{安全检查}
+C --> |通过| D[AI内容生成]
+C --> |拦截| E[安全提示返回]
+D --> F[输出内容安全审核]
+F --> G{安全检查}
+G --> |通过| H[内容返回]
+G --> |拦截| I[内容拦截提示]
+E --> J[用户界面更新]
+I --> J
+H --> J
+```
+
+**图表来源**
+- [generate/route.ts:390-454](file://ai-content-project/src/app/api/generate/route.ts#L390-L454)
+
+#### 敏感内容检测规则
+
+系统建立了全面的敏感内容检测规则：
+
+```mermaid
+flowchart TD
+A[BLOCKED_KEYWORDS] --> B[赌博相关词汇]
+A --> C[色情相关词汇]
+A --> D[毒品相关词汇]
+A --> E[暴力武器词汇]
+A --> F[经济犯罪词汇]
+A --> G[政治敏感词汇]
+A --> H[个人信息泄露词汇]
+B --> I[赌博/博彩/赌场]
+B --> J[六合彩/时时彩/网赌]
+C --> K[色情/成人内容/约炮]
+C --> L[裸聊/援交/色情直播]
+D --> M[毒品/冰毒/海洛因]
+D --> N[大麻/摇头丸/K粉]
+E --> O[枪支/军火/炸药]
+E --> P[暗杀/炸弹制作]
+F --> Q[洗钱/诈骗/传销]
+F --> R[非法集资/庞氏骗局]
+G --> S[颠覆政权/分裂国家]
+G --> T[宗教极端/恐怖主义]
+H --> U[代孕/卖卵/器官买卖]
+H --> V[翻墙工具/VPN破解]
+```
+
+**图表来源**
+- [generate/route.ts:72-91](file://ai-content-project/src/app/api/generate/route.ts#L72-L91)
+
+**章节来源**
+- [generate/route.ts:72-120](file://ai-content-project/src/app/api/generate/route.ts#L72-L120)
+
 ## 依赖关系分析
 
 ### 前端依赖关系
@@ -916,6 +1040,8 @@ AI内容生成系统是一个功能完整、架构清晰的现代化内容创作
 2. **沙特新闻管理**: 专门的内容发布到沙特资讯平台功能
 3. **海报编辑器增强**: 沙特主题背景、阿拉伯音乐BGM、智能标签生成
 4. **网络故障处理**: 智能模拟响应机制，确保系统稳定性
+5. **内容安全防护**: 双层敏感内容检测，确保内容合规性
+6. **系统提示词优化**: 更严格的AI生成约束和格式要求
 
 ### 发展方向
 

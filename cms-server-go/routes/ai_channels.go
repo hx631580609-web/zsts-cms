@@ -5,8 +5,12 @@ import (
 	"cms-server-go/middleware"
 	"cms-server-go/models"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,6 +24,7 @@ func RegisterAIChannelRoutes(r *gin.RouterGroup) {
 		channels.PUT("/:id", middleware.RequireSuperAdmin(), updateChannel)
 		channels.PUT("/:id/set-default", middleware.RequireSuperAdmin(), setDefaultChannel)
 		channels.DELETE("/:id", middleware.RequireSuperAdmin(), deleteChannel)
+		channels.POST("/test-connection", middleware.RequireSuperAdmin(), testChannelConnection)
 	}
 }
 
@@ -150,3 +155,87 @@ func deleteChannel(c *gin.Context) {
 
 // 确保 strconv 被引用
 var _ = strconv.Itoa
+
+// testChannelConnection POST /api/ai-channels/test-connection
+// 测试 AI 渠道连接并获取可用模型列表
+func testChannelConnection(c *gin.Context) {
+	var req struct {
+		ApiURL string `json:"api_url" binding:"required"`
+		ApiKey string `json:"api_key"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请提供 API 地址"})
+		return
+	}
+
+	// 构建 /v1/models 端点
+	baseURL := strings.TrimRight(req.ApiURL, "/")
+	// 如果用户填的是完整 chat/completions URL，回退到 base
+	if strings.Contains(baseURL, "/chat/completions") {
+		baseURL = baseURL[:strings.Index(baseURL, "/chat/completions")]
+	}
+	// 确保有 /v1 前缀
+	modelsURL := baseURL + "/models"
+	if !strings.Contains(baseURL, "/v1") {
+		modelsURL = baseURL + "/v1/models"
+	}
+
+	// 发起请求
+	client := &http.Client{Timeout: 15 * time.Second}
+	httpReq, err := http.NewRequest("GET", modelsURL, nil)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "构建请求失败: " + err.Error()})
+		return
+	}
+	if req.ApiKey != "" {
+		httpReq.Header.Set("Authorization", "Bearer "+req.ApiKey)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "连接失败: " + err.Error()})
+		return
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		c.JSON(http.StatusBadGateway, gin.H{
+			"error":  fmt.Sprintf("API 返回 HTTP %d", resp.StatusCode),
+			"detail": string(body),
+		})
+		return
+	}
+
+	// 解析模型列表
+	var result struct {
+		Data []struct {
+			ID      string `json:"id"`
+			Name    string `json:"name"`
+			OwnedBy string `json:"owned_by"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "解析响应失败: " + err.Error()})
+		return
+	}
+
+	var modelIDs []string
+	for _, m := range result.Data {
+		id := m.ID
+		if id == "" {
+			id = m.Name
+		}
+		if id != "" {
+			modelIDs = append(modelIDs, id)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": fmt.Sprintf("连接成功，发现 %d 个模型", len(modelIDs)),
+		"models":  modelIDs,
+	})
+}

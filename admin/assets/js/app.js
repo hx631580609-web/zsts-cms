@@ -1690,13 +1690,15 @@ async function renderAiChannelsPage(container) {
   }
 
   function showChannelModal(id, channel) {
+    const API = window.API || '/api';
     const isEdit = !!id;
     const ch = channel || { name:'', api_url:'', api_key:'', model_list:[], default_model:'', is_default:0 };
     let models = [...(ch.model_list || [])];
     let defaultModel = ch.default_model || '';
+    let fetchedModels = [];
 
     function renderModelTags() {
-      if (models.length === 0) return '<span class="text-xs text-gray-400">暂无模型，请在下方添加</span>';
+      if (models.length === 0) return '<span class="text-xs text-gray-400">暂无模型，请通过下方“测试连接”拉取或手动添加</span>';
       let s = '';
       for (const m of models) {
         const isDef = (m === defaultModel);
@@ -1708,6 +1710,23 @@ async function renderAiChannelsPage(container) {
           '<a href="javascript:void(0)" onclick="event.stopPropagation();window._aiChRemoveModel(\'' + m.replace(/'/g, "\\'") + '\')" style="color:#94a3b8;margin-left:2px;font-size:14px;line-height:1;" onmouseover="this.style.color=\'#ef4444\'" onmouseout="this.style.color=\'#94a3b8\'">&times;</a>' +
         '</span> ';
       }
+      return s;
+    }
+
+    function renderFetchedModels() {
+      if (fetchedModels.length === 0) return '';
+      let s = '<div class="mt-3"><p class="text-xs font-semibold text-gray-500 mb-2">📡 远程模型列表 <span class="font-normal text-gray-400">（点击添加）</span></p>';
+      s += '<div style="max-height:180px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:10px;padding:6px;display:flex;flex-wrap:wrap;gap:4px;">';
+      for (const m of fetchedModels) {
+        const added = models.includes(m);
+        const bg = added ? 'background:#dcfce7;color:#166534;border-color:#86efac;' : 'background:#f8fafc;color:#475569;border-color:#e2e8f0;';
+        const cursor = added ? 'cursor:default;' : 'cursor:pointer;';
+        const label = added ? '✓ ' + esc(m) : '+ ' + esc(m);
+        s += '<span style="' + bg + 'border-width:1px;border-style:solid;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:500;' + cursor + '" ' +
+          (added ? '' : 'onclick="window._aiChAddFetchedModel(\'' + m.replace(/'/g, "\\'") + '\')"') + '>' +
+          label + '</span> ';
+      }
+      s += '</div></div>';
       return s;
     }
 
@@ -1724,15 +1743,24 @@ async function renderAiChannelsPage(container) {
           '<input type="text" id="aiChName" value="' + esc(ch.name) + '" placeholder="如：OpenRouter / OpenAI / 私服" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green outline-none transition"></div>' +
         '<div><label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">API 地址（Base URL）</label>' +
           '<input type="url" id="aiChUrl" value="' + esc(ch.api_url) + '" placeholder="https://openrouter.ai/api/v1" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green outline-none transition font-mono">' +
-          '<p class="mt-1.5 text-xs text-gray-400">模仿 OpenRouter，填写完整的 Base URL（需包含 /v1 或对应路径）</p></div>' +
+          '<p class="mt-1.5 text-xs text-gray-400">填写完整的 Base URL（如 https://openrouter.ai/api/v1）</p></div>' +
         '<div><label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">API 密钥</label>' +
           '<div class="relative"><input type="' + (window._aiChShowKey ? 'text' : 'password') + '" id="aiChKey" value="' + esc(ch.api_key || '') + '" placeholder="sk-or-v1-..." class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green outline-none transition pr-16 font-mono">' +
           '<button type="button" onclick="window._aiChToggleKey()" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded">' + (window._aiChShowKey ? '隐藏' : '显示') + '</button></div></div>' +
-        '<div><label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">模型列表</label>' +
+        // 测试连接按钮 + 结果区域
+        '<div id="testConnArea">' +
+          '<button id="testConnBtn" onclick="window._aiChTestConnection()" style="width:100%;padding:10px;background:#f0f9ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;" onmouseover="this.style.background=\'#dbeafe\'" onmouseout="this.style.background=\'#f0f9ff\'">' +
+            '🔌 测试连接并获取模型列表' +
+          '</button>' +
+          '<div id="testConnResult" class="mt-2" style="display:none;"></div>' +
+          '<div id="fetchedModelsArea"></div>' +
+        '</div>' +
+        // 模型列表
+        '<div><label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">已选模型</label>' +
           '<div id="modelTags" class="flex flex-wrap gap-1.5 mb-3 p-3 bg-gray-50 rounded-xl min-h-[42px]">' + renderModelTags() + '</div>' +
-          '<div class="flex gap-2"><input type="text" id="newModelInput" placeholder="输入模型名称，如 gpt-4o" class="flex-1 px-4 py-2 border border-gray-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green">' +
+          '<div class="flex gap-2"><input type="text" id="newModelInput" placeholder="或手动输入模型名称" class="flex-1 px-4 py-2 border border-gray-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green">' +
           '<button onclick="window._aiChAddModel()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 text-sm font-medium transition">添加</button></div>' +
-          '<p class="mt-1.5 text-xs text-gray-400">点击模型名称可设为默认模型（⭐ 标记），AI 生成内容时将使用默认模型</p></div>' +
+          '<p class="mt-1.5 text-xs text-gray-400">点击模型名称可设为默认（⭐），AI 生成时将使用默认模型</p></div>' +
         '<div class="flex items-center gap-3 pt-2"><input type="checkbox" id="aiChDefault" ' + (ch.is_default ? 'checked' : '') + ' class="w-4 h-4 text-zsts-green border-gray-300 rounded focus:ring-zsts-green accent-zsts-green">' +
           '<label for="aiChDefault" class="text-sm text-gray-700 font-medium">设为默认渠道</label></div>' +
       '</div>' +
@@ -1758,12 +1786,88 @@ async function renderAiChannelsPage(container) {
       document.getElementById('modelTags').innerHTML = renderModelTags();
       input.value = '';
       input.focus();
+      // 刷新远程模型区域（标记已添加）
+      document.getElementById('fetchedModelsArea').innerHTML = renderFetchedModels();
+    };
+    window._aiChAddFetchedModel = (modelName) => {
+      if (models.includes(modelName)) return;
+      models.push(modelName);
+      document.getElementById('modelTags').innerHTML = renderModelTags();
+      document.getElementById('fetchedModelsArea').innerHTML = renderFetchedModels();
     };
     window._aiChRemoveModel = (modelName) => {
       models = models.filter(m => m !== modelName);
       if (defaultModel === modelName) defaultModel = '';
       document.getElementById('modelTags').innerHTML = renderModelTags();
+      document.getElementById('fetchedModelsArea').innerHTML = renderFetchedModels();
     };
+
+    // 测试连接并获取模型列表
+    window._aiChTestConnection = async () => {
+      const api_url = document.getElementById('aiChUrl').value.trim();
+      const api_key = document.getElementById('aiChKey').value.trim();
+      if (!api_url) { alert('请先填写 API 地址'); return; }
+
+      const btn = document.getElementById('testConnBtn');
+      const resultDiv = document.getElementById('testConnResult');
+      btn.innerHTML = '<span style="display:inline-block;width:14px;height:14px;border:2px solid #93c5fd;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite;"></span> 正在连接...';
+      btn.disabled = true;
+      btn.style.opacity = '0.7';
+      resultDiv.style.display = 'none';
+
+      // 添加 spin 动画（如果没有的话）
+      if (!document.getElementById('spinAnim')) {
+        const style = document.createElement('style');
+        style.id = 'spinAnim';
+        style.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+        document.head.appendChild(style);
+      }
+
+      try {
+        const r = await fetch(API + '/ai-channels/test-connection', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('cms_token'),
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ api_url, api_key })
+        });
+        const data = await r.json();
+
+        if (!r.ok) {
+          resultDiv.style.display = 'block';
+          resultDiv.innerHTML = '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:10px 14px;color:#991b1b;font-size:12px;">' +
+            '❌ ' + esc(data.error || '连接失败') +
+            (data.detail ? '<br><span style="color:#b91c1c;font-size:11px;margin-top:4px;display:block;word-break:break-all;">' + esc(data.detail).substring(0, 200) + '</span>' : '') +
+          '</div>';
+          btn.innerHTML = '🔌 测试连接并获取模型列表';
+          btn.disabled = false;
+          btn.style.opacity = '1';
+          return;
+        }
+
+        // 成功
+        fetchedModels = data.models || [];
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px 14px;color:#166534;font-size:12px;">' +
+          '✅ ' + esc(data.message) +
+        '</div>';
+        document.getElementById('fetchedModelsArea').innerHTML = renderFetchedModels();
+
+        btn.innerHTML = '✅ 连接成功，重新拉取';
+        btn.style.background = '#f0fdf4';
+        btn.style.color = '#166534';
+        btn.style.borderColor = '#bbf7d0';
+
+      } catch(e) {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:10px 14px;color:#991b1b;font-size:12px;">❌ 请求失败: ' + esc(e.message) + '</div>';
+      }
+
+      btn.disabled = false;
+      btn.style.opacity = '1';
+    };
+
     window._aiChSave = async (saveId) => {
       const name = document.getElementById('aiChName').value.trim();
       const api_url = document.getElementById('aiChUrl').value.trim();

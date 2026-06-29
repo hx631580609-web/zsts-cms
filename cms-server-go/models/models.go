@@ -152,3 +152,63 @@ type WechatDraftRequest struct {
 	Digest  string `json:"digest"`
 	Thumb   string `json:"thumb_media_id"`
 }
+
+// Article AI 生成的文章
+type Article struct {
+	ID          int64     `json:"id"`
+	Title       string    `json:"title"`
+	Summary     string    `json:"summary"`
+	Tags        string    `json:"tags"`
+	CoverImage  string    `json:"cover_image"`
+	Content     string    `json:"content"`
+	ContentHTML string    `json:"content_html"`
+	Source      string    `json:"source"`
+	WordCount   int       `json:"word_count"`
+	Status      string    `json:"status"` // draft, published
+	Author      string    `json:"author"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+// ArticleRow 数据库行（tags 为逗号分隔字符串）
+type ArticleRow struct {
+	ID          int64     `json:"id"`
+	Title       string    `json:"title"`
+	Summary     string    `json:"summary"`
+	Tags        string    `json:"tags"`
+	CoverImage  string    `json:"cover_image"`
+	Content     string    `json:"content"`
+	ContentHTML string    `json:"content_html"`
+	Source      string    `json:"source"`
+	WordCount   int       `json:"word_count"`
+	Status      string    `json:"status"`
+	Author      string    `json:"author"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+// CreateArticleRequest 创建文章请求
+type CreateArticleRequest struct {
+	Title       string `json:"title" binding:"required"`
+	Summary     string `json:"summary"`
+	Tags        string `json:"tags"`
+	CoverImage  string `json:"cover_image"`
+	Content     string `json:"content"`
+	ContentHTML string `json:"content_html"`
+	Source      string `json:"source"`
+	WordCount   int    `json:"word_count"`
+}
+
+// ArticleListResult 文章列表结果
+type ArticleListResult struct {
+	Total int64     `json:"total"`
+	Rows  []Article `json:"rows"`
+}
+
+// ArticleStats 文章统计
+type ArticleStats struct {
+	Total     int64 `json:"total"`
+	Draft     int64 `json:"draft"`
+	Published int64 `json:"published"`
+	Today     int64 `json:"today"`
+}

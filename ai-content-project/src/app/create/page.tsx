@@ -17,6 +17,9 @@ import {
   Paperclip,
   FileText,
   ImageIcon,
+  X,
+  Globe,
+  Upload,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -41,6 +44,7 @@ interface ChatMessage {
     wordCount: number;
     pageCount?: number;
     ratio?: '9:16' | '16:9';
+    slogan?: string;
     pages?: Array<{ title: string; sections: Array<{ heading: string; items: string[] }> }>;
   };
 }
@@ -67,6 +71,15 @@ function CreateContentInner() {
   const [posterPageCount, setPosterPageCount] = useState(6);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 文件上传 & URL 抓取状态
+  interface UploadedFile { filename: string; content: string; type: string; preview?: string; }
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [urlContent, setUrlContent] = useState('');
+  const [urlFetching, setUrlFetching] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [detectedUrl, setDetectedUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -84,6 +97,61 @@ function CreateContentInner() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // 检测输入中的 URL
+  useEffect(() => {
+    const urlMatch = input.match(/https?:\/\/[^\s<>"']+/i);
+    if (urlMatch && !urlContent) {
+      setDetectedUrl(urlMatch[0]);
+    } else if (!urlMatch) {
+      setDetectedUrl(null);
+    }
+  }, [input, urlContent]);
+
+  // 文件上传处理
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/ai-content/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '上传失败');
+      setUploadedFiles(prev => [...prev, {
+        filename: data.filename,
+        content: data.content,
+        type: data.type,
+        preview: data.preview,
+      }]);
+    } catch (err) {
+      console.error('[fileUpload]', err);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  // URL 内容抓取
+  const handleFetchUrl = async (url: string) => {
+    setUrlFetching(true);
+    try {
+      const res = await fetch('/ai-content/api/fetch-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '抓取失败');
+      setUrlContent(data.content || '');
+      setDetectedUrl(null);
+    } catch (err) {
+      console.error('[fetchUrl]', err);
+    } finally {
+      setUrlFetching(false);
+    }
+  };
 
   const generatePosterPages = (
     source: string,
@@ -434,13 +502,28 @@ function CreateContentInner() {
     setInput('');
     setIsLoading(true);
 
+    // 收集附件和 URL 上下文
+    const currentAttachments = [...uploadedFiles];
+    const currentUrlContent = urlContent;
+    // 发送后清空附件状态
+    setUploadedFiles([]);
+    setUrlContent('');
+    setDetectedUrl(null);
+
     try {
       // 从 localStorage 读取用户 CMS token，用于鉴权访问 AI 渠道配置
       const cmsToken = typeof window !== 'undefined' ? localStorage.getItem('cms_token') || '' : '';
       const res = await fetch('/ai-content/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userInput, contentType, pageCount: posterPageCount, token: cmsToken }),
+        body: JSON.stringify({
+          message: userInput,
+          contentType,
+          pageCount: posterPageCount,
+          token: cmsToken,
+          attachments: currentAttachments.map(f => ({ filename: f.filename, content: f.content, type: f.type })),
+          urlContent: currentUrlContent,
+        }),
       });
 
       const data = await res.json();
@@ -464,22 +547,40 @@ function CreateContentInner() {
 
       // 海报模式：优先使用 API 返回的结构化 pages 数据
       if (contentType === 'poster' && data.pages && Array.isArray(data.pages)) {
+        const posterTitle = data.posterTitle || extractTitle(aiContent, userInput);
+        const posterSummary = data.posterSummary || extractSummary(aiContent);
+        const posterTags = data.posterTags || extractTags(aiContent);
+        const posterSlogan = data.posterSlogan || '';
+        const posterPages = data.pages;
+
+        // 生成友好的聊天消息内容（不显示原始 JSON）
+        const friendlyContent = `🖼️ 海报内容已生成完毕！
+
+📌 标题：${posterTitle}
+📝 摘要：${posterSummary}
+🏷️ 标签：${posterTags.join('、')}
+${posterSlogan ? `💬 标语：${posterSlogan}` : ''}
+📄 共 ${posterPages.length} 页海报内容
+
+每页包含标题、分节内容和配图，点击下方「使用内容」进入海报编辑器查看和编辑。`;
+
         const aiResponse: ChatMessage = {
           id: generateId(),
           role: 'assistant',
-          content: aiContent,
+          content: friendlyContent,
           timestamp: Date.now(),
           type: 'result',
           contentType: 'poster',
           resultData: {
-            title: data.posterTitle || extractTitle(aiContent, userInput),
-            summary: data.posterSummary || extractSummary(aiContent),
-            tags: data.posterTags || extractTags(aiContent),
+            title: posterTitle,
+            summary: posterSummary,
+            tags: posterTags,
             source: detectSource(userInput),
             wordCount: aiContent.length,
-            pageCount: data.pages.length,
+            pageCount: posterPages.length,
             ratio: '9:16',
-            pages: data.pages,
+            slogan: posterSlogan,
+            pages: posterPages,
           },
         };
         setMessages((prev) => [...prev, aiResponse]);
@@ -490,10 +591,15 @@ function CreateContentInner() {
         const tags = extractTags(aiContent);
         const source = detectSource(userInput);
 
+        // 海报模式但无结构化数据时，也生成友好消息
+        const displayContent = contentType === 'poster'
+          ? `🖼️ 海报内容已生成！\n\n📌 标题：${title}\n📝 摘要：${summary}\n🏷️ 标签：${tags.join('、')}\n📄 共 ${posterPageCount} 页\n\n点击下方「使用内容」进入海报编辑器。`
+          : aiContent;
+
         const aiResponse: ChatMessage = {
           id: generateId(),
           role: 'assistant',
-          content: aiContent,
+          content: displayContent,
           timestamp: Date.now(),
           type: 'result',
           contentType: contentType,
@@ -535,6 +641,16 @@ function CreateContentInner() {
   const handleUseContent = (msg: ChatMessage) => {
     if (!msg.resultData) return;
     const type = msg.contentType || 'article';
+    // 将完整 AI 结果存入 sessionStorage，供编辑器读取
+    sessionStorage.setItem('ai_result', JSON.stringify({
+      content: msg.content,
+      title: msg.resultData.title,
+      summary: msg.resultData.summary,
+      tags: msg.resultData.tags,
+      source: msg.resultData.source,
+      wordCount: msg.resultData.wordCount,
+      slogan: msg.resultData.slogan,
+    }));
     if (type === 'poster') {
       // 将分页数据存入 sessionStorage 供海报编辑器读取
       if (msg.resultData.pages) {
@@ -542,6 +658,9 @@ function CreateContentInner() {
       }
       sessionStorage.setItem('poster_title', msg.resultData.title);
       sessionStorage.setItem('poster_source', msg.resultData.source);
+      if (msg.resultData.slogan) {
+        sessionStorage.setItem('poster_slogan', msg.resultData.slogan);
+      }
       router.push(`/poster?contentId=new&source=${encodeURIComponent(msg.resultData.source)}&title=${encodeURIComponent(msg.resultData.title)}&pageCount=${msg.resultData.pageCount || 6}&ratio=9:16`);
     } else {
       router.push(`/article?source=${encodeURIComponent(msg.resultData.source)}&title=${encodeURIComponent(msg.resultData.title)}`);
@@ -559,13 +678,7 @@ function CreateContentInner() {
     <div className="flex h-screen flex-col bg-[#F5F5F7]">
       {/* 顶部导航 */}
       <header className="sticky top-0 z-20 border-b bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-3xl items-center gap-3 px-4">
-          <Link href="/">
-            <Button variant="ghost" size="icon-sm" className="shrink-0">
-              <ArrowLeft className="size-4" />
-            </Button>
-          </Link>
-          <Separator orientation="vertical" className="h-5" />
+        <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <div className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600">
               <Sparkles className="size-3.5 text-white" />
@@ -574,6 +687,12 @@ function CreateContentInner() {
               <span className="text-sm font-semibold">AI 创作助手</span>
             </div>
           </div>
+          <Link href="/dashboard">
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+              <FileText className="size-3" />
+              文章管理
+            </Button>
+          </Link>
         </div>
       </header>
 
@@ -780,15 +899,64 @@ function CreateContentInner() {
             </div>
           )}
 
+          {/* 附件 & URL 上下文指示器 */}
+          {(uploadedFiles.length > 0 || urlContent) && (
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {uploadedFiles.map((f, i) => (
+                <span key={i} className="inline-flex items-center gap-1 rounded-lg border bg-blue-50 px-2 py-1 text-[11px] text-blue-700">
+                  {f.type === 'image' ? <ImageIcon className="size-3" /> : <FileText className="size-3" />}
+                  {f.filename.length > 20 ? f.filename.substring(0, 17) + '...' : f.filename}
+                  <button onClick={() => setUploadedFiles(prev => prev.filter((_, idx) => idx !== i))} className="ml-0.5 text-blue-400 hover:text-red-500">
+                    <X className="size-3" />
+                  </button>
+                </span>
+              ))}
+              {urlContent && (
+                <span className="inline-flex items-center gap-1 rounded-lg border bg-green-50 px-2 py-1 text-[11px] text-green-700">
+                  <Globe className="size-3" />
+                  已读取 URL 内容 ({urlContent.length} 字)
+                  <button onClick={() => setUrlContent('')} className="ml-0.5 text-green-400 hover:text-red-500">
+                    <X className="size-3" />
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* URL 检测提示 */}
+          {detectedUrl && !urlContent && (
+            <div className="mb-2 flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700">
+              <Link2 className="size-3.5 shrink-0" />
+              <span className="flex-1 truncate">检测到链接: {detectedUrl}</span>
+              <button
+                onClick={() => handleFetchUrl(detectedUrl)}
+                disabled={urlFetching}
+                className="shrink-0 rounded-md bg-blue-600 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {urlFetching ? '抓取中...' : '读取内容'}
+              </button>
+            </div>
+          )}
+
+          {/* 隐藏的文件输入 */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.docx,.txt,.md,.csv,.json,.html"
+            onChange={handleFileUpload}
+          />
+
           {/* 类型选择 + 输入框 */}
           <div className="flex items-end gap-2">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="shrink-0 text-muted-foreground"
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-slate-100 hover:text-blue-600 disabled:opacity-50"
+              title="上传文件（图片/PDF/DOCX/TXT等）"
             >
-              <Paperclip className="size-4" />
-            </Button>
+              {uploading ? <Loader2 className="size-4 animate-spin" /> : <Paperclip className="size-4" />}
+            </button>
 
             {/* 输入框容器 */}
             <div className="relative flex-1">

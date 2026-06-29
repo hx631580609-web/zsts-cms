@@ -125,6 +125,23 @@ func createTables() {
 	if wcCount == 0 {
 		DB.Exec("INSERT INTO wechat_config (app_id, app_secret) VALUES ('', '')")
 	}
+
+	// articles 表（AI 生成的文章）
+	DB.Exec(`CREATE TABLE IF NOT EXISTS articles (
+		id           BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+		title        VARCHAR(500) NOT NULL,
+		summary      TEXT,
+		tags         VARCHAR(500) DEFAULT '',
+		cover_image  VARCHAR(1000) DEFAULT '',
+		content      LONGTEXT,
+		content_html LONGTEXT,
+		source       VARCHAR(50) DEFAULT 'AI生成',
+		word_count   INT DEFAULT 0,
+		status       ENUM('draft','published') NOT NULL DEFAULT 'draft',
+		author       VARCHAR(100) DEFAULT '',
+		created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
 }
 
 // seedAdmin 插入默认超级管理员
