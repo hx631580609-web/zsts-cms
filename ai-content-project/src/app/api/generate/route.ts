@@ -568,6 +568,19 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // ── 文章模式：清洗 Markdown 格式（AI 可能不遵循纯文本指令） ──
+    if (!isPoster) {
+      // 去除行首的 # 标记（保留标题文字）
+      aiContent = aiContent.replace(/^#{1,6}\s+/gm, '');
+      // 去除 **粗体** 和 *斜体* 标记（保留中间文字）
+      aiContent = aiContent.replace(/\*\*(.*?)\*\*/g, '$1');
+      aiContent = aiContent.replace(/\*(.*?)\*/g, '$1');
+      // 去除行内代码 `` 和代码块 ```
+      aiContent = aiContent.replace(/`{1,3}[^`]*`{1,3}/g, '');
+      // 去除行首的 - 或 * 无序列表标记，替换为中文项目符号
+      aiContent = aiContent.replace(/^[-*]\s+/gm, '· ');
+    }
+
     return NextResponse.json({
       content: aiContent,
       message,

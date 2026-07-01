@@ -5,11 +5,18 @@ import (
 	"cms-server-go/db"
 	"cms-server-go/middleware"
 	"cms-server-go/models"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/color"
+	"image/png"
 	"io"
 	"mime/multipart"
 	"net/http"
+	"os"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -206,6 +213,217 @@ func uploadMaterialToWechat(accessToken, imageURL string) (string, error) {
 	return result.MediaID, nil
 }
 
+// uploadDefaultThumb 生成并上传一个默认缩略图到微信素材库
+func uploadDefaultThumb(accessToken string) (string, error) {
+	// 生成 300x200 的纯色 PNG 图片
+	img := image.NewRGBA(image.Rect(0, 0, 300, 200))
+	bgColor := color.RGBA{R: 0, G: 99, B: 65, A: 255} // 品牌绿
+	for y := 0; y < 200; y++ {
+		for x := 0; x < 300; x++ {
+			img.Set(x, y, bgColor)
+		}
+	}
+
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, img); err != nil {
+		return "", fmt.Errorf("生成默认缩略图失败: %v", err)
+	}
+
+	var formBuf bytes.Buffer
+	writer := multipart.NewWriter(&formBuf)
+	part, err := writer.CreateFormFile("media", "default_thumb.png")
+	if err != nil {
+		return "", fmt.Errorf("创建表单失败: %v", err)
+	}
+	part.Write(buf.Bytes())
+	writer.Close()
+
+	uploadURL := fmt.Sprintf("https://api.weixin.qq.com/cgi-bin/material/add_material?access_token=%s&type=image", accessToken)
+	req, err := http.NewRequest("POST", uploadURL, &formBuf)
+	if err != nil {
+		return "", fmt.Errorf("创建上传请求失败: %v", err)
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	uploadResp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("上传默认缩略图失败: %v", err)
+	}
+	defer uploadResp.Body.Close()
+
+	var result struct {
+		MediaID string `json:"media_id"`
+		ErrCode int    `json:"errcode"`
+		ErrMsg  string `json:"errmsg"`
+	}
+	if err := json.NewDecoder(uploadResp.Body).Decode(&result); err != nil {
+		return "", fmt.Errorf("解析响应失败: %v", err)
+	}
+	if result.ErrCode != 0 {
+		return "", fmt.Errorf("微信返回错误: %s (code=%d)", result.ErrMsg, result.ErrCode)
+	}
+
+	return result.MediaID, nil
+}
+
+// uploadMaterialToWechatWithURL 上传永久素材到微信，返回 media_id 和 cdn_url
+func uploadMaterialToWechatWithURL(accessToken, imageURL string) (mediaID, cdnURL string, err error) {
+	resp, err := http.Get(imageURL)
+	if err != nil {
+		return "", "", fmt.Errorf("下载图片失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	imgData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", "", fmt.Errorf("读取图片数据失败: %v", err)
+	}
+
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	part, err := writer.CreateFormFile("media", "thumb.jpg")
+	if err != nil {
+		return "", "", fmt.Errorf("创建表单文件失败: %v", err)
+	}
+	part.Write(imgData)
+	writer.Close()
+
+	uploadURL := fmt.Sprintf("https://api.weixin.qq.com/cgi-bin/material/add_material?access_token=%s&type=image", accessToken)
+	req, err := http.NewRequest("POST", uploadURL, &buf)
+	if err != nil {
+		return "", "", fmt.Errorf("创建上传请求失败: %v", err)
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	uploadResp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", "", fmt.Errorf("上传失败: %v", err)
+	}
+	defer uploadResp.Body.Close()
+
+	var result struct {
+		MediaID string `json:"media_id"`
+		URL     string `json:"url"`
+		ErrCode int    `json:"errcode"`
+		ErrMsg  string `json:"errmsg"`
+	}
+	if err := json.NewDecoder(uploadResp.Body).Decode(&result); err != nil {
+		return "", "", fmt.Errorf("解析响应失败: %v", err)
+	}
+	if result.ErrCode != 0 {
+		return "", "", fmt.Errorf("微信返回错误: %s (code=%d)", result.ErrMsg, result.ErrCode)
+	}
+
+	return result.MediaID, result.URL, nil
+}
+
+// uploadDataURLToWechat 上传 base64 data URL 图片到微信素材库
+func uploadDataURLToWechat(accessToken, dataURL string) (mediaID, cdnURL string, err error) {
+	// 解析 data:image/png;base64,xxxxx
+	parts := strings.SplitN(dataURL, ",", 2)
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("无效的 data URL 格式")
+	}
+	base64Str := parts[1]
+	imgData, err := base64.StdEncoding.DecodeString(base64Str)
+	if err != nil {
+		return "", "", fmt.Errorf("base64 解码失败: %v", err)
+	}
+
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	part, err := writer.CreateFormFile("media", "image.png")
+	if err != nil {
+		return "", "", fmt.Errorf("创建表单失败: %v", err)
+	}
+	part.Write(imgData)
+	writer.Close()
+
+	uploadURL := fmt.Sprintf("https://api.weixin.qq.com/cgi-bin/material/add_material?access_token=%s&type=image", accessToken)
+	req, err := http.NewRequest("POST", uploadURL, &buf)
+	if err != nil {
+		return "", "", fmt.Errorf("创建上传请求失败: %v", err)
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	uploadResp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", "", fmt.Errorf("上传失败: %v", err)
+	}
+	defer uploadResp.Body.Close()
+
+	var result struct {
+		MediaID string `json:"media_id"`
+		URL     string `json:"url"`
+		ErrCode int    `json:"errcode"`
+		ErrMsg  string `json:"errmsg"`
+	}
+	if err := json.NewDecoder(uploadResp.Body).Decode(&result); err != nil {
+		return "", "", fmt.Errorf("解析响应失败: %v", err)
+	}
+	if result.ErrCode != 0 {
+		return "", "", fmt.Errorf("微信返回错误: %s (code=%d)", result.ErrMsg, result.ErrCode)
+	}
+
+	return result.MediaID, result.URL, nil
+}
+
+// processContentImages 处理 HTML 内容中的图片：上传到微信素材库并替换为微信 CDN URL
+func processContentImages(accessToken, htmlContent, baseURL string) (string, error) {
+	re := regexp.MustCompile(`<img[^>]+src=["']([^"']+)["'][^>]*>`)
+	matches := re.FindAllStringSubmatchIndex(htmlContent, -1)
+	if len(matches) == 0 {
+		return htmlContent, nil
+	}
+
+	var result []byte
+	lastEnd := 0
+	for _, m := range matches {
+		srcStart, srcEnd := m[2], m[3]
+		src := htmlContent[srcStart:srcEnd]
+
+		imageURL := src
+		isDataURL := strings.HasPrefix(src, "data:")
+		if strings.HasPrefix(src, "/") {
+			imageURL = strings.TrimRight(baseURL, "/") + src
+		} else if !isDataURL && !strings.HasPrefix(src, "http") {
+			imageURL = strings.TrimRight(baseURL, "/") + "/" + src
+		}
+
+		var wechatURL string
+		if isDataURL {
+			// base64 data URL: 解码后上传
+			_, url, err := uploadDataURLToWechat(accessToken, src)
+			if err != nil {
+				fmt.Printf("[wechat] base64图片上传失败: %v\n", err)
+				result = append(result, []byte(htmlContent[lastEnd:m[1]])...)
+				lastEnd = m[1]
+				continue
+			}
+			wechatURL = url
+		} else if strings.HasPrefix(imageURL, "http") {
+			_, url, err := uploadMaterialToWechatWithURL(accessToken, imageURL)
+			if err != nil || url == "" {
+				fmt.Printf("[wechat] 图片上传失败 %s: %v\n", imageURL, err)
+				result = append(result, []byte(htmlContent[lastEnd:m[1]])...)
+				lastEnd = m[1]
+				continue
+			}
+			wechatURL = url
+		} else {
+			result = append(result, []byte(htmlContent[lastEnd:m[1]])...)
+			lastEnd = m[1]
+			continue
+		}
+
+		result = append(result, []byte(htmlContent[lastEnd:srcStart])...)
+		result = append(result, []byte(wechatURL)...)
+		lastEnd = srcEnd
+	}
+	result = append(result, []byte(htmlContent[lastEnd:])...)
+	return string(result), nil
+}
+
 // ── 推送草稿箱 ──
 
 func pushWechatDraft(c *gin.Context) {
@@ -231,24 +449,103 @@ func pushWechatDraft(c *gin.Context) {
 		return
 	}
 
-	// 上传缩略图（如果有图片 URL）
-	thumbMediaID := req.Thumb
-	if req.Thumb == "" && req.Content != "" {
-		// 尝试从 HTML 内容中提取第一张图片
-		// 简单匹配 <img src="xxx"> 或 src="xxx"
-		// 这里不做复杂解析，如果没提供 thumb_media_id 就跳过
+	// CMS_PUBLIC_URL 应配置为公网可访问的地址
+	publicURL := os.Getenv("CMS_PUBLIC_URL")
+	if publicURL == "" {
+		publicURL = "http://localhost:3001"
 	}
+
+	// 上传缩略图（支持 HTTP / base64 / 相对路径）
+	thumbMediaID := ""
+	hasCover := false
+
 	if req.Thumb != "" {
-		mediaID, err := uploadMaterialToWechat(accessToken, req.Thumb)
-		if err != nil {
-			// 缩略图上传失败不阻断，继续推送
-			fmt.Printf("[wechat] 缩略图上传失败: %v\n", err)
-		} else {
-			thumbMediaID = mediaID
+		isDataURL := strings.HasPrefix(req.Thumb, "data:")
+		isHTTP := strings.HasPrefix(req.Thumb, "http")
+		isRelative := strings.HasPrefix(req.Thumb, "/")
+
+		thumbURL := req.Thumb
+		if isRelative {
+			thumbURL = strings.TrimRight(publicURL, "/") + thumbURL
+			isHTTP = true
+		}
+
+		if isDataURL {
+			mediaID, _, err := uploadDataURLToWechat(accessToken, thumbURL)
+			if err != nil {
+				fmt.Printf("[wechat] 缩略图(base64)上传失败: %v\n", err)
+			} else {
+				thumbMediaID = mediaID
+				hasCover = true
+				fmt.Printf("[wechat] 缩略图(base64)上传成功 media_id=%s\n", mediaID)
+			}
+		} else if isHTTP {
+			mediaID, _, err := uploadMaterialToWechatWithURL(accessToken, thumbURL)
+			if err != nil {
+				fmt.Printf("[wechat] 缩略图上传失败: %v\n", err)
+			} else {
+				thumbMediaID = mediaID
+				hasCover = true
+				fmt.Printf("[wechat] 缩略图上传成功 media_id=%s\n", mediaID)
+			}
 		}
 	}
-	if thumbMediaID == "" {
-		thumbMediaID = "thumb" // 微信要求必须有 thumb_media_id
+
+	if !hasCover {
+		// 无有效缩略图时，优先从内容中提取第一张图片作为封面
+		fmt.Println("[wechat] 未提供有效封面，尝试从内容提取第一张图...")
+		re := regexp.MustCompile(`<img[^>]+src=["']([^"']+)["']`)
+		if match := re.FindStringSubmatch(req.Content); len(match) > 1 {
+			extractedURL := match[1]
+			fmt.Printf("[wechat] 从内容提取到图片: %s\n", extractedURL)
+			// 上传提取到的图片到微信
+			if strings.HasPrefix(extractedURL, "data:") {
+				mid, _, err := uploadDataURLToWechat(accessToken, extractedURL)
+				if err == nil {
+					thumbMediaID = mid
+					hasCover = true
+				} else {
+					fmt.Printf("[wechat] 内容图片(data)上传失败: %v\n", err)
+				}
+			} else if strings.HasPrefix(extractedURL, "/") {
+				fullURL := strings.TrimRight(publicURL, "/") + extractedURL
+				mid, _, err := uploadMaterialToWechatWithURL(accessToken, fullURL)
+				if err == nil {
+					thumbMediaID = mid
+					hasCover = true
+				} else {
+					fmt.Printf("[wechat] 内容图片(相对路径)上传失败: %v\n", err)
+				}
+			} else if strings.HasPrefix(extractedURL, "http") {
+				mid, _, err := uploadMaterialToWechatWithURL(accessToken, extractedURL)
+				if err == nil {
+					thumbMediaID = mid
+					hasCover = true
+				} else {
+					fmt.Printf("[wechat] 内容图片(http)上传失败: %v\n", err)
+				}
+			}
+		} else {
+			fmt.Println("[wechat] 内容中未找到 <img> 标签")
+		}
+	}
+
+	if !hasCover {
+		// 无缩略图时，上传一个默认封面
+		fmt.Println("[wechat] 使用默认封面")
+		defaultThumb, err := uploadDefaultThumb(accessToken)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "需要提供 thumb_media_id（缩略图），自动生成默认封面失败: " + err.Error()})
+			return
+		}
+		thumbMediaID = defaultThumb
+	}
+
+	// 处理内容中的图片：上传到微信素材库并替换 URL
+	processedContent, imgErr := processContentImages(accessToken, req.Content, publicURL)
+	if imgErr != nil {
+		fmt.Printf("[wechat] 处理内容图片失败: %v\n", imgErr)
+		processedContent = req.Content // 降级使用原始内容
 	}
 
 	// 构建草稿内容
@@ -258,7 +555,7 @@ func pushWechatDraft(c *gin.Context) {
 				"title":                 req.Title,
 				"author":                req.Author,
 				"digest":                req.Digest,
-				"content":               req.Content,
+				"content":               processedContent,
 				"thumb_media_id":        thumbMediaID,
 				"need_open_comment":     0,
 				"only_fans_can_comment": 0,

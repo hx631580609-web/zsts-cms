@@ -31,17 +31,11 @@
   const pageKey = getPageKeyFromURL();
   console.log('[CMS Preview] 启动，URL:', window.location.pathname, '→ pageKey:', pageKey);
 
-  // 拦截 applyTranslations / setLang，防止它们覆盖 CMS 注入的内容
-  // 在预览模式下，这些函数应该什么都不做
-  const _origApply = window.applyTranslations;
+  // 拦截 applyTranslations，防止它覆盖 CMS 注入的内容
+  // 预览模式下 setLang 仍然可用（保存语言偏好 + 更新按钮状态），但不触发翻译
   window.applyTranslations = function() {
-    console.log('[CMS] ⚠️ applyTranslations() 被调用，已阻止（预览模式）');
+    console.log('[CMS] ⚠️ applyTranslations() 已阻止（预览模式）');
   };
-  const _origSetLang = window.setLang;
-  window.setLang = function() {
-    console.log('[CMS] ⚠️ setLang() 被调用，已阻止（预览模式）');
-  };
-  console.log('[CMS] ✅ 已拦截 applyTranslations/setLang');
 
   // ── 工具：从嵌套对象取值 ──────────────────
   function getVal(obj, path) {

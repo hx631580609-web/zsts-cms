@@ -116,7 +116,12 @@ function CreateContentInner() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch('/ai-content/api/upload', { method: 'POST', body: formData });
+      const token = new URLSearchParams(window.location.search).get('token') || localStorage.getItem('cms_token') || '';
+      const res = await fetch('/ai-content/api/upload', {
+        method: 'POST',
+        body: formData,
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '上传失败');
       setUploadedFiles(prev => [...prev, {
@@ -512,7 +517,10 @@ function CreateContentInner() {
 
     try {
       // 从 localStorage 读取用户 CMS token，用于鉴权访问 AI 渠道配置
-      const cmsToken = typeof window !== 'undefined' ? localStorage.getItem('cms_token') || '' : '';
+      // 优先 URL token（iframe 内无 localStorage），兜底 localStorage
+      const urlToken = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('token') || '' : '';
+      const localToken = typeof window !== 'undefined' ? localStorage.getItem('cms_token') || '' : '';
+      const cmsToken = urlToken || localToken;
       const res = await fetch('/ai-content/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

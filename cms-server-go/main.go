@@ -164,6 +164,20 @@ func setupAIProxy(r *gin.Engine) {
 			return
 		}
 
+		// 静态资源免认证（_next/, favicon, *.css, *.js 等）
+		if strings.Contains(c.Request.URL.Path, "/_next/") ||
+			strings.HasSuffix(c.Request.URL.Path, "/favicon.ico") ||
+			strings.HasSuffix(c.Request.URL.Path, ".css") ||
+			strings.HasSuffix(c.Request.URL.Path, ".js") ||
+			strings.HasSuffix(c.Request.URL.Path, ".ico") ||
+			strings.HasSuffix(c.Request.URL.Path, ".svg") ||
+			strings.HasSuffix(c.Request.URL.Path, ".woff") ||
+			strings.HasSuffix(c.Request.URL.Path, ".woff2") {
+			proxy.ServeHTTP(c.Writer, c.Request)
+			c.Abort()
+			return
+		}
+
 		// 验证认证
 		claims, err := middleware.VerifyToken(c)
 		if err != nil {
