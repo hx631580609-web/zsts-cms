@@ -18,6 +18,44 @@
     }
   },
   "enterprise": {
+    "services": {
+      "items": {
+        "zh": [
+          { "title": "市场调研", "desc": "沙特市场深度调研、行业分析、竞品研究、可行性分析报告", "icon": "search" },
+          { "title": "公司注册", "desc": "沙特公司注册、营业执照办理、银行开户、税务登记全流程代办", "icon": "file-text" },
+          { "title": "签证办理", "desc": "工作签证、商务签证、家属签证等代办服务，快速出签", "icon": "stamp" },
+          { "title": "财税法务", "desc": "沙特财税合规、记账报税、法律咨询、合同审核等专业支持", "icon": "scale" },
+          { "title": "办公选址", "desc": "办公室/仓库选址、租赁合同谈判、装修协调等落地服务", "icon": "building" },
+          { "title": "业务对接", "desc": "本地商业资源对接、合作伙伴筛选、政府关系协调", "icon": "handshake" }
+        ],
+        "en": [
+          { "title": "Market Research", "desc": "In-depth Saudi market research, industry analysis, competitor study, feasibility reports", "icon": "search" },
+          { "title": "Company Registration", "desc": "Company registration, business license, bank account opening, tax registration — full-service", "icon": "file-text" },
+          { "title": "Visa Processing", "desc": "Work visa, business visa, family visa processing with fast approval", "icon": "stamp" },
+          { "title": "Finance & Legal", "desc": "Saudi tax compliance, bookkeeping, legal consulting, contract review", "icon": "scale" },
+          { "title": "Office Setup", "desc": "Office/warehouse location scouting, lease negotiation, renovation coordination", "icon": "building" },
+          { "title": "Business Matching", "desc": "Local business resource matching, partner screening, government relations", "icon": "handshake" }
+        ]
+      }
+    },
+    "faq": {
+      "items": {
+        "zh": [
+          { "q": "在沙特注册公司需要多长时间？", "a": "一般注册流程约需15-30个工作日，具体取决于公司类型和审批进度。我们提供加急服务，可缩短至10个工作日。" },
+          { "q": "外资可以100%持股吗？", "a": "可以。沙特允许外资在大多数行业100%持股。部分行业可能需要沙特合作伙伴，我们会根据您的行业提供具体建议。" },
+          { "q": "需要多少注册资本？", "a": "沙特大部分行业无最低注册资本要求，但建议根据实际业务规模合理设定。我们会根据您的行业提供建议。" },
+          { "q": "可以代办工作签证吗？", "a": "可以。我们提供工作签证代办服务，包括签证申请、材料准备、进度跟踪等，快速出签。" },
+          { "q": "在沙特运营需要哪些合规要求？", "a": "主要包括年度审计、税务申报、劳工合规、商业登记续期等。我们的财税团队提供全程合规支持。" }
+        ],
+        "en": [
+          { "q": "How long does it take to register a company in Saudi Arabia?", "a": "Generally 15-30 business days, depending on company type and approval. We offer expedited service to reduce to 10 business days." },
+          { "q": "Can foreign investors hold 100% ownership?", "a": "Yes. Saudi Arabia allows 100% foreign ownership in most industries. Some sectors may require a local partner; we'll advise based on your industry." },
+          { "q": "What is the minimum registered capital?", "a": "Most industries in Saudi Arabia have no minimum capital requirement, but we recommend setting it based on your actual business scale." },
+          { "q": "Can you process work visas?", "a": "Yes. We provide work visa processing services including application, documentation, and progress tracking with fast approval." },
+          { "q": "What compliance requirements are needed for operations?", "a": "Mainly annual audits, tax filings, labor compliance, and commercial registration renewal. Our finance team provides full compliance support." }
+        ]
+      }
+    },
     "step": {
       "1": {
         "desc": {

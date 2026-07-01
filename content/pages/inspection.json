@@ -1,0 +1,323 @@
+{
+  "cta": {
+    "btn1": {
+      "en": "",
+      "zh": "立即咨询"
+    },
+    "btn2": {
+      "en": "",
+      "zh": "微信咨询"
+    },
+    "subtitle": {
+      "en": "",
+      "zh": "无论您是计划商务考察、参展参会，还是企业出海落地，\n                中盛启瀚都将为您提供专业、高效的一站式服务。"
+    },
+    "title": {
+      "en": "",
+      "zh": "开启您的沙特商务之旅"
+    }
+  },
+  "footer": {
+    "contactTitle": {
+      "en": "",
+      "zh": "联系方式"
+    },
+    "copyright": {
+      "en": "",
+      "zh": "中盛启瀚（ZSTS）国际商务发展有限公司"
+    },
+    "desc": {
+      "en": "",
+      "zh": "依托沙特阿拉伯授权签证中心，聚焦沙特市场的综合商业服务公司，致力于构筑中沙两国高质量发展桥梁。"
+    },
+    "navTitle": {
+      "en": "",
+      "zh": "快速导航"
+    },
+    "privacy": {
+      "en": "",
+      "zh": "隐私政策"
+    },
+    "sitemap": {
+      "en": "",
+      "zh": "网站地图"
+    },
+    "terms": {
+      "en": "",
+      "zh": "服务条款"
+    }
+  },
+  "hero": {
+    "badge": {
+      "en": "",
+      "zh": "企业考察 · 定制行程"
+    },
+    "bgImage": "images/riyadh-skyline.jpg",
+    "desc": {
+      "en": "",
+      "zh": "定制化企业考察行程，深度参访沙特龙头企业，对接本地商业资源"
+    },
+    "subtitle": {
+      "en": "",
+      "zh": "深度参访 · 资源对接"
+    },
+    "title": {
+      "en": "",
+      "zh": "企业考察"
+    }
+  },
+  "inspection": {
+    "services": {
+      "items": {
+        "zh": [
+          { "title": "商务考察团", "desc": "定制化沙特商务考察行程，参访龙头企业，对接本地商业资源", "icon": "building-2" },
+          { "title": "展会参展", "desc": "沙特国际展会参展服务，含展位预订、布展、行程安排", "icon": "presentation" },
+          { "title": "政府/机构拜访", "desc": "安排拜访沙特政府部门、商会、行业协会等机构", "icon": "landmark" },
+          { "title": "项目调研", "desc": "沙特市场调研、行业分析、合作伙伴筛选等专项服务", "icon": "search" }
+        ],
+        "en": [
+          { "title": "Business Delegation", "desc": "Customized Saudi business itinerary, visiting leading enterprises and matching local resources", "icon": "building-2" },
+          { "title": "Exhibition Participation", "desc": "Saudi international exhibition services including booth booking, setup, and itinerary", "icon": "presentation" },
+          { "title": "Government/Institution Visit", "desc": "Arrange visits to Saudi government departments, chambers of commerce, and industry associations", "icon": "landmark" },
+          { "title": "Project Research", "desc": "Saudi market research, industry analysis, and partner screening services", "icon": "search" }
+        ]
+      }
+    },
+    "faq": {
+      "items": {
+        "zh": [
+          { "q": "考察行程可以定制吗？", "a": "可以。我们根据您的行业、考察目的、时间和预算定制专属行程，包括参访企业、会议安排、交通住宿等。" },
+          { "q": "可以安排哪些类型的参访企业？", "a": "我们可以安排参访沙特各行业龙头企业，包括能源、建筑、金融、科技、制造业等领域的知名企业。" },
+          { "q": "考察费用包含哪些？", "a": "费用包含行程定制、企业对接、商务会议安排、翻译服务、交通住宿等，透明报价无隐形费用。" },
+          { "q": "需要多久前开始准备？", "a": "建议至少提前30-45天开始准备，以便充分对接企业、安排会议和预订行程。旺季建议更早。" },
+          { "q": "可以配翻译/商务陪同吗？", "a": "可以。我们提供专业中文/阿拉伯语翻译及商务陪同人员，协助沟通交流，确保考察顺利进行。" }
+        ],
+        "en": [
+          { "q": "Can the inspection itinerary be customized?", "a": "Yes. We customize itineraries based on your industry, purpose, timeline, and budget, including enterprise visits, meetings, transport, and accommodation." },
+          { "q": "What types of enterprises can be visited?", "a": "We can arrange visits to leading Saudi enterprises in energy, construction, finance, technology, manufacturing, and more." },
+          { "q": "What does the inspection fee include?", "a": "Fees cover itinerary customization, enterprise liaison, business meeting arrangement, translation, transport, and accommodation—transparent pricing." },
+          { "q": "How far in advance should I start preparing?", "a": "We recommend starting at least 30-45 days in advance for sufficient enterprise coordination and booking. Earlier for peak seasons." },
+          { "q": "Can I get a translator/business escort?", "a": "Yes. We provide professional Chinese/Arabic translators and business escorts to facilitate communication and ensure a smooth inspection." }
+        ]
+      }
+    },
+    "step": {
+      "1": {
+        "desc": {
+          "en": "",
+          "zh": "联系专属顾问，告知考察目的、行业方向、参访企业类型及时间安排"
+        },
+        "title": {
+          "en": "",
+          "zh": "需求沟通"
+        }
+      },
+      "2": {
+        "desc": {
+          "en": "",
+          "zh": "根据您的需求定制考察行程方案，含参访企业、会议安排、交通住宿"
+        },
+        "title": {
+          "en": "",
+          "zh": "方案定制"
+        }
+      },
+      "3": {
+        "desc": {
+          "en": "",
+          "zh": "与您确认最终行程方案，办理签证、机票、酒店等出行准备"
+        },
+        "title": {
+          "en": "",
+          "zh": "确认行程"
+        }
+      },
+      "4": {
+        "desc": {
+          "en": "",
+          "zh": "顾问协助参访行程安排，及时协调行程中的相关问题"
+        },
+        "title": {
+          "en": "",
+          "zh": "出发考察"
+        }
+      },
+      "5": {
+        "desc": {
+          "en": "",
+          "zh": "考察结束后提供总结报告，协助后续商业对接与落地服务"
+        },
+        "title": {
+          "en": "",
+          "zh": "后续跟进"
+        }
+      }
+    }
+  },
+  "modal": {
+    "desc": {
+      "en": "",
+      "zh": "选择您方便的方式联系我们"
+    },
+    "phone": {
+      "en": "",
+      "zh": "客服电话：010-85656995 / 010-53670397 / 17190016075"
+    },
+    "title": {
+      "en": "",
+      "zh": "扫码咨询"
+    }
+  },
+  "nav": {
+    "about": {
+      "en": "",
+      "zh": "关于我们"
+    },
+    "consult": {
+      "en": "",
+      "zh": "立即咨询"
+    },
+    "enterprise": {
+      "en": "",
+      "zh": "企业出海"
+    },
+    "home": {
+      "en": "",
+      "zh": "首页"
+    },
+    "inspection": {
+      "en": "",
+      "zh": "企业考察"
+    },
+    "insurance": {
+      "en": "",
+      "zh": "境外保险"
+    },
+    "news": {
+      "en": "",
+      "zh": "沙特资讯"
+    },
+    "saudiVisa": {
+      "en": "",
+      "zh": "沙特签证"
+    },
+    "transport": {
+      "en": "",
+      "zh": "境外交通住宿"
+    },
+    "visa": {
+      "en": "",
+      "zh": "全球签证"
+    }
+  },
+  "page": {
+    "title": {
+      "en": "",
+      "zh": "企业考察 | 中盛启瀚 ZSTS"
+    }
+  },
+  "section": {
+    "faq": {
+      "tag": {
+        "en": "",
+        "zh": "常见问题"
+      },
+      "title": {
+        "en": "",
+        "zh": "FAQ · 您最关心的问题"
+      }
+    },
+    "process": {
+      "subtitle": {
+        "en": "",
+        "zh": "从需求沟通到行程结束，专业顾问全程跟进，"
+      },
+      "tag": {
+        "en": "",
+        "zh": "办理流程"
+      },
+      "title": {
+        "en": "",
+        "zh": "5步定制您的考察行程"
+      }
+    },
+    "services": {
+      "subtitle": {
+        "en": "",
+        "zh": "根据您的商务需求，提供多样化的企业考察服务方案"
+      },
+      "tag": {
+        "en": "",
+        "zh": "服务类型"
+      },
+      "title": {
+        "en": "",
+        "zh": "企业考察服务类型"
+      }
+    }
+  },
+  "sidebar": {
+    "contact": {
+      "sub": {
+        "en": "",
+        "zh": "快速响应"
+      },
+      "title": {
+        "en": "",
+        "zh": "考察顾问"
+      }
+    },
+    "email": {
+      "label": {
+        "en": "",
+        "zh": "邮件咨询"
+      }
+    },
+    "phone": {
+      "label": {
+        "en": "",
+        "zh": "电话咨询"
+      }
+    },
+    "qr": {
+      "enterprise": {
+        "en": "",
+        "zh": "微信客服二"
+      },
+      "personal": {
+        "en": "",
+        "zh": "微信客服一"
+      },
+      "whatsapp": {
+        "en": "",
+        "zh": "WhatsApp"
+      }
+    },
+    "trust": {
+      "p1": {
+        "en": "",
+        "zh": "定制化行程"
+      },
+      "p2": {
+        "en": "",
+        "zh": "沙特本地资源"
+      },
+      "p3": {
+        "en": "",
+        "zh": "中文顾问支持"
+      },
+      "p4": {
+        "en": "",
+        "zh": "多家企业服务经验"
+      },
+      "p5": {
+        "en": "",
+        "zh": "透明报价"
+      },
+      "title": {
+        "en": "",
+        "zh": "为什么选择中盛启瀚？"
+      }
+    }
+  }
+}

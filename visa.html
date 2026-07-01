@@ -244,8 +244,11 @@
         // 5 步办理流程 repeater
         function renderStep() {
             var d = window.CMS_PAGE_DATA;
-            if (!d || !d.step) return;
-            var items = (d.step.items && d.step.items[currentLang()]) || [];
+            if (!d) return;
+            // 兼容两种路径：d.step.items 或 d.section.process.items
+            var stepData = d.step || (d.section && d.section.process) || null;
+            if (!stepData) return;
+            var items = (stepData.items && stepData.items[currentLang()]) || [];
             var container = document.getElementById('step-grid');
             if (!container) return;
             container.innerHTML = '';
@@ -298,8 +301,11 @@
         // FAQ repeater
         function renderFaq() {
             var d = window.CMS_PAGE_DATA;
-            if (!d || !d.faq) return;
-            var items = (d.faq.items && d.faq.items[currentLang()]) || [];
+            if (!d) return;
+            // 兼容两种路径：d.faq.items 或 d.section.faq.items
+            var faqData = d.faq || (d.section && d.section.faq) || null;
+            if (!faqData) return;
+            var items = (faqData.items && faqData.items[currentLang()]) || [];
             var container = document.getElementById('faq-container');
             if (!container) return;
             container.innerHTML = '';

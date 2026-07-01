@@ -1,5 +1,23 @@
 {
   "adv": {
+    "items": {
+      "zh": [
+        { "title": "使馆官方授权", "desc": "沙特阿拉伯驻华大使馆领事部直接授权认证，权威可靠，流程规范透明。", "icon": "shield-check", "color": "green" },
+        { "title": "高效出签通道", "desc": "专业审核团队预检材料，与使馆保持沟通，协助推进签证办理进度。", "icon": "zap", "color": "sand" },
+        { "title": "一对一专属服务", "desc": "每位客户配备专属顾问，从材料准备到取签全程跟进，工作时间内及时响应。", "icon": "users", "color": "blue" },
+        { "title": "全链条服务", "desc": "签证、机票、酒店、保险、考察、落地一站式解决，无需多方对接。", "icon": "globe", "color": "purple" },
+        { "title": "本地资源深厚", "desc": "在沙特拥有合作网络资源，为企业考察、商务对接提供本地支持。", "icon": "map-pin", "color": "orange" },
+        { "title": "高通过率", "desc": "多年经验积累，材料审核严格把关，助力提升签证申请通过概率。", "icon": "heart-handshake", "color": "rose" }
+      ],
+      "en": [
+        { "title": "Embassy Authorized", "desc": "Directly authorized by the Consular Department of the Royal Embassy of Saudi Arabia, authoritative and transparent.", "icon": "shield-check", "color": "green" },
+        { "title": "Efficient Processing", "desc": "Professional team pre-review, embassy communication, expedited visa processing.", "icon": "zap", "color": "sand" },
+        { "title": "Dedicated Consultant", "desc": "Each client gets a dedicated advisor from document preparation to visa collection.", "icon": "users", "color": "blue" },
+        { "title": "Full-Chain Service", "desc": "Visa, flights, hotels, insurance, inspection, landing — one-stop solution.", "icon": "globe", "color": "purple" },
+        { "title": "Deep Local Resources", "desc": "Extensive partnership network in Saudi Arabia for business inspections and meetings.", "icon": "map-pin", "color": "orange" },
+        { "title": "High Approval Rate", "desc": "Years of experience, strict document review, helping improve visa approval rates.", "icon": "heart-handshake", "color": "rose" }
+      ]
+    },
     "1": {
       "desc": {
         "en": "",
@@ -234,6 +252,20 @@
     }
   },
   "stats": {
+    "items": {
+      "zh": [
+        { "number": "15+", "label": "覆盖国家地区" },
+        { "number": "98%", "label": "出签成功率" },
+        { "number": "5000+", "label": "服务客户" },
+        { "number": "10+", "label": "年行业深耕" }
+      ],
+      "en": [
+        { "number": "15+", "label": "Countries Covered" },
+        { "number": "98%", "label": "Visa Approval Rate" },
+        { "number": "5000+", "label": "Clients Served" },
+        { "number": "10+", "label": "Years of Experience" }
+      ]
+    },
     "1": {
       "label": {
         "en": "",
