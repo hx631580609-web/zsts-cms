@@ -57,8 +57,8 @@ const INITIAL_BLOCKS: ContentBlock[] = [
   {
     id: 'img1',
     type: 'image',
-    content: 'https://images.pexels.com/photos/3727464/pexels-photo-3727464.jpeg?w=800&h=400&fit=crop',
-    imageDesc: '沙特利雅得城市天际线',
+    content: 'https://images.pexels.com/photos/31654587/pexels-photo-31654587.jpeg?w=800&h=400&fit=crop',
+    imageDesc: '利雅得现代天际线',
   },
   {
     id: 'h1',
@@ -79,8 +79,8 @@ const INITIAL_BLOCKS: ContentBlock[] = [
   {
     id: 'img2',
     type: 'image',
-    content: 'https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?w=800&h=400&fit=crop',
-    imageDesc: '签证申请材料',
+    content: 'https://images.pexels.com/photos/30137371/pexels-photo-30137371.jpeg?w=800&h=400&fit=crop',
+    imageDesc: '阿卢拉马拉亚音乐厅',
   },
   {
     id: 'h2',
@@ -135,8 +135,8 @@ const INITIAL_BLOCKS: ContentBlock[] = [
   {
     id: 'img3',
     type: 'image',
-    content: 'https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?w=800&h=400&fit=crop',
-    imageDesc: '签证办理流程',
+    content: 'https://images.pexels.com/photos/17186685/pexels-photo-17186685.jpeg?w=800&h=400&fit=crop',
+    imageDesc: '阿卢拉大象岩',
   },
   {
     id: 'h4',
@@ -282,10 +282,10 @@ function parseAiContentToBlocks(text: string): ContentBlock[] {
       continue;
     }
 
-    // 提示/注意类内容（⚠ 💡 开头）
+    // 提示/注意类内容（⚠ 💡 开头）— 保留原始 emoji
     if (/^[⚠💡🔔]/.test(line)) {
       flushList();
-      blocks.push({ id: genId(), type: 'tip', content: line.replace(/^[⚠💡🔔]\s*/, '') });
+      blocks.push({ id: genId(), type: 'tip', content: line });
       continue;
     }
 
@@ -390,7 +390,7 @@ function ArticleEditorInner() {
   const [distribution, setDistribution] = useState<{ cms: boolean; wechat: boolean }>({ cms: false, wechat: false });
   const [publishing, setPublishing] = useState(false);
   const [publishMessage, setPublishMessage] = useState('');
-  const [coverImage, setCoverImage] = useState('https://images.pexels.com/photos/3727464/pexels-photo-3727464.jpeg?w=800&h=360&fit=crop');
+  const [coverImage, setCoverImage] = useState('https://images.pexels.com/photos/31654587/pexels-photo-31654587.jpeg?w=800&h=360&fit=crop');
   const [imagePickerTarget, setImagePickerTarget] = useState<{ blockId?: string; isCover?: boolean } | null>(null);
   const [imagePickerTab, setImagePickerTab] = useState<'pexels' | 'upload'>('pexels');
   const [imagePickerQuery, setImagePickerQuery] = useState('');
@@ -494,7 +494,9 @@ function ArticleEditorInner() {
         word_count: wordCount,
       };
 
-      const token = typeof window !== 'undefined' ? localStorage.getItem('cms_token') || '' : '';
+      const urlToken = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('token') || '' : '';
+      const localToken = typeof window !== 'undefined' ? localStorage.getItem('cms_token') || '' : '';
+      const token = urlToken || localToken;
       const url = articleId
         ? `/api/articles/${articleId}`
         : '/api/articles';
@@ -544,9 +546,46 @@ function ArticleEditorInner() {
         case 'table':
           return `<table class="w-full text-sm border"><tbody>${(b.rows || []).map((r, ri) => `<tr${ri === 0 ? ' class="bg-zinc-800 text-white"' : ''}>${r.map(c => `<td class="border px-3 py-2">${escapeHtml(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
         case 'tip':
-          return `<div class="tip"><strong>提示：</strong>${escapeHtml(b.content)}</div>`;
+          return `<div class="tip">${escapeHtml(b.content)}</div>`;
         case 'quote':
           return `<blockquote>${escapeHtml(b.content)}</blockquote>`;
+        default:
+          return '';
+      }
+    }).join('\n');
+  }
+
+  // 微信版 HTML：Tailwind class 转为内联 style（微信会过滤 class）
+  function blocksToWechatHtml(blocks: ContentBlock[]) {
+    const styles = {
+      h2: 'font-size:18px;font-weight:bold;color:#222;margin:16px 0 8px;padding:0 4px;border-left:4px solid #07C160;',
+      p: 'font-size:15px;color:#333;line-height:1.75;margin:8px 0;',
+      img: 'width:100%;border-radius:8px;margin:12px auto;display:block;',
+      figcaption: 'text-align:center;font-size:13px;color:#999;margin-top:4px;',
+      ul: 'padding-left:20px;margin:8px 0;',
+      li: 'font-size:15px;color:#333;line-height:1.75;margin:4px 0;',
+      table: 'width:100%;border-collapse:collapse;margin:12px 0;font-size:14px;',
+      td: 'border:1px solid #ddd;padding:8px 10px;',
+      th: 'background:#222;color:#fff;border:1px solid #444;padding:8px 10px;',
+      tip: 'background:#fef9e7;border:1px solid #f9e79f;border-radius:8px;padding:12px 16px;margin:12px 0;font-size:14px;color:#7d6608;',
+      blockquote: 'border-left:3px solid #07C160;padding:8px 16px;margin:12px 0;color:#666;font-size:14px;background:#f0fdf4;',
+    };
+    return blocks.map(b => {
+      switch (b.type) {
+        case 'heading':
+          return `<h2 style="${styles.h2}">${escapeHtml(b.content)}</h2>`;
+        case 'paragraph':
+          return `<p style="${styles.p}">${escapeHtml(b.content)}</p>`;
+        case 'image':
+          return `<div style="text-align:center;margin:12px 0;"><img src="${escapeHtml(b.content)}" style="${styles.img}" />${b.imageDesc ? `<p style="${styles.figcaption}">${escapeHtml(b.imageDesc)}</p>` : ''}</div>`;
+        case 'list':
+          return `${b.content ? `<p style="${styles.p}"><strong>${escapeHtml(b.content)}</strong></p>` : ''}<ul style="${styles.ul}">${(b.items || []).map(i => `<li style="${styles.li}">${escapeHtml(i)}</li>`).join('')}</ul>`;
+        case 'table':
+          return `<table style="${styles.table}"><tbody>${(b.rows || []).map((r, ri) => `<tr>${r.map(c => ri === 0 ? `<td style="${styles.th}">${escapeHtml(c)}</td>` : `<td style="${styles.td}">${escapeHtml(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+        case 'tip':
+          return `<div style="${styles.tip}">${escapeHtml(b.content)}</div>`;
+        case 'quote':
+          return `<blockquote style="${styles.blockquote}">${escapeHtml(b.content)}</blockquote>`;
         default:
           return '';
       }
@@ -625,18 +664,18 @@ function ArticleEditorInner() {
     if (distribution.wechat) {
       setPublishing(true);
       try {
-        const contentHtml = blocksToHtml(blocks);
+        const contentHtml = blocksToWechatHtml(blocks);
         const res = await fetch('/api/wechat/draft', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + (typeof window !== 'undefined' ? localStorage.getItem('cms_token') || '' : ''),
+            'Authorization': 'Bearer ' + (typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('token') || localStorage.getItem('cms_token') || '') : ''),
           },
           body: JSON.stringify({
             title,
             author: 'ZSTS签证通',
             content: contentHtml,
-            digest: summary || title,
+            digest: (summary || title).substring(0, 120),
             thumb_media_id: coverImage,
           }),
         });
@@ -652,6 +691,15 @@ function ArticleEditorInner() {
       } finally {
         setPublishing(false);
       }
+    }
+
+    // 推送成功后更新文章状态为已发布
+    if (articleId && (distribution.cms || distribution.wechat)) {
+      const token = typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('token') || localStorage.getItem('cms_token') || '') : '';
+      fetch(`/api/articles/${articleId}/publish`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` },
+      }).catch(() => {});
     }
   }
 
@@ -680,8 +728,9 @@ function ArticleEditorInner() {
   const handlePexelsSearch = async () => {
     setImagePickerLoading(true);
     try {
+      const query = imagePickerQuery || 'riyadh alula saudi arabia landmarks';
       const res = await fetch(
-        `https://api.pexels.com/v1/search?query=${encodeURIComponent(imagePickerQuery || 'saudi arabia business visa')}&per_page=8`,
+        `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=8`,
         {
           headers: { Authorization: 'brcLaxxFLPDBf7mcvEUtBGQc9DpZznfR9fqRaBjwYwLmCwwxeljifpXJ' },
         }
@@ -697,14 +746,14 @@ function ArticleEditorInner() {
       } else {
         // fallback: curated results
         setPexelsResults([
-          { url: 'https://images.pexels.com/photos/3727464/pexels-photo-3727464.jpeg?w=800&h=400&fit=crop', desc: '利雅得城市天际线' },
-          { url: 'https://images.pexels.com/photos/3881104/pexels-photo-3881104.jpeg?w=800&h=400&fit=crop', desc: '沙漠风光' },
-          { url: 'https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?w=800&h=400&fit=crop', desc: '商务办公' },
-          { url: 'https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?w=800&h=400&fit=crop', desc: '团队协作' },
-          { url: 'https://images.pexels.com/photos/17444870/pexels-photo-17444870.jpeg?w=800&h=400&fit=crop', desc: '城市夜景' },
-          { url: 'https://images.pexels.com/photos/2104742/pexels-photo-2104742.jpeg?w=800&h=400&fit=crop', desc: '旅行出行' },
-          { url: 'https://images.pexels.com/photos/325193/pexels-photo-325193.jpeg?w=800&h=400&fit=crop', desc: '城市建筑' },
-          { url: 'https://images.pexels.com/photos/313782/pexels-photo-313782.jpeg?w=800&h=400&fit=crop', desc: '现代都市' },
+          { url: 'https://images.pexels.com/photos/31654587/pexels-photo-31654587.jpeg?w=800&h=400&fit=crop', desc: '封面图1' },
+          { url: 'https://images.pexels.com/photos/10545941/pexels-photo-10545941.jpeg?w=800&h=400&fit=crop', desc: '封面图2' },
+          { url: 'https://images.pexels.com/photos/11359895/pexels-photo-11359895.jpeg?w=800&h=400&fit=crop', desc: '封面图3' },
+          { url: 'https://images.pexels.com/photos/17049056/pexels-photo-17049056.jpeg?w=800&h=400&fit=crop', desc: '封面图4' },
+          { url: 'https://images.pexels.com/photos/36405564/pexels-photo-36405564.jpeg?w=800&h=400&fit=crop', desc: '利雅得现代天际线' },
+          { url: 'https://images.pexels.com/photos/30137371/pexels-photo-30137371.jpeg?w=800&h=400&fit=crop', desc: '阿卢拉马拉亚音乐厅' },
+          { url: 'https://images.pexels.com/photos/17186685/pexels-photo-17186685.jpeg?w=800&h=400&fit=crop', desc: '阿卢拉大象岩' },
+          { url: 'https://images.pexels.com/photos/3727464/pexels-photo-3727464.jpeg?w=800&h=400&fit=crop', desc: '利雅得城市全景' },
         ]);
       }
     } catch {
@@ -776,7 +825,6 @@ function ArticleEditorInner() {
       case 'tip':
         return (
           <div key={block.id} className="my-4 flex gap-3 rounded-xl bg-amber-50 border border-amber-200 p-4">
-            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />
             <p className="text-sm leading-relaxed text-amber-800">{block.content}</p>
           </div>
         );

@@ -9,7 +9,6 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  Phone,
   Upload,
   Loader2,
   ExternalLink,
@@ -17,6 +16,7 @@ import {
   Play,
   X,
   CheckCheck,
+  Send,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,17 +40,37 @@ import { fetchFile } from '@ffmpeg/util';
 
 type Ratio = '9:16' | '16:9';
 
-// ── BGM 音频生成（Web Audio API，Hijaz 阿拉伯音阶） ──
-// 音符频率映射（Hijaz 音阶 D4-G5）
-const HIJAZ_SCALE = [293.66, 311.13, 369.99, 392.00, 440.00, 466.16, 554.37, 587.33];
-// 各 BGM 的旋律模式（音阶索引序列 + 节奏）
-type BgmPattern = { notes: number[]; rhythm: number[]; tempo: number; wave: OscillatorType };
+// ── BGM 音频生成（Web Audio API，欢快阿拉伯旋律） ──
+// 音符频率映射（Hijaz 音阶 D4-G5，具有鲜明中东色彩）
+const HIJAZ_SCALE = [293.66, 311.13, 369.99, 392.00, 440.00, 466.16, 554.37, 587.33, 622.25, 698.46, 783.99, 880.00];
+// 各 BGM 的旋律模式（音阶索引序列 + 节奏）— 5 曲风格迥异
+type BgmPattern = { notes: number[]; rhythm: number[]; tempo: number; wave: OscillatorType; accent: string };
 const BGM_PATTERNS: Record<string, BgmPattern> = {
-  '沙特传统乌德琴':  { notes: [0,2,4,3,2,1,0,2,4,5,4,3], rhythm: [3,1,2,2,2,2,3,1,2,1,3,2], tempo: 80,  wave: 'triangle' },
-  '沙漠驼铃':        { notes: [4,4,0,0,4,4,2,2],           rhythm: [4,2,4,2,4,2,4,2],           tempo: 60,  wave: 'sine' },
-  '阿拉伯之夜':      { notes: [0,2,4,5,7,5,4,2,0,2,3,4],   rhythm: [2,2,2,2,2,2,2,2,2,2,2,2],   tempo: 120, wave: 'sawtooth' },
-  '中东风情':        { notes: [0,1,3,4,3,1,0,2,4,5,4,2],   rhythm: [2,2,3,1,2,2,2,2,3,1,2,2],   tempo: 100, wave: 'triangle' },
-  '利雅得晨曦':      { notes: [4,3,2,0,2,3,4,5,7,5,4,0],   rhythm: [3,1,2,2,3,1,2,2,4,2,2,2],   tempo: 90,  wave: 'sine' },
+  '沙特传统乌德琴': {
+    notes: [0,2,4,5,7,5,4,2, 3,5,7,8,10,8,7,5, 4,5,7,9,10,9,7,5, 4,2,0,2,4,2,0],
+    rhythm: [2,1,1,2,2,1,1,2, 2,1,1,2,2,1,1,2, 2,1,1,2,2,1,1,2, 1,1,2,1,2,2,4],
+    tempo: 140, wave: 'triangle', accent: '传统乌德琴琶音，明亮跳跃'
+  },
+  '沙漠驼铃': {
+    notes: [0,0,4,4, 2,2,5,5, 3,3,7,7, 5,5,0,0, 4,4,2,2, 5,5,3,3, 7,7,5,5, 4,4,0,0],
+    rhythm: [3,1,3,1, 3,1,3,1, 3,1,3,1, 3,1,3,1, 3,1,3,1, 3,1,3,1, 3,1,3,1, 3,1,3,1],
+    tempo: 140, wave: 'sine', accent: '驼铃叮当节奏，轻盈欢快'
+  },
+  '阿拉伯之夜': {
+    notes: [0,4,7,5, 4,2,0,2, 4,5,7,10, 8,7,5,4, 0,2,4,5, 7,5,4,2, 0,4,7,5, 4,2,0],
+    rhythm: [2,2,1,1, 2,2,1,1, 2,2,1,1, 2,2,1,1, 2,2,1,1, 2,2,1,1, 2,2,1,1, 2,2,4],
+    tempo: 170, wave: 'sawtooth', accent: '夜市舞曲，热烈奔放'
+  },
+  '中东风情': {
+    notes: [5,4,5,7, 8,7,5,4, 2,3,4,5, 4,3,2,0, 5,7,8,7, 5,4,3,2, 0,2,4,5, 7,5,4,0],
+    rhythm: [1,1,2,2, 2,1,1,2, 1,1,2,2, 2,1,1,2, 1,1,2,2, 2,1,1,2, 1,1,2,2, 2,2,2],
+    tempo: 150, wave: 'triangle', accent: '民间舞曲，轻松愉悦'
+  },
+  '利雅得晨曦': {
+    notes: [4,5,7,8, 10,8,7,5, 4,5,7,9, 10,9,7,5, 8,10,8,7, 5,7,5,4, 2,4,2,0, 0,2,4,0],
+    rhythm: [2,2,2,2, 3,1,2,2, 2,2,2,2, 3,1,2,2, 2,2,2,2, 3,1,2,2, 2,2,2,2, 3,1,4],
+    tempo: 140, wave: 'sine', accent: '清晨阳光，温暖上扬'
+  },
 };
 
 async function createBgmAudioStream(bgmName: string, durationSec: number): Promise<MediaStream | null> {
@@ -72,86 +92,101 @@ async function createBgmAudioStream(bgmName: string, durationSec: number): Promi
   osc.connect(oscGain);
   oscGain.connect(masterGain);
 
-  // 背景低音 drone
-  const drone = ctx.createOscillator();
-  drone.type = 'sine';
-  drone.frequency.value = HIJAZ_SCALE[0] / 2; // 低八度根音
-  const droneGain = ctx.createGain();
-  droneGain.gain.value = 0.04;
-  drone.connect(droneGain);
-  droneGain.connect(masterGain);
+  // 背景低音 drone（根音+五度双声部）
+  const now = ctx.currentTime;
+  const rootFreq = HIJAZ_SCALE[0] / 2;
+  [rootFreq, rootFreq * 1.5].forEach((freq, idx) => {
+    const d = ctx.createOscillator();
+    d.type = 'sine';
+    d.frequency.value = freq;
+    const dg = ctx.createGain();
+    dg.gain.value = idx === 0 ? 0.04 : 0.02;
+    d.connect(dg);
+    dg.connect(masterGain);
+    d.start(now);
+    d.stop(now + durationSec);
+  });
 
-  // 节奏打击（模拟 darbuka）
+  const endTime = now + durationSec;
+
+  // 节奏打击（模拟 darbuka + riq 铃鼓）
   const percGain = ctx.createGain();
-  percGain.gain.value = 0.06;
+  percGain.gain.value = 0.07;
   percGain.connect(masterGain);
 
-  const now = ctx.currentTime;
   osc.start(now);
-  drone.start(now);
+  osc.stop(endTime);
 
-  // 编排旋律
-  let time = now;
-  let loopCount = 0;
-  const loopDuration = pattern.rhythm.reduce((a, b) => a + b, 0) * beatDuration;
-  while (time < now + durationSec + 0.5) {
-    for (let i = 0; i < pattern.notes.length; i++) {
-      const start = time;
-      const dur = pattern.rhythm[i] * beatDuration * 0.85;
-      const freq = HIJAZ_SCALE[pattern.notes[i] % HIJAZ_SCALE.length];
-      osc.frequency.setValueAtTime(freq, start);
-      oscGain.gain.setValueAtTime(0.12, start);
-      oscGain.gain.setTargetAtTime(0.001, start + dur * 0.7, dur * 0.3);
-      // 打击节奏（每拍一次）
-      const osc2 = ctx.createOscillator();
-      osc2.type = 'triangle';
-      osc2.frequency.value = 200 + (i % 2) * 100;
-      const g2 = ctx.createGain();
-      g2.gain.setValueAtTime(0, start);
-      g2.gain.linearRampToValueAtTime(0.3, start + 0.01);
-      g2.gain.exponentialRampToValueAtTime(0.001, start + 0.08);
-      osc2.connect(g2);
-      g2.connect(percGain);
-      osc2.start(start);
-      osc2.stop(start + 0.1);
-      time = start + pattern.rhythm[i] * beatDuration;
-    }
-    loopCount++;
-  }
+  // 用定时器分批调度音符，避免一次性预排太多事件导致浏览器截断
+  const totalSteps = Math.floor(durationSec / beatDuration);
+  let step = 0;
+  const scheduleWindow = 0.5;
 
-  osc.stop(now + durationSec + 0.5);
-  drone.stop(now + durationSec + 0.5);
+  return new Promise<MediaStream>((resolve) => {
+    const scheduleNext = () => {
+      const scheduleUntil = ctx.currentTime + scheduleWindow;
+      while (step < totalSteps) {
+        const noteIdx = step % pattern.notes.length;
+        const start = now + step * beatDuration;
+        if (start > scheduleUntil) break;
 
-  return destination.stream;
+        const dur = pattern.rhythm[noteIdx] * beatDuration * 0.85;
+        const freq = HIJAZ_SCALE[pattern.notes[noteIdx] % HIJAZ_SCALE.length];
+        osc.frequency.setValueAtTime(freq, start);
+        oscGain.gain.setValueAtTime(0.12, start);
+        oscGain.gain.setTargetAtTime(0.001, start + dur * 0.7, Math.max(dur * 0.3, 0.001));
+
+        const osc2 = ctx.createOscillator();
+        osc2.type = 'triangle';
+        osc2.frequency.value = 200 + (noteIdx % 2) * 100;
+        const g2 = ctx.createGain();
+        g2.gain.setValueAtTime(0, start);
+        g2.gain.linearRampToValueAtTime(0.3, Math.max(start + 0.005, start));
+        g2.gain.exponentialRampToValueAtTime(0.001, start + 0.04);
+        osc2.connect(g2);
+        g2.connect(percGain);
+        osc2.start(start);
+        osc2.stop(start + 0.06);
+        step++;
+      }
+
+      if (step < totalSteps) {
+        setTimeout(scheduleNext, 200);
+      } else {
+        resolve(destination.stream);
+      }
+    };
+    scheduleNext();
+  });
 }
 
-// 3 个预设背景图
+// 3 个预设背景图（Pexels 免费商用）
 const PRESET_BGS = [
   {
     id: 'desert-dunes',
-    label: '沙漠金丘',
-    url: 'https://images.pexels.com/photos/189349/pexels-photo-189349.jpeg?w=600&h=1067&fit=crop&q=80',
-    accent: '#D4A843',
-    overlay: 'linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.65) 100%)',
-    tagBg: '#1a5c2a',
+    label: '阿卢拉大象岩',
+    url: 'https://images.pexels.com/photos/17186685/pexels-photo-17186685.jpeg?w=600&h=1067&fit=crop&q=80',
+    accent: '#D4975B',
+    overlay: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.25) 50%, rgba(0,0,0,0.6) 100%)',
+    tagBg: '#5c3a1a',
     tagText: '#FFFFFF',
   },
   {
     id: 'riyadh-skyline',
-    label: '利雅得天际线',
-    url: 'https://images.pexels.com/photos/2087391/pexels-photo-2087391.jpeg?w=600&h=1067&fit=crop&q=80',
+    label: '利雅得现代天际线',
+    url: 'https://images.pexels.com/photos/36405564/pexels-photo-36405564.jpeg?w=600&h=1067&fit=crop&q=80',
     accent: '#4A90D9',
-    overlay: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.25) 50%, rgba(0,0,0,0.7) 100%)',
+    overlay: 'linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.65) 100%)',
     tagBg: '#1a3a6b',
     tagText: '#FFFFFF',
   },
   {
     id: 'mecca-night',
-    label: '麦加夜景',
-    url: 'https://images.pexels.com/photos/2087454/pexels-photo-2087454.jpeg?w=600&h=1067&fit=crop&q=80',
-    accent: '#C9A84C',
-    overlay: 'linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.75) 100%)',
-    tagBg: '#6b4c1a',
+    label: '马拉亚音乐厅',
+    url: 'https://images.pexels.com/photos/30137371/pexels-photo-30137371.jpeg?w=600&h=1067&fit=crop&q=80',
+    accent: '#B8C5D0',
+    overlay: 'linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.6) 100%)',
+    tagBg: '#3a4a5a',
     tagText: '#FFFFFF',
   },
 ];
@@ -288,8 +323,6 @@ function PosterEditorInner() {
         } else if (aiResult.summary) {
           setBottomSlogan(aiResult.summary.length > 30 ? aiResult.summary.substring(0, 30) : aiResult.summary);
         }
-        // 清除示例联系电话
-        setContactPhone('');
       } else {
         // 没有 AI 结果时，回退到旧逻辑
         if (storedTitle) {
@@ -308,12 +341,13 @@ function PosterEditorInner() {
     { amount: '880', label: '落地签', badge: '说走就走' },
   ]);
   const [bottomSlogan, setBottomSlogan] = useState('专业签证服务 · 让商旅更简单');
-  const [contactPhone, setContactPhone] = useState('400-888-6666');
 
   // ── 视频选项 ──
   const [generateVideo, setGenerateVideo] = useState(true);
   const [pageDuration, setPageDuration] = useState(5); // 每页展示秒数
   const [bgm, setBgm] = useState('不选择');
+  const [publishing, setPublishing] = useState(false);
+  const [publishMsg, setPublishMsg] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -503,8 +537,107 @@ function PosterEditorInner() {
       setTimeout(() => setGenProgress(''), 1500);
     } catch (err: any) {
       console.error('视频生成失败:', err);
-      setGenProgress('视频生成失败');
-      setTimeout(() => setGenProgress(''), 2000);
+      setGenProgress('视频生成失败: ' + (err.message || '未知'));
+      setTimeout(() => setGenProgress(''), 3000);
+    }
+  };
+
+  // ── 仅生成画廊图片（不显示UI），返回 data URLs 数组 ──
+  const generateGalleryOnly = async (): Promise<string[]> => {
+    const allPages = totalPages;
+    const urls: string[] = [];
+    for (let i = 0; i < allPages; i++) {
+      const el = previewRefs.current.get(i);
+      if (!el) continue;
+      const canvas = await html2canvas(el, {
+        scale: 4,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null,
+      });
+      urls.push(canvas.toDataURL('image/png'));
+    }
+    return urls;
+  };
+
+  // ── 海报推送到微信公众号草稿箱（图文消息嵌入多图） ──
+  const handleWechatPoster = async () => {
+    setPublishing(true);
+    setPublishMsg('正在生成海报图片...');
+    try {
+      const token = typeof window !== 'undefined'
+        ? (new URLSearchParams(window.location.search).get('token') || localStorage.getItem('cms_token') || '')
+        : '';
+
+      // 确保画廊已生成
+      let urls = galleryDataUrls;
+      if (urls.length === 0) {
+        setPublishMsg('正在截取海报页面...');
+        urls = await generateGalleryOnly();
+        if (urls.length === 0) {
+          setPublishMsg('海报生成失败，请先生成预览');
+          return;
+        }
+      }
+
+      // 构建图文消息 HTML：标题 + 海报图片
+      let html = `<h2 style="font-size:18px;font-weight:bold;color:#222;margin:16px 0 8px;border-left:4px solid #07C160;padding:0 8px;">${mainTitle || '海报'}</h2>`;
+      urls.forEach((url) => {
+        html += `<img src="${url}" style="width:100%;border-radius:8px;display:block;margin:8px 0;" />`;
+      });
+
+      setPublishMsg('正在推送到微信...');
+      const res = await fetch('/api/wechat/draft', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: mainTitle || '海报',
+          author: 'ZSTS签证通',
+          content: html,
+          digest: (subTitleTag1 + ' ' + subTitleTag2 + ' ' + bottomSlogan).substring(0, 120),
+          thumb_media_id: coverCustomBgUrl || currentCoverBg().bgUrl,
+        }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        setPublishMsg('已推送到微信草稿箱');
+        // 推送成功后保存为文章并标记为已发布
+        const savePayload = {
+          title: mainTitle || '海报',
+          summary: `${subTitleTag1 || ''} ${subTitleTag2 || ''}`.trim(),
+          tags: autoTags.join(','),
+          cover_image: coverCustomBgUrl || currentCoverBg().bgUrl,
+          content: JSON.stringify(innerPages),
+          content_html: html,
+          source: 'AI生成',
+          word_count: 0,
+        };
+        const saveRes = await fetch('/api/articles', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(savePayload),
+        });
+        const saveData = await saveRes.json();
+        if (saveData.id) {
+          fetch(`/api/articles/${saveData.id}/publish`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` },
+          }).catch(() => {});
+        }
+      } else {
+        setPublishMsg(result.error || '推送失败');
+      }
+    } catch (err: any) {
+      setPublishMsg('网络错误: ' + (err.message || ''));
+    } finally {
+      setPublishing(false);
+      setTimeout(() => setPublishMsg(''), 3000);
     }
   };
 
@@ -735,6 +868,28 @@ function PosterEditorInner() {
     setInnerPages(newInner);
   };
 
+  const deleteSection = (secIdx: number) => {
+    if (currentPage === 0) return;
+    const newInner = [...innerPages];
+    const sections = [...newInner[currentPage - 1].sections];
+    if (sections.length <= 1) return;
+    sections.splice(secIdx, 1);
+    newInner[currentPage - 1] = { ...newInner[currentPage - 1], sections };
+    setInnerPages(newInner);
+  };
+
+  const deleteSectionItem = (secIdx: number, itemIdx: number) => {
+    if (currentPage === 0) return;
+    const newInner = [...innerPages];
+    const sections = [...newInner[currentPage - 1].sections];
+    if (sections[secIdx].items.length <= 1) return;
+    const items = [...sections[secIdx].items];
+    items.splice(itemIdx, 1);
+    sections[secIdx] = { ...sections[secIdx], items };
+    newInner[currentPage - 1] = { ...newInner[currentPage - 1], sections };
+    setInnerPages(newInner);
+  };
+
   const handleAddPrice = () => {
     setPrices([...prices, { amount: '', label: '', badge: '' }]);
   };
@@ -750,9 +905,11 @@ function PosterEditorInner() {
     const bg = currentCoverBg();
     return (
       <div ref={ref} className={`${previewAspect} w-full relative overflow-hidden bg-black`}>
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${bg.bgUrl})` }}
+        <img
+          src={bg.bgUrl}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          crossOrigin="anonymous"
         />
         <div className="absolute inset-0" style={{ background: bg.overlay }} />
         <div className="relative flex h-full flex-col justify-between px-5 py-8">
@@ -761,9 +918,7 @@ function PosterEditorInner() {
               {topTagline || '探索无界 商旅无忧'}
             </p>
             <div className="mx-auto mt-3 flex items-center justify-center gap-3">
-              <span className="h-px w-10 bg-white/30" />
-              <span className="text-xs text-white/40">Heart</span>
-              <span className="h-px w-10 bg-white/30" />
+              <span className="h-px w-20 bg-white/30" />
             </div>
           </div>
           <div className="text-center -mt-4">
@@ -827,21 +982,19 @@ function PosterEditorInner() {
       <div
         ref={ref}
         className={`${previewAspect} w-full relative overflow-hidden`}
-        style={{
-          backgroundImage: `url(${bg.bgUrl})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
       >
+        <img
+          src={bg.bgUrl}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          crossOrigin="anonymous"
+        />
         <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.7) 40%, rgba(0,0,0,0.85) 100%)' }} />
         <div className="absolute top-0 left-0 right-0 h-1" style={{ background: bg.accent }} />
         <div className="relative flex h-full flex-col p-5 pt-6">
           <div className="mb-4 text-center">
             <h2 className="text-lg font-bold text-white">{ip.title || '内页标题'}</h2>
             <div className="mx-auto mt-2 h-0.5 w-10" style={{ background: bg.accent }} />
-            {ip.imageDesc && (
-              <p className="mt-2 text-[10px] text-white/50 italic">🖼️ {ip.imageDesc}</p>
-            )}
           </div>
           <div className="flex-1 space-y-3 overflow-hidden">
             {ip.sections.map((section, si) => (
@@ -873,10 +1026,6 @@ function PosterEditorInner() {
               </div>
             )}
             <div className="text-center rounded-lg py-2" style={{ background: `${bg.accent}20` }}>
-              <div className="flex items-center justify-center gap-1.5 text-[10px] text-white/70">
-                <Phone className="size-3" style={{ color: bg.accent }} />
-                <span>{contactPhone || '联系方式'}</span>
-              </div>
               <p className="mt-0.5 text-[8px] text-white/40">{bottomSlogan || '底部标语'}</p>
             </div>
           </div>
@@ -1014,10 +1163,6 @@ function PosterEditorInner() {
         <Separator />
         <div className="space-y-4 px-5 py-5">
           <div>
-            <Label className="text-sm">联系电话</Label>
-            <Input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} className="mt-1.5" placeholder="如：400-888-6666" />
-          </div>
-          <div>
             <Label className="text-sm">底部标语</Label>
             <Input value={bottomSlogan} onChange={(e) => setBottomSlogan(e.target.value)} className="mt-1.5" placeholder="底部标语文字" />
           </div>
@@ -1039,10 +1184,6 @@ function PosterEditorInner() {
           <Separator />
           <div className="px-5 py-5 space-y-4">
             <Input value={ip.title} onChange={(e) => updateInnerTitle(e.target.value)} placeholder="如：办理流程 & 材料清单" />
-            <div>
-              <Label className="text-xs text-muted-foreground">🖼️ 配图描述</Label>
-              <Input value={ip.imageDesc} onChange={(e) => updateInnerImageDesc(e.target.value)} placeholder="如：沙特利雅得城市天际线日落全景" className="mt-1.5" />
-            </div>
           </div>
         </Card>
 
@@ -1057,20 +1198,43 @@ function PosterEditorInner() {
           <div className="space-y-4 px-5 py-5">
             {ip.sections.map((section, si) => (
               <div key={si} className="space-y-2 rounded-lg border bg-slate-50/50 p-3">
-                <Input
-                  value={section.heading}
-                  onChange={(e) => updateSectionHeading(si, e.target.value)}
-                  placeholder="板块标题"
-                  className="h-8 text-sm font-medium"
-                />
-                {section.items.map((item, ii) => (
+                <div className="flex items-center gap-1">
                   <Input
-                    key={ii}
-                    value={item}
-                    onChange={(e) => updateSectionItem(si, ii, e.target.value)}
-                    placeholder={`条目 ${ii + 1}`}
-                    className="h-7 text-xs"
+                    value={section.heading}
+                    onChange={(e) => updateSectionHeading(si, e.target.value)}
+                    placeholder="板块标题"
+                    className="h-8 text-sm font-medium flex-1"
                   />
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="h-7 w-7 shrink-0 text-muted-foreground hover:text-red-500 hover:bg-red-50"
+                    onClick={() => deleteSection(si)}
+                    disabled={ip.sections.length <= 1}
+                    title="删除板块"
+                  >
+                    <X className="size-3.5" />
+                  </Button>
+                </div>
+                {section.items.map((item, ii) => (
+                  <div key={ii} className="flex items-center gap-1">
+                    <Input
+                      value={item}
+                      onChange={(e) => updateSectionItem(si, ii, e.target.value)}
+                      placeholder={`条目 ${ii + 1}`}
+                      className="h-7 text-xs flex-1"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="h-6 w-6 shrink-0 text-muted-foreground hover:text-red-500 hover:bg-red-50"
+                      onClick={() => deleteSectionItem(si, ii)}
+                      disabled={section.items.length <= 1}
+                      title="删除条目"
+                    >
+                      <X className="size-3" />
+                    </Button>
+                  </div>
                 ))}
                 <Button
                   variant="ghost"
@@ -1359,9 +1523,22 @@ function PosterEditorInner() {
               </div>
             </div>
 
-            {/* 第二行：分发平台 + 复制 */}
+            {/* 第二行：公众号 + 分发平台 + 复制 */}
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-400 shrink-0">一键发布到：</span>
+              <span className="text-xs text-gray-400 shrink-0">发布到：</span>
+              <button
+                onClick={handleWechatPoster}
+                disabled={publishing}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-400 transition-all"
+                title="将海报内容推送到微信公众号草稿箱"
+              >
+                {publishing ? <Loader2 className="size-3 animate-spin" /> : <Send className="size-3" />}
+                <span>{publishing ? '推送中...' : '公众号'}</span>
+              </button>
+              {publishMsg && (
+                <span className="text-xs text-emerald-600">{publishMsg}</span>
+              )}
+              <Separator orientation="vertical" className="h-4 bg-gray-300" />
               {SHARE_PLATFORMS.map((p) => (
                 <button
                   key={p.id}

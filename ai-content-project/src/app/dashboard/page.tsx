@@ -60,7 +60,7 @@ export default function DashboardPage() {
   const fetchArticles = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('cms_token') || '';
+      const token = new URLSearchParams(window.location.search).get('token') || localStorage.getItem('cms_token') || '';
       const params = new URLSearchParams();
       if (searchQuery) params.set('search', searchQuery);
       if (filterStatus) params.set('status', filterStatus);
@@ -80,7 +80,7 @@ export default function DashboardPage() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const token = localStorage.getItem('cms_token') || '';
+      const token = new URLSearchParams(window.location.search).get('token') || localStorage.getItem('cms_token') || '';
       const res = await fetch('/api/articles/stats', {
         headers: { 'Authorization': `Bearer ${token}` },
       });
@@ -99,7 +99,7 @@ export default function DashboardPage() {
   const handleDelete = async (id: number, title: string) => {
     if (!confirm(`确定要删除文章「${title}」吗？`)) return;
     try {
-      const token = localStorage.getItem('cms_token') || '';
+      const token = new URLSearchParams(window.location.search).get('token') || localStorage.getItem('cms_token') || '';
       const res = await fetch(`/api/articles/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },

@@ -28,19 +28,17 @@ function bufferToBase64DataUrl(buffer: Buffer, mimeType: string): string {
 
 async function extractPdfText(buffer: Buffer): Promise<string> {
   try {
-    // pdf-parse v2 使用 class API，用 any 绕过类型检查
     const { PDFParse } = await import('pdf-parse');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const parser = new (PDFParse as any)({ verbosity: 0 });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (parser as any).load(buffer);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result: any = await parser.getText();
+    // pdf-parse v2: data 通过构造函数选项传入，load() 不接受参数
+    const parser = new (PDFParse as any)({ data: buffer, verbosity: 0 });
+    await (parser as any).load();
+    const result = (parser as any).getText();
     parser.destroy();
     // getText 可能返回 string 或 { text: string }
-    if (typeof result === 'string') return result;
-    if (result && typeof result.text === 'string') return result.text;
-    if (result && typeof result.toString === 'function') return result.toString();
+    const text = await result;
+    if (typeof text === 'string') return text;
+    if (text && typeof text.text === 'string') return text.text;
+    if (text && typeof text.toString === 'function') return text.toString();
     return '';
   } catch (err) {
     console.error('[upload] PDF 解析失败:', err);
