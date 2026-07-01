@@ -1,0 +1,278 @@
+{
+  "adv": {
+    "1": {
+      "desc": {
+        "en": "",
+        "zh": "沙特阿拉伯驻华大使馆领事部直接授权认证，权威可靠，流程规范透明。"
+      },
+      "title": {
+        "en": "",
+        "zh": "使馆官方授权"
+      }
+    },
+    "2": {
+      "desc": {
+        "en": "",
+        "zh": "专业审核团队预检材料，与使馆保持沟通，协助推进签证办理进度。"
+      },
+      "title": {
+        "en": "",
+        "zh": "高效出签通道"
+      }
+    },
+    "3": {
+      "desc": {
+        "en": "",
+        "zh": "每位客户配备专属顾问，从材料准备到取签全程跟进，工作时间内及时响应。"
+      },
+      "title": {
+        "en": "",
+        "zh": "一对一专属服务"
+      }
+    },
+    "4": {
+      "desc": {
+        "en": "",
+        "zh": "签证、机票、酒店、保险、考察、落地一站式解决，无需多方对接。"
+      },
+      "title": {
+        "en": "",
+        "zh": "全链条服务"
+      }
+    },
+    "5": {
+      "desc": {
+        "en": "",
+        "zh": "在沙特拥有合作网络资源，为企业考察、商务对接提供本地支持。"
+      },
+      "title": {
+        "en": "",
+        "zh": "本地资源深厚"
+      }
+    },
+    "6": {
+      "desc": {
+        "en": "",
+        "zh": "多年经验积累，材料审核严格把关，助力提升签证申请通过概率。"
+      },
+      "title": {
+        "en": "",
+        "zh": "高通过率"
+      }
+    }
+  },
+  "advantages": {
+    "subtitle": {
+      "en": "Official authorization, professional team, multi-dimensional service coverage",
+      "zh": "官方授权背书，专业团队支撑，多维度服务覆盖"
+    },
+    "tag": {
+      "en": "Core Strengths",
+      "zh": "核心优势"
+    },
+    "title": {
+      "en": "Why Choose ZSTS",
+      "zh": "为什么选择中盛启瀚"
+    }
+  },
+  "cta": {
+    "btn1": {
+      "en": "Contact Us",
+      "zh": "立即咨询"
+    },
+    "btn2": {
+      "en": "WeChat",
+      "zh": "微信咨询"
+    },
+    "subtitle": {
+      "en": "Whether planning business inspections, exhibitions, or enterprise landing, ZSTS provides professional and efficient one-stop services.",
+      "zh": "无论您是计划商务考察、参展参会，还是企业出海落地，\n                中盛启瀚都将为您提供专业、高效的一站式服务。"
+    },
+    "title": {
+      "en": "Start Your Saudi Business Journey",
+      "zh": "开启您的沙特商务之旅"
+    }
+  },
+  "footer": {
+    "contactTitle": {
+      "en": "Contact",
+      "zh": "联系方式"
+    },
+    "copyright": {
+      "en": "ZSTS International Business Development Co., Ltd.",
+      "zh": "中盛启瀚（ZSTS）国际商务发展有限公司. All rights reserved."
+    },
+    "desc": {
+      "en": "A comprehensive business service company focused on the Saudi market, authorized by the Saudi visa center, dedicated to building bridges for high-quality China-Saudi development.",
+      "zh": "依托沙特阿拉伯授权签证中心，聚焦沙特市场的综合商业服务公司，致力于构筑中沙两国高质量发展桥梁。"
+    },
+    "navTitle": {
+      "en": "Quick Links",
+      "zh": "快速导航"
+    },
+    "privacy": {
+      "en": "Privacy Policy",
+      "zh": "隐私政策"
+    },
+    "sitemap": {
+      "en": "Sitemap",
+      "zh": "网站地图"
+    },
+    "terms": {
+      "en": "Terms of Service",
+      "zh": "服务条款"
+    }
+  },
+  "hero": {
+    "badge": {
+      "en": "Royal Embassy of Saudi Arabia · Official Authorized Agency",
+      "zh": "沙特阿拉伯驻华大使馆 · 官方授权代办机构"
+    },
+    "subtitle": {
+      "en": "Building bridges for high-quality China-Saudi development, providing one-stop professional services for enterprises entering Saudi Arabia",
+      "zh": "构筑中沙两国高质量发展的桥梁，为企业出海沙特提供一站式专业服务"
+    },
+    "title": {
+      "en": "About ZSTS",
+      "zh": "关于中盛启瀚"
+    }
+  },
+  "modal": {
+    "desc": {
+      "en": "Choose the most convenient way to contact us",
+      "zh": "选择您方便的方式联系我们"
+    },
+    "phone": {
+      "en": "Tel: 010-85656995 / 010-53670397 / 17190016075",
+      "zh": "客服电话：010-85656995 / 010-53670397 / 17190016075"
+    },
+    "title": {
+      "en": "Scan to Consult",
+      "zh": "扫码咨询"
+    }
+  },
+  "nav": {
+    "about": {
+      "en": "About",
+      "zh": "关于我们"
+    },
+    "consult": {
+      "en": "Contact Us",
+      "zh": "立即咨询"
+    },
+    "enterprise": {
+      "en": "Enterprise",
+      "zh": "企业出海"
+    },
+    "home": {
+      "en": "Home",
+      "zh": "首页"
+    },
+    "inspection": {
+      "en": "Inspection",
+      "zh": "企业考察"
+    },
+    "insurance": {
+      "en": "Overseas Insurance",
+      "zh": "境外保险"
+    },
+    "news": {
+      "en": "News",
+      "zh": "沙特资讯"
+    },
+    "saudiVisa": {
+      "en": "Saudi Visa",
+      "zh": "沙特签证"
+    },
+    "transport": {
+      "en": "Overseas Transport & Stay",
+      "zh": "境外交通住宿"
+    },
+    "visa": {
+      "en": "Global Visa",
+      "zh": "全球签证"
+    }
+  },
+  "page": {
+    "title": {
+      "en": "About Us | ZSTS — Saudi Business Service Experts",
+      "zh": "关于我们 | 中盛启瀚 ZSTS — 沙特商务服务专家"
+    }
+  },
+  "profile": {
+    "p1": {
+      "en": "ZSTS International Business Development Co., Ltd. is a comprehensive business service company focused on the Saudi market, backed by the authorized Saudi visa center. We are dedicated to providing Chinese enterprises and individuals with a professional gateway to the Saudi market.",
+      "zh": "中盛启瀚（ZSTS）国际商务发展有限公司是一家依托沙特阿拉伯授权签证中心、聚焦沙特市场的综合商业服务公司。我们致力于为中国企业与个人提供通往沙特市场的专业桥梁。"
+    },
+    "p3": {
+      "en": "In addition to core visa services, our offerings cover global visa processing, enterprise landing in Saudi Arabia, customized business inspections, overseas insurance, international travel bookings, and document notarization and authentication.",
+      "zh": "除核心签证业务外，我们的服务涵盖全球签证代办、企业出海落地、商务考察定制、境外保险、国际交通预订、文书公证认证等全链条商务出行解决方案。"
+    },
+    "tag": {
+      "en": "Company Profile",
+      "zh": "公司简介"
+    },
+    "title": {
+      "en": "Focused on the Saudi Market<br>Your Trusted Business Partner",
+      "zh": "专注沙特市场\n值得信赖的商务服务伙伴"
+    }
+  },
+  "sidebar": {
+    "qr": {
+      "enterprise": {
+        "en": "",
+        "zh": "微信客服二"
+      },
+      "personal": {
+        "en": "",
+        "zh": "微信客服一"
+      },
+      "whatsapp": {
+        "en": "",
+        "zh": "WhatsApp"
+      }
+    }
+  },
+  "stats": {
+    "1": {
+      "label": {
+        "en": "",
+        "zh": "覆盖国家地区"
+      },
+      "number": {
+        "en": "",
+        "zh": "15+"
+      }
+    },
+    "2": {
+      "label": {
+        "en": "",
+        "zh": "出签成功率"
+      },
+      "number": {
+        "en": "",
+        "zh": "98%"
+      }
+    },
+    "3": {
+      "label": {
+        "en": "",
+        "zh": "服务客户"
+      },
+      "number": {
+        "en": "",
+        "zh": "5000+"
+      }
+    },
+    "4": {
+      "label": {
+        "en": "",
+        "zh": "年行业深耕"
+      },
+      "number": {
+        "en": "",
+        "zh": "10+"
+      }
+    }
+  }
+}

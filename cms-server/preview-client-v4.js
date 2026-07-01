@@ -31,17 +31,25 @@
   const pageKey = getPageKeyFromURL();
   console.log('[CMS Preview] 启动，URL:', window.location.pathname, '→ pageKey:', pageKey);
 
-  // 拦截 applyTranslations / setLang，防止它们覆盖 CMS 注入的内容
-  // 在预览模式下，这些函数应该什么都不做
+  // 拦截 applyTranslations，防止原始页面的 i18n 覆盖 CMS 注入的内容
+  // 但允许 setLang 正常工作，并在语言切换后重新应用 CMS 内容
   const _origApply = window.applyTranslations;
   window.applyTranslations = function() {
-    console.log('[CMS] ⚠️ applyTranslations() 被调用，已阻止（预览模式）');
+    console.log('[CMS] ⚠️ applyTranslations() 被调用，已阻止（预览模式，由 CMS 内容接管）');
   };
+  // 包装 setLang：允许语言切换，切换后重新应用 CMS 内容（使用已缓存数据，不重复请求）
   const _origSetLang = window.setLang;
-  window.setLang = function() {
-    console.log('[CMS] ⚠️ setLang() 被调用，已阻止（预览模式）');
-  };
-  console.log('[CMS] ✅ 已拦截 applyTranslations/setLang');
+  if (typeof _origSetLang === 'function') {
+    window.setLang = function(lang) {
+      _origSetLang(lang);
+      // 语言切换后，用已缓存的 CMS 数据重新渲染（toString 会根据新语言取值）
+      console.log('[CMS] 语言切换为:', lang, '，重新渲染 CMS 内容');
+      if (window.CMS_PAGE_DATA) {
+        setTimeout(function() { applyPageContent(window.CMS_PAGE_DATA); }, 50);
+      }
+    };
+  }
+  console.log('[CMS] ✅ 已拦截 applyTranslations，setLang 已包装支持语言切换');
 
   // ── 工具：从嵌套对象取值 ──────────────────
   function getVal(obj, path) {
@@ -55,14 +63,23 @@
     return cur;
   }
 
-  // ── 工具：把取到的值转成字符串 ─────────
+  // ── 工具：获取当前语言 ─────────────
+  function getCurrentLang() {
+    return (typeof localStorage !== 'undefined' && localStorage.getItem('zsts-lang')) || 'zh';
+  }
+
+  // ── 工具：把取到的值转成字符串（根据当前语言） ─────────
   function toString(val) {
     if (val == null) return null;
     if (typeof val === 'string') return val;
     if (typeof val === 'object') {
-      // 优先返回 zh（即使为空字符串），否则返回 en
-      if ('zh' in val) return val.zh || '';
-      if ('en' in val) return val.en || '';
+      const lang = getCurrentLang();
+      // 根据当前语言返回对应字段，优先当前语言，其次 zh，最后 en
+      if (lang in val && val[lang]) return val[lang];
+      if ('zh' in val && val.zh) return val.zh;
+      if ('en' in val && val.en) return val.en;
+      // 兜底：返回第一个非空值
+      for (const k of Object.keys(val)) { if (val[k]) return val[k]; }
     }
     return null;
   }

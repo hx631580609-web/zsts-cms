@@ -1,153 +1,152 @@
 {
   "cta": {
     "btn1": {
-      "en": "",
+      "en": "Contact Us",
       "zh": "立即咨询"
     },
     "btn2": {
-      "en": "",
+      "en": "WeChat",
       "zh": "微信咨询"
     },
     "subtitle": {
-      "en": "",
+      "en": "Whether you are traveling for business, exhibitions, or tourism, ZSTS will provide you with professional and efficient one-stop transport and accommodation booking services.",
       "zh": "无论您是商务差旅、参展参会，还是出境旅游，\n                中盛启瀚都将为您提供专业、高效的一站式交通与住宿预订服务。"
     },
     "title": {
-      "en": "",
+      "en": "Start Your Overseas Journey",
       "zh": "开启您的境外出行之旅"
     }
   },
   "footer": {
     "contactTitle": {
-      "en": "",
+      "en": "Contact",
       "zh": "联系方式"
     },
     "copyright": {
-      "en": "",
+      "en": "ZSTS International Business Development Co., Ltd.",
       "zh": "中盛启瀚（ZSTS）国际商务发展有限公司"
     },
     "desc": {
-      "en": "",
+      "en": "Official authorized agency of the Saudi Embassy in China, dedicated to China-Saudi business services.",
       "zh": "依托沙特阿拉伯授权签证中心，聚焦沙特市场的综合商业服务公司，致力于构筑中沙两国高质量发展桥梁。"
     },
     "navTitle": {
-      "en": "",
+      "en": "Quick Links",
       "zh": "快速导航"
     },
     "privacy": {
-      "en": "",
+      "en": "Privacy Policy",
       "zh": "隐私政策"
     },
     "sitemap": {
-      "en": "",
+      "en": "Sitemap",
       "zh": "网站地图"
     },
     "terms": {
-      "en": "",
+      "en": "Terms",
       "zh": "服务条款"
     }
   },
   "hero": {
     "badge": {
-      "en": "",
+      "en": "Overseas Transport & Stay · One-Stop Booking",
       "zh": "境外交通住宿 · 一站式预订"
     },
-    "bgImage": "images/jeddah-tower.jpg",
     "desc": {
-      "en": "",
+      "en": "International flights, airport transfers, local car rental, and hotel accommodation — one-stop travel solution.",
       "zh": "国际机票、机场接送、当地包车、酒店住宿，一站式出行解决方案"
     },
     "subtitle": {
-      "en": "",
+      "en": "Fast Booking · Full-Service",
       "zh": "极速办理 · 全程服务"
     },
     "title": {
-      "en": "",
+      "en": "Overseas Transport & Stay",
       "zh": "境外交通住宿"
     }
   },
   "modal": {
     "desc": {
-      "en": "",
+      "en": "Choose the most convenient way to contact us",
       "zh": "选择您方便的方式联系我们"
     },
     "phone": {
-      "en": "",
+      "en": "Tel: 010-85656995 / 010-53670397 / 17190016075",
       "zh": "客服电话：010-85656995 / 010-53670397 / 17190016075"
     },
     "title": {
-      "en": "",
+      "en": "Scan to Contact",
       "zh": "扫码咨询"
     }
   },
   "nav": {
     "about": {
-      "en": "",
+      "en": "About",
       "zh": "关于我们"
     },
     "consult": {
-      "en": "",
+      "en": "Contact Us",
       "zh": "立即咨询"
     },
     "enterprise": {
-      "en": "",
+      "en": "Enterprise",
       "zh": "企业出海"
     },
     "home": {
-      "en": "",
+      "en": "Home",
       "zh": "首页"
     },
     "inspection": {
-      "en": "",
+      "en": "Inspection",
       "zh": "企业考察"
     },
     "insurance": {
-      "en": "",
+      "en": "Overseas Insurance",
       "zh": "境外保险"
     },
     "news": {
-      "en": "",
+      "en": "News",
       "zh": "沙特资讯"
     },
     "saudiVisa": {
-      "en": "",
+      "en": "Saudi Visa",
       "zh": "沙特签证"
     },
     "transport": {
-      "en": "",
+      "en": "Overseas Transport & Stay",
       "zh": "境外交通住宿"
     },
     "visa": {
-      "en": "",
+      "en": "Global Visa",
       "zh": "全球签证"
     }
   },
   "page": {
     "title": {
-      "en": "",
+      "en": "Overseas Transport & Stay | ZSTS",
       "zh": "境外交通住宿预订 | 中盛启瀚 ZSTS"
     }
   },
   "sidebar": {
     "contact": {
       "sub": {
-        "en": "",
+        "en": "Quick Response",
         "zh": "快速响应"
       },
       "title": {
-        "en": "",
+        "en": "Travel Consultant",
         "zh": "出行顾问"
       }
     },
     "email": {
       "label": {
-        "en": "",
+        "en": "Email Us",
         "zh": "邮件咨询"
       }
     },
     "phone": {
       "label": {
-        "en": "",
+        "en": "Call Us",
         "zh": "电话咨询"
       }
     },
@@ -167,7 +166,7 @@
     },
     "trust": {
       "title": {
-        "en": "",
+        "en": "Why Choose ZSTS?",
         "zh": "为什么选择中盛启瀚？"
       }
     }

@@ -2,292 +2,291 @@
   "coreService": {
     "card1": {
       "cta": {
-        "en": "",
+        "en": "Learn More",
         "zh": "了解详情"
       },
       "desc": {
-        "en": "",
+        "en": "Covering 15+ countries with professional end-to-end support",
         "zh": "覆盖15+国家签证办理，专业团队全程协助材料准备与送签"
       },
       "title": {
-        "en": "",
+        "en": "Global Visa Service",
         "zh": "全球签证代办"
       }
     },
     "card2": {
       "cta": {
-        "en": "",
+        "en": "Learn More",
         "zh": "了解详情"
       },
       "desc": {
-        "en": "",
+        "en": "International flight booking and global hotel reservations",
         "zh": "国际机票预订与全球酒店代订，商务舱特惠资源"
       },
       "title": {
-        "en": "",
+        "en": "Overseas Transport & Stay",
         "zh": "境外交通住宿"
       }
     },
     "card3": {
       "cta": {
-        "en": "",
+        "en": "Learn More",
         "zh": "了解详情"
       },
       "desc": {
-        "en": "",
+        "en": "Customized travel and business insurance for business travelers",
         "zh": "为商旅人士定制境外旅行与商务保险方案，出行无忧"
       },
       "title": {
-        "en": "",
+        "en": "Overseas Insurance",
         "zh": "境外保险"
       }
     },
     "card4": {
       "cta": {
-        "en": "",
+        "en": "Learn More",
         "zh": "了解详情"
       },
       "desc": {
-        "en": "",
+        "en": "Full-process services for overseas enterprises: market research, registration, compliance, and resource matching",
         "zh": "为出海企业提供市场调研、注册落地、合规运营、资源对接等全流程服务"
       },
       "title": {
-        "en": "",
+        "en": "Enterprise Landing",
         "zh": "企业出海"
       }
     },
     "card5": {
       "cta": {
-        "en": "",
+        "en": "Learn More",
         "zh": "了解详情"
       },
       "desc": {
-        "en": "",
+        "en": "Customized Saudi business tours, enterprise landing, and local resource matching",
         "zh": "沙特商务团定制、企业出海落地、当地资源对接"
       },
       "title": {
-        "en": "",
+        "en": "Enterprise Inspection",
         "zh": "企业考察"
       }
     },
     "subtitle": {
-      "en": "",
+      "en": "Learn More",
       "zh": "了解详情"
     },
     "tag": {
-      "en": "",
+      "en": "One-Stop Service",
       "zh": "一站式服务"
     },
     "title": {
-      "en": "",
+      "en": "Flights, Stay, Reimbursement, Enterprise & Inspection Custom Resources",
       "zh": "签证、机票、住宿、报销、出海、考察定制资源"
     }
   },
   "footer": {
     "contactTitle": {
-      "en": "",
+      "en": "Contact",
       "zh": "联系方式"
     },
     "copyright": {
-      "en": "",
+      "en": "ZSTS International Business Development Co., Ltd.",
       "zh": "中盛启瀚（ZSTS）国际商务发展有限公司"
     },
     "desc": {
-      "en": "",
+      "en": "A comprehensive business service company focused on the Saudi market, authorized by the Saudi visa center, dedicated to building bridges for high-quality China-Saudi development.",
       "zh": "依托沙特阿拉伯授权签证中心，聚焦沙特市场的综合商业服务公司，致力于构筑中沙两国高质量发展桥梁。"
     },
     "email": {
-      "en": "",
+      "en": "info@zsts.group",
       "zh": "info@zsts.group"
     },
     "navTitle": {
-      "en": "",
+      "en": "Quick Links",
       "zh": "快速导航"
     },
     "phone": {
-      "en": "",
+      "en": "010-85656995 / 010-53670397 / 17190016075",
       "zh": "010-85656995 / 010-53670397 / 17190016075"
     },
     "privacy": {
-      "en": "",
+      "en": "Privacy Policy",
       "zh": "隐私政策"
     },
     "qrWechat1": {
-      "en": "",
+      "en": "WeChat Support 1",
       "zh": "微信客服一"
     },
     "qrWechat2": {
-      "en": "",
+      "en": "WeChat Support 2",
       "zh": "微信客服二"
     },
     "qrWhatsapp": {
-      "en": "",
+      "en": "WhatsApp",
       "zh": "WhatsApp"
     },
     "sitemap": {
-      "en": "",
+      "en": "Sitemap",
       "zh": "网站地图"
     },
     "terms": {
-      "en": "",
+      "en": "Terms of Service",
       "zh": "服务条款"
     }
   },
   "hero": {
-    "bgImage": "images/riyadh-skyline.jpg",
     "cta1": {
-      "en": "",
+      "en": "Visa Services",
       "zh": "了解签证服务"
     },
     "cta2": {
-      "en": "",
+      "en": "Consult Online",
       "zh": "在线咨询"
     },
     "services": {
-      "en": "",
+      "en": "Visa · Enterprise · Inspection",
       "zh": "签证办理 · 企业出海 · 商务考察"
     },
     "subtitle": {
-      "en": "",
+      "en": "ZSTS — Your one-stop business service partner to the Saudi market.",
       "zh": "中盛启瀚（ZSTS）—— 您通往沙特市场的一站式商业服务伙伴。"
     },
     "title1": {
-      "en": "",
+      "en": "Saudi Business Visa",
       "zh": "沙特商务签证"
     },
     "title2": {
-      "en": "",
+      "en": "Official Authorized",
       "zh": "官方授权代办"
     }
   },
   "modal": {
     "desc": {
-      "en": "",
+      "en": "Choose the most convenient way to contact us",
       "zh": "选择您方便的方式联系我们"
     },
     "phone": {
-      "en": "",
+      "en": "Tel: 010-85656995 / 010-53670397 / 17190016075",
       "zh": "客服电话：010-85656995 / 010-53670397 / 17190016075"
     },
     "qrWechat1": {
-      "en": "",
+      "en": "WeChat Support 1",
       "zh": "微信客服一"
     },
     "qrWechat2": {
-      "en": "",
+      "en": "WeChat Support 2",
       "zh": "微信客服二"
     },
     "qrWhatsapp": {
-      "en": "",
+      "en": "WhatsApp",
       "zh": "WhatsApp"
     },
     "title": {
-      "en": "",
+      "en": "Scan to Consult",
       "zh": "扫码咨询"
     }
   },
   "nav": {
     "about": {
-      "en": "",
+      "en": "About",
       "zh": "关于我们"
     },
     "consult": {
-      "en": "",
+      "en": "Contact Us",
       "zh": "立即咨询"
     },
     "enterprise": {
-      "en": "",
+      "en": "Enterprise",
       "zh": "企业出海"
     },
     "home": {
-      "en": "",
+      "en": "Home",
       "zh": "首页"
     },
     "inspection": {
-      "en": "",
+      "en": "Inspection",
       "zh": "企业考察"
     },
     "insurance": {
-      "en": "",
+      "en": "Overseas Insurance",
       "zh": "境外保险"
     },
     "news": {
-      "en": "",
+      "en": "News",
       "zh": "沙特资讯"
     },
     "saudiVisa": {
-      "en": "",
+      "en": "Saudi Visa",
       "zh": "沙特签证"
     },
     "transport": {
-      "en": "",
+      "en": "Overseas Transport & Stay",
       "zh": "境外交通住宿"
     },
     "visa": {
-      "en": "",
+      "en": "Global Visa",
       "zh": "全球签证"
     }
   },
   "page": {
     "title": {
-      "en": "",
+      "en": "ZSTS | Saudi Business Visa · Official Authorized Agency",
       "zh": "中盛启瀚 ZSTS | 沙特商务签证·官方授权代办"
     }
   },
   "stats": {
     "clients": {
       "label": {
-        "en": "",
+        "en": "Clients Served",
         "zh": "服务客户"
       },
       "unit": {
-        "en": "",
+        "en": "+",
         "zh": "+"
       },
       "value": {
-        "en": "",
+        "en": "5000",
         "zh": "5000"
       }
     },
     "countries": {
       "label": {
-        "en": "",
+        "en": "Countries",
         "zh": "办理国家"
       },
       "unit": {
-        "en": "",
+        "en": "+",
         "zh": "+"
       },
       "value": {
-        "en": "",
+        "en": "15",
         "zh": "15"
       }
     },
     "experience": {
       "label": {
-        "en": "",
+        "en": "Experience",
         "zh": "行业经验"
       },
       "unit": {
-        "en": "",
+        "en": "Yrs",
         "zh": "年"
       },
       "value": {
-        "en": "",
+        "en": "10",
         "zh": "10"
       }
     },
     "rate": {
       "label": {
-        "en": "",
+        "en": "Approval Rate",
         "zh": "出签成功率"
       },
       "unit": {
-        "en": "",
+        "en": "%",
         "zh": "%"
       },
       "value": {
-        "en": "",
+        "en": "98",
         "zh": "98"
       }
     }

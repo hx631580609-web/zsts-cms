@@ -1,169 +1,168 @@
 {
   "cta": {
     "btn1": {
-      "en": "",
+      "en": "Contact Us",
       "zh": "立即咨询"
     },
     "btn2": {
-      "en": "",
+      "en": "WeChat",
       "zh": "微信咨询"
     },
     "subtitle": {
-      "en": "",
+      "en": "Whether you are planning international travel, business inspection, or visiting friends and family, ZSTS will provide you with professional and efficient one-stop visa services.",
       "zh": "无论您是计划出国旅游、商务考察，还是探亲访友，\n                中盛启瀚都将为您提供专业、高效的一站式签证服务。"
     },
     "title": {
-      "en": "",
+      "en": "Start Your Global Journey",
       "zh": "开启您的全球旅程"
     }
   },
   "footer": {
     "contactTitle": {
-      "en": "",
+      "en": "Contact",
       "zh": "联系方式"
     },
     "copyright": {
-      "en": "",
+      "en": "ZSTS International Business Development Co., Ltd.",
       "zh": "中盛启瀚（ZSTS）国际商务发展有限公司"
     },
     "desc": {
-      "en": "",
+      "en": "Official authorized agency of the Saudi Embassy in China, dedicated to China-Saudi business services.",
       "zh": "依托沙特阿拉伯授权签证中心，聚焦沙特市场的综合商业服务公司，致力于构筑中沙两国高质量发展桥梁。"
     },
     "navTitle": {
-      "en": "",
+      "en": "Quick Links",
       "zh": "快速导航"
     },
     "privacy": {
-      "en": "",
+      "en": "Privacy Policy",
       "zh": "隐私政策"
     },
     "sitemap": {
-      "en": "",
+      "en": "Sitemap",
       "zh": "网站地图"
     },
     "terms": {
-      "en": "",
+      "en": "Terms",
       "zh": "服务条款"
     }
   },
   "hero": {
     "badge": {
-      "en": "",
+      "en": "Global Visa Service · One-Stop Solution",
       "zh": "全球签证服务 · 一站式办理"
     },
-    "bgImage": "images/riyadh-skyline.jpg",
     "desc": {
-      "en": "",
+      "en": "Visa agency for 200+ countries, dedicated consultant, 98% approval rate",
       "zh": "覆盖全球200+国家签证代办，专业团队一对一服务，98%出签率保障"
     },
     "subtitle": {
-      "en": "",
+      "en": "Fast Processing · Full-Service",
       "zh": "极速办理 · 全程服务"
     },
     "title": {
-      "en": "",
+      "en": "Global Visa",
       "zh": "全球签证"
     }
   },
   "modal": {
     "desc": {
-      "en": "",
+      "en": "Choose the most convenient way to contact us",
       "zh": "选择您方便的方式联系我们"
     },
     "phone": {
-      "en": "",
+      "en": "Tel: 010-85656995 / 010-53670397 / 17190016075",
       "zh": "客服电话：010-85656995 / 010-53670397 / 17190016075"
     },
     "title": {
-      "en": "",
+      "en": "Scan to Consult",
       "zh": "扫码咨询"
     }
   },
   "nav": {
     "about": {
-      "en": "",
+      "en": "About",
       "zh": "关于我们"
     },
     "consult": {
-      "en": "",
+      "en": "Contact Us",
       "zh": "立即咨询"
     },
     "enterprise": {
-      "en": "",
+      "en": "Enterprise",
       "zh": "企业出海"
     },
     "home": {
-      "en": "",
+      "en": "Home",
       "zh": "首页"
     },
     "inspection": {
-      "en": "",
+      "en": "Inspection",
       "zh": "企业考察"
     },
     "insurance": {
-      "en": "",
+      "en": "Overseas Insurance",
       "zh": "境外保险"
     },
     "news": {
-      "en": "",
+      "en": "News",
       "zh": "沙特资讯"
     },
     "saudiVisa": {
-      "en": "",
+      "en": "Saudi Visa",
       "zh": "沙特签证"
     },
     "transport": {
-      "en": "",
+      "en": "Overseas Transport & Stay",
       "zh": "境外交通住宿"
     },
     "visa": {
-      "en": "",
+      "en": "Global Visa",
       "zh": "全球签证"
     }
   },
   "page": {
     "title": {
-      "en": "",
+      "en": "Global Visa | ZSTS",
       "zh": "全球签证办理 | 中盛启瀚 ZSTS"
     }
   },
   "section": {
     "faq": {
       "tag": {
-        "en": "",
+        "en": "FAQ",
         "zh": "常见问题"
       },
       "title": {
-        "en": "",
+        "en": "Frequently Asked Questions",
         "zh": "FAQ · 您最关心的问题"
       }
     },
     "process": {
       "subtitle": {
-        "en": "",
+        "en": "From document submission to visa collection, guided by professional advisors",
         "zh": "从提交材料到拿到签证，全程专业顾问陪同指引"
       },
       "tag": {
-        "en": "",
+        "en": "Process",
         "zh": "办理流程"
       },
       "title": {
-        "en": "",
+        "en": "5 Simple Steps to Your Visa",
         "zh": "简单5步，轻松出签"
       }
     },
     "regions": {
       "subtitle": {
-        "en": "",
+        "en": "Six major regions covered, with tourist, business, training, and expedited visa services available",
         "zh": "覆盖六大热门区域，提供旅游、商务及加急等多种签证类型服务"
       },
       "tag": {
-        "en": "",
+        "en": "Global Visa",
         "zh": "全球签证"
       },
       "title": {
-        "en": "",
+        "en": "Global Visa · Choose by Region",
         "zh": "全球签证 · 按区域选择目的地"
       }
     }
@@ -171,23 +170,23 @@
   "sidebar": {
     "contact": {
       "sub": {
-        "en": "",
+        "en": "Quick Response",
         "zh": "快速响应"
       },
       "title": {
-        "en": "",
+        "en": "Dedicated Visa Advisor",
         "zh": "专属签证顾问"
       }
     },
     "email": {
       "label": {
-        "en": "",
+        "en": "Email Us",
         "zh": "邮件咨询"
       }
     },
     "phone": {
       "label": {
-        "en": "",
+        "en": "Call Us",
         "zh": "电话咨询"
       }
     },
@@ -207,7 +206,7 @@
     },
     "trust": {
       "title": {
-        "en": "",
+        "en": "Why Choose ZSTS?",
         "zh": "为什么选择中盛启瀚？"
       }
     }

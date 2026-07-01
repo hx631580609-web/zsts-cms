@@ -28,6 +28,9 @@ func RegisterArticleRoutes(r *gin.RouterGroup) {
 		articles.PUT("/:id/publish", middleware.RequireAuth(), publishArticle)
 		articles.DELETE("/:id", middleware.RequireAuth(), deleteArticle)
 	}
+
+	// 官网首页沙特资讯接口（公开，兼容前端 /api/news 调用）
+	r.GET("/news", getNewsForHomepage)
 }
 
 // listArticles GET /api/articles
@@ -163,6 +166,58 @@ func getPublishedArticles(c *gin.Context) {
 		"limit": limit,
 		"rows":  articles,
 	})
+}
+
+// getNewsForHomepage GET /api/news
+// 官网首页沙特资讯接口（公开，返回前端期望的 { items: [...] } 格式）
+func getNewsForHomepage(c *gin.Context) {
+	limit := 3
+	if l := c.Query("limit"); l != "" {
+		fmt.Sscanf(l, "%d", &limit)
+	}
+	if limit < 1 || limit > 50 {
+		limit = 3
+	}
+
+	rows, err := db.DB.Query(
+		"SELECT id, title, summary, tags, cover_image, created_at FROM articles WHERE status = 'published' ORDER BY created_at DESC LIMIT ?",
+		limit,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "查询失败"})
+		return
+	}
+	defer rows.Close()
+
+	type NewsItem struct {
+		ID          int64  `json:"id"`
+		Title       string `json:"title"`
+		Summary     string `json:"summary"`
+		CoverImage  string `json:"cover_image"`
+		Category    string `json:"category"`
+		PublishedAt string `json:"published_at"`
+	}
+
+	var items []NewsItem
+	for rows.Next() {
+		var item NewsItem
+		var createdAt string
+		if err := rows.Scan(&item.ID, &item.Title, &item.Summary, &item.Category, &item.CoverImage, &createdAt); err != nil {
+			continue
+		}
+		item.PublishedAt = createdAt
+		// 取 tags 第一个作为 category 显示
+		if idx := strings.Index(item.Category, "、"); idx > 0 {
+			item.Category = item.Category[:idx]
+		}
+		items = append(items, item)
+	}
+
+	if items == nil {
+		items = []NewsItem{}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"items": items})
 }
 
 // getArticle GET /api/articles/:id
