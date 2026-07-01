@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -31,10 +32,23 @@ var htmlEntities = map[string]string{
 	"&quot;": "\"",
 }
 
-// PageSnapshotHandler GET /api/page-snapshot/:pageKey
-func PageSnapshotHandler(c *gin.Context) {
-	pageKey := c.Param("pageKey")
+// 预编译正则（RE2 不支持 \1 反向引用，改用通用闭合标签匹配）
+var (
+	// 匹配文本内容: <tag data-i18n="key">文本</tag>
+	reText = regexp.MustCompile(`(?s)<([a-zA-Z][a-zA-Z0-9]*)[^>]*data-i18n="([a-zA-Z0-9_.\-]+)"[^>]*>(.*?)</[a-zA-Z][a-zA-Z0-9]*>`)
+	// 匹配 img 标签
+	reImg = regexp.MustCompile(`<img[^>]*data-i18n="([a-zA-Z0-9_.\-]+)"[^>]*src="([^"]*)"[^>]*/?>`)
+	reImg2 = regexp.MustCompile(`<img[^>]*src="([^"]*)"[^>]*data-i18n="([a-zA-Z0-9_.\-]+)"[^>]*/?>`)
+	// 匹配 background-image
+	reBg1 = regexp.MustCompile(`<([a-zA-Z][a-zA-Z0-9]*)[^>]*data-i18n="([a-zA-Z0-9_.\-]+)"[^>]*background-image\s*:\s*url\(([^)]+)\)[^>]*>`)
+	reBg2 = regexp.MustCompile(`<([a-zA-Z][a-zA-Z0-9]*)[^>]*style="[^"]*background-image\s*:\s*url\(([^)]+)\)[^"]*"[^>]*data-i18n="([a-zA-Z0-9_.\-]+)"[^>]*>`)
+	// 辅助
+	reBr  = regexp.MustCompile(`<br\s*/?>`)
+	reTag = regexp.MustCompile(`<[^>]+>`)
+)
 
+// GenerateSnapshot 从 HTML 文件提取可编辑内容快照
+func GenerateSnapshot(pageKey string) (map[string]interface{}, error) {
 	htmlFile, ok := pageKeyToHTML[pageKey]
 	if !ok {
 		htmlFile = pageKey + ".html"
@@ -42,22 +56,19 @@ func PageSnapshotHandler(c *gin.Context) {
 
 	htmlPath := filepath.Join(projectRoot, htmlFile)
 	if _, err := os.Stat(htmlPath); os.IsNotExist(err) {
-		c.JSON(http.StatusNotFound, gin.H{"error": "HTML 文件不存在"})
-		return
+		return nil, fmt.Errorf("HTML 文件不存在: %s", htmlFile)
 	}
 
 	htmlBytes, err := os.ReadFile(htmlPath)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		return nil, err
 	}
 
 	html := string(htmlBytes)
 	snapshot := make(map[string]interface{})
 
 	// 1. 匹配文本内容: <tag data-i18n="key">文本</tag>
-	textRe := regexp.MustCompile(`<([a-zA-Z][a-zA-Z0-9]*)\b[^>]*\bdata-i18n="([a-zA-Z0-9_.\-]+)"[^>]*>([\s\S]*?)</\1>`)
-	textMatches := textRe.FindAllStringSubmatch(html, -1)
+	textMatches := reText.FindAllStringSubmatch(html, -1)
 	for _, m := range textMatches {
 		key := m[2]
 		if _, exists := snapshot[key]; exists {
@@ -65,22 +76,19 @@ func PageSnapshotHandler(c *gin.Context) {
 		}
 		inner := m[3]
 		// 处理 <br> 换行
-		brRe := regexp.MustCompile(`<br\s*/?>`)
-		inner = brRe.ReplaceAllString(inner, "\n")
+		inner = reBr.ReplaceAllString(inner, "\n")
 		// 去掉内嵌 HTML 标签
-		tagRe := regexp.MustCompile(`<[^>]+>`)
-		inner = tagRe.ReplaceAllString(inner, "")
+		inner = reTag.ReplaceAllString(inner, "")
 		// HTML 实体解码
 		inner = decodeHTMLEntities(inner)
 		inner = strings.TrimSpace(inner)
 		if inner != "" {
-			snapshot[key] = map[string]string{"zh": inner, "en": ""}
+			snapshot[key] = map[string]interface{}{"zh": inner, "en": ""}
 		}
 	}
 
 	// 2. 匹配 img 标签: <img data-i18n="key" src="...">
-	imgRe := regexp.MustCompile(`<img\b[^>]*\bdata-i18n="([a-zA-Z0-9_.\-]+)"[^>]*\bsrc="([^"]*)"[^>]*/?>`)
-	imgMatches := imgRe.FindAllStringSubmatch(html, -1)
+	imgMatches := reImg.FindAllStringSubmatch(html, -1)
 	for _, m := range imgMatches {
 		key := m[1]
 		if _, exists := snapshot[key]; exists {
@@ -90,10 +98,20 @@ func PageSnapshotHandler(c *gin.Context) {
 			snapshot[key] = m[2]
 		}
 	}
+	// img 标签 src 在前、data-i18n 在后
+	imgMatches2 := reImg2.FindAllStringSubmatch(html, -1)
+	for _, m := range imgMatches2 {
+		key := m[2]
+		if _, exists := snapshot[key]; exists {
+			continue
+		}
+		if m[1] != "" {
+			snapshot[key] = m[1]
+		}
+	}
 
-	// 3. 匹配 background-image（data-i18n 在后）: style="...background-image:url(...)" data-i18n="key"
-	bgRe := regexp.MustCompile(`<([a-zA-Z][a-zA-Z0-9]*)\b[^>]*\bdata-i18n="([a-zA-Z0-9_.\-]+)"[^>]*\bbackground-image\s*:\s*url\(([^)]+)\)[^>]*>`)
-	bgMatches := bgRe.FindAllStringSubmatch(html, -1)
+	// 3. 匹配 background-image（data-i18n 在前）
+	bgMatches := reBg1.FindAllStringSubmatch(html, -1)
 	for _, m := range bgMatches {
 		key := m[2]
 		if _, exists := snapshot[key]; exists {
@@ -106,9 +124,8 @@ func PageSnapshotHandler(c *gin.Context) {
 		}
 	}
 
-	// 4. 匹配 background-image（style 在前）: style="background-image:url(...)" ... data-i18n="key"
-	bgRe2 := regexp.MustCompile(`<([a-zA-Z][a-zA-Z0-9]*)\b[^>]*\bstyle="[^"]*background-image\s*:\s*url\(([^)]+)\)[^"]*"[^>]*\bdata-i18n="([a-zA-Z0-9_.\-]+)"[^>]*>`)
-	bgMatches2 := bgRe2.FindAllStringSubmatch(html, -1)
+	// 4. 匹配 background-image（style 在前）
+	bgMatches2 := reBg2.FindAllStringSubmatch(html, -1)
 	for _, m := range bgMatches2 {
 		key := m[3]
 		if _, exists := snapshot[key]; exists {
@@ -121,8 +138,20 @@ func PageSnapshotHandler(c *gin.Context) {
 		}
 	}
 
+	return snapshot, nil
+}
+
+// PageSnapshotHandler GET /api/page-snapshot/:pageKey
+func PageSnapshotHandler(c *gin.Context) {
+	pageKey := c.Param("pageKey")
+
+	snapshot, err := GenerateSnapshot(pageKey)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"htmlFile": htmlFile,
 		"count":    len(snapshot),
 		"snapshot": snapshot,
 	})

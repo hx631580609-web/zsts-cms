@@ -476,7 +476,7 @@ function ArticleEditorInner() {
     setBlocks(newBlocks);
   };
 
-  const handleSave = async () => {
+  const handleSave = async (): Promise<number | null> => {
     setSaving(true);
     try {
       const contentJson = JSON.stringify(blocks);
@@ -512,11 +512,14 @@ function ArticleEditorInner() {
       const result = await res.json();
       if (result.id && !articleId) {
         setArticleId(result.id);
+        return result.id;
       }
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
+      return articleId;
     } catch (e) {
       console.error('保存失败:', e);
+      return null;
     } finally {
       setSaving(false);
     }
@@ -560,11 +563,28 @@ function ArticleEditorInner() {
   }
 
   async function handlePublish() {
-    handleSave();
     setPublishMessage('');
+
+    // 先保存文章，确保拿到 articleId
+    const savedId = await handleSave();
+    const currentId = savedId || articleId;
+
+    // 调用后端发布接口，将状态更新为 published
+    if (currentId) {
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('cms_token') || '' : '';
+        await fetch(`/api/articles/${currentId}/publish`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+      } catch (e) {
+        console.warn('更新发布状态失败:', e);
+      }
+    }
 
     if (!distribution.cms && !distribution.wechat) {
       setPublished(true);
+      setPublishMessage('文章已发布');
       return;
     }
 

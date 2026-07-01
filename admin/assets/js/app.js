@@ -42,7 +42,8 @@ function resolveImgUrl(src) {
   if (!src) return '';
   if (src.startsWith('/')) return src;
   if (src.startsWith('http')) return src;
-  return `/cms-images/${src.replace(/^images\//, '')}`;
+  // 原始图片路径 images/xxx → /images/xxx，上传路径 /uploads/images/xxx 已由上面 startsWith('/') 处理
+  return `/${src}`;
 }
 
 window.handleImageUpload = async function(input, fieldId) {
@@ -63,6 +64,10 @@ window.handleImageUpload = async function(input, fieldId) {
     document.getElementById(fieldId).value = data.url;
     preview.innerHTML = `<img src="${data.url}" alt="" class="w-full h-full object-contain">`;
     document.getElementById(`${fieldId}-path`).textContent = data.url;
+    // 手动触发 input 事件，让实时预览同步更新上传后的图片
+    const hiddenInput = document.getElementById(fieldId);
+    hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
+    hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
     showToast(`✅ 图片已上传`);
   } catch (e) {
     preview.innerHTML = '<span class="text-xs text-red-500">❌ 上传失败</span>';
@@ -1157,19 +1162,18 @@ async function renderPageEditor(container, pageKey) {
     if (r.ok) data = await r.json();
   } catch(e) { console.error(e); }
 
-  // 如果服务端没有数据（或字段全空），从 HTML 抓取当前默认值回显
-  const allEmpty = visibleFields.every(f => !getNested(data, f.key));
-  if (allEmpty && visibleFields.length > 0) {
+  // 始终从 HTML 快照补充空值字段，确保编辑器能回显当前实际内容
+  if (visibleFields.length > 0) {
     try {
       const snapR = await fetch(`${API}/page-snapshot/${pageKey}`);
       if (snapR.ok) {
         const { snapshot } = await snapR.json();
         if (snapshot && Object.keys(snapshot).length) {
           data = mergeSnapshot(data, snapshot);
-          console.log('[CMS] 从 HTML 抓取默认值:', Object.keys(snapshot).length, '个字段');
+          console.log('[CMS] 从 HTML 快照回显:', Object.keys(snapshot).length, '个字段');
         }
       }
-    } catch(e) { console.warn('[CMS] 抓取默认值失败:', e); }
+    } catch(e) { console.warn('[CMS] 快照回显失败:', e); }
   }
 
   // 按模块（key 第一段，如 hero/section.process/step/faq/cta）分组

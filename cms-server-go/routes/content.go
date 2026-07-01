@@ -2,11 +2,14 @@ package routes
 
 import (
 	"cms-server-go/db"
+	"cms-server-go/handlers"
 	"cms-server-go/middleware"
 	"encoding/json"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -74,15 +77,28 @@ func getContent(c *gin.Context) {
 
 	filePath := filepath.Join(contentDir, pageKey+".json")
 	data, err := os.ReadFile(filePath)
-	if err != nil {
+
+	// 如果 JSON 文件不存在或为空，从 HTML 快照自动初始化并保存
+	if err != nil || len(data) < 10 {
+		snapshot, snapErr := handlers.GenerateSnapshot(pageKey)
+		if snapErr == nil && len(snapshot) > 0 {
+			nested := flatToNested(snapshot)
+			saved, _ := json.MarshalIndent(nested, "", "  ")
+			os.WriteFile(filePath, saved, 0644)
+			log.Printf("[Content] 从 HTML 快照初始化页面: %s (%d 个字段)", pageKey, len(snapshot))
+			c.JSON(http.StatusOK, nested)
+			return
+		}
 		c.JSON(http.StatusOK, gin.H{})
 		return
 	}
+
 	var result interface{}
 	if json.Unmarshal(data, &result) != nil {
 		c.JSON(http.StatusOK, gin.H{})
 		return
 	}
+
 	c.JSON(http.StatusOK, result)
 }
 
@@ -142,4 +158,33 @@ func updateContent(c *gin.Context) {
 
 	middleware.Audit(c, "update_page", pageKey, "")
 	c.JSON(http.StatusOK, gin.H{"message": "页面内容已保存"})
+}
+
+// flatToNested 将扁平 key（如 "hero.title1"）转为嵌套 map 结构
+func flatToNested(flat map[string]interface{}) map[string]interface{} {
+	nested := make(map[string]interface{})
+	for key, val := range flat {
+		parts := strings.Split(key, ".")
+		current := nested
+		for i, part := range parts {
+			if i == len(parts)-1 {
+				current[part] = val
+			} else {
+				if next, ok := current[part]; ok {
+					if nextMap, ok := next.(map[string]interface{}); ok {
+						current = nextMap
+					} else {
+						newMap := make(map[string]interface{})
+						current[part] = newMap
+						current = newMap
+					}
+				} else {
+					newMap := make(map[string]interface{})
+					current[part] = newMap
+					current = newMap
+				}
+			}
+		}
+	}
+	return nested
 }

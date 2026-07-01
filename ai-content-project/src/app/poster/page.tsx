@@ -370,7 +370,7 @@ function PosterEditorInner() {
     ]);
 
     const data = await ff.readFile('output.mp4');
-    const mp4Blob = new Blob([data], { type: 'video/mp4' });
+    const mp4Blob = new Blob([data as BlobPart], { type: 'video/mp4' });
 
     // 清理临时文件
     await ff.deleteFile('input.webm').catch(() => {});
