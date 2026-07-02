@@ -1,22 +1,4 @@
 {
-  "cta": {
-    "btn1": {
-      "en": "",
-      "zh": "立即咨询"
-    },
-    "btn2": {
-      "en": "",
-      "zh": "微信咨询"
-    },
-    "subtitle": {
-      "en": "",
-      "zh": "无论您是计划商务考察、参展参会，还是企业出海落地，\n                中盛启瀚都将为您提供专业、高效的一站式服务。"
-    },
-    "title": {
-      "en": "",
-      "zh": "开启您的沙特商务之旅"
-    }
-  },
   "faq": {
     "a1": {
       "en": "",
@@ -75,150 +57,109 @@
       "zh": "签证被拒后可以重新申请吗？"
     }
   },
-  "footer": {
-    "contactTitle": {
-      "en": "",
-      "zh": "联系方式"
-    },
-    "copyright": {
-      "en": "",
-      "zh": "中盛启瀚（ZSTS）国际商务发展有限公司"
-    },
-    "desc": {
-      "en": "",
-      "zh": "依托沙特阿拉伯授权签证中心，聚焦沙特市场的综合商业服务公司，致力于构筑中沙两国高质量发展桥梁。"
-    },
-    "navTitle": {
-      "en": "",
-      "zh": "快速导航"
-    },
-    "privacy": {
-      "en": "",
-      "zh": "隐私政策"
-    },
-    "sitemap": {
-      "en": "",
-      "zh": "网站地图"
-    },
-    "terms": {
-      "en": "",
-      "zh": "服务条款"
-    }
-  },
   "hero": {
     "badge": {
-      "en": "Royal Embassy of Saudi Arabia · Official Authorized Agency",
+      "en": "",
       "zh": "沙特阿拉伯驻华大使馆 · 官方授权代办"
     },
+    "bgImage": "images/jeddah-tower.jpg",
     "desc": {
-      "en": "Business, work, family visit, tourist, residence, and student visa one-stop service",
+      "en": "",
       "zh": "商务、工作、探亲、旅游、居住、留学签证专业代办"
     },
     "subtitle": {
-      "en": "Official Authorized · Fast Processing",
+      "en": "",
       "zh": "专业办理 · 极速出签"
     },
     "title": {
-      "en": "Saudi Arabia Visa",
+      "en": "",
       "zh": "沙特签证"
     }
   },
   "mat": {
     "business": {
+      "content": {
+        "en": [],
+        "zh": []
+      },
       "label": {
-        "en": "Business Visa",
+        "en": "",
         "zh": "商务签证"
       },
       "title": {
-        "en": "Business Visa Document Checklist",
+        "en": "",
         "zh": "商务签证申请材料"
       }
     },
     "family": {
+      "content": {
+        "en": [],
+        "zh": []
+      },
       "label": {
-        "en": "Family Visit Visa",
+        "en": "",
         "zh": "探亲签证"
+      },
+      "title": {
+        "en": "",
+        "zh": ""
       }
     },
     "residence": {
+      "content": {
+        "en": [],
+        "zh": []
+      },
       "label": {
-        "en": "Residence Visa",
+        "en": "",
         "zh": "居住签证"
+      },
+      "title": {
+        "en": "",
+        "zh": ""
       }
     },
     "student": {
+      "content": {
+        "en": [],
+        "zh": []
+      },
       "label": {
-        "en": "Student Visa",
+        "en": "",
         "zh": "留学签证"
+      },
+      "title": {
+        "en": "",
+        "zh": ""
       }
     },
     "tourist": {
+      "content": {
+        "en": [],
+        "zh": []
+      },
       "label": {
-        "en": "Tourist Visa",
+        "en": "",
         "zh": "旅游签证"
+      },
+      "title": {
+        "en": "",
+        "zh": ""
       }
     },
     "work": {
+      "content": {
+        "en": [],
+        "zh": []
+      },
       "label": {
-        "en": "Work Visa",
+        "en": "",
         "zh": "工作签证"
+      },
+      "title": {
+        "en": "",
+        "zh": ""
       }
-    }
-  },
-  "modal": {
-    "desc": {
-      "en": "",
-      "zh": "选择您方便的方式联系我们"
-    },
-    "phone": {
-      "en": "",
-      "zh": "客服电话：010-85656995 / 010-53670397 / 17190016075"
-    },
-    "title": {
-      "en": "",
-      "zh": "扫码咨询"
-    }
-  },
-  "nav": {
-    "about": {
-      "en": "About",
-      "zh": "关于我们"
-    },
-    "consult": {
-      "en": "Contact Us",
-      "zh": "立即咨询"
-    },
-    "enterprise": {
-      "en": "Enterprise",
-      "zh": "企业出海"
-    },
-    "home": {
-      "en": "Home",
-      "zh": "首页"
-    },
-    "inspection": {
-      "en": "Inspection",
-      "zh": "企业考察"
-    },
-    "insurance": {
-      "en": "Overseas Insurance",
-      "zh": "境外保险"
-    },
-    "news": {
-      "en": "News",
-      "zh": "沙特资讯"
-    },
-    "saudiVisa": {
-      "en": "Saudi Visa",
-      "zh": "沙特签证"
-    },
-    "transport": {
-      "en": "Overseas Transport & Stay",
-      "zh": "境外交通住宿"
-    },
-    "visa": {
-      "en": "Global Visa",
-      "zh": "全球签证"
     }
   },
   "section": {
@@ -234,26 +175,16 @@
     },
     "materials": {
       "subtitle": {
-        "en": "Standard checklist below; our advisor will provide a free pre-review",
+        "en": "",
         "zh": "以下为标准材料清单，具体要求以最新使馆通知为准，顾问将免费核查"
       },
       "tag": {
-        "en": "Documents",
+        "en": "",
         "zh": "材料清单"
-      }
-    },
-    "process": {
-      "subtitle": {
-        "en": "From consultation to visa collection, guided by professional advisors for all 6 visa types",
-        "zh": "从咨询到取签，全程专业顾问协助指引，覆盖商务、工作、探亲、旅游、居住、留学全类型签证"
-      },
-      "tag": {
-        "en": "Process",
-        "zh": "办理流程"
       },
       "title": {
-        "en": "5 Simple Steps to Your Visa",
-        "zh": "简单5步，轻松出签"
+        "en": "",
+        "zh": ""
       }
     }
   },
@@ -272,27 +203,26 @@
       "label": {
         "en": "",
         "zh": "邮件咨询"
+      },
+      "value": {
+        "en": "",
+        "zh": ""
       }
     },
     "phone": {
       "label": {
         "en": "",
         "zh": "电话咨询"
+      },
+      "value": {
+        "en": "",
+        "zh": ""
       }
     },
     "qr": {
-      "enterprise": {
-        "en": "",
-        "zh": "微信客服二"
-      },
-      "personal": {
-        "en": "",
-        "zh": "微信客服一"
-      },
-      "whatsapp": {
-        "en": "",
-        "zh": "WhatsApp"
-      }
+      "enterprise": "/uploads/images/img_1782958791257eoxv48.jpg",
+      "personal": "微信客服一",
+      "whatsapp": "WhatsApp"
     },
     "trust": {
       "p1": {
@@ -318,58 +248,6 @@
       "title": {
         "en": "",
         "zh": "为什么选择中盛启瀚？"
-      }
-    }
-  },
-  "step": {
-    "1": {
-      "desc": {
-        "en": "Contact your dedicated advisor with your travel purpose and dates to get a personalized visa plan",
-        "zh": "联系专属顾问，告知出行目的和时间，获取个性化签证方案"
-      },
-      "title": {
-        "en": "Consult",
-        "zh": "在线咨询"
-      }
-    },
-    "2": {
-      "desc": {
-        "en": "Prepare documents per checklist; advisor reviews for free to ensure full compliance",
-        "zh": "按清单准备申请材料，顾问免费审核，确保材料合规完整"
-      },
-      "title": {
-        "en": "Prepare Docs",
-        "zh": "准备材料"
-      }
-    },
-    "3": {
-      "desc": {
-        "en": "After document approval, we submit the formal application to the Saudi Embassy on your behalf",
-        "zh": "材料审核通过后，代为向沙特驻华使馆提交正式签证申请"
-      },
-      "title": {
-        "en": "Submit",
-        "zh": "提交申请"
-      }
-    },
-    "4": {
-      "desc": {
-        "en": "We monitor Embassy review progress and provide timely transparent status updates",
-        "zh": "全程跟进使馆审核进度，第一时间反馈最新状态，保证透明"
-      },
-      "title": {
-        "en": "Track Progress",
-        "zh": "审核跟进"
-      }
-    },
-    "5": {
-      "desc": {
-        "en": "Upon approval, collect your visa and embark on your Saudi journey",
-        "zh": "出签成功后通知取签，顺利踏上沙特之旅"
-      },
-      "title": {
-        "en": "Collect & Go",
-        "zh": "取签出发"
       }
     }
   }

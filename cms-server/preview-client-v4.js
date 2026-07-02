@@ -246,8 +246,9 @@
     // 首先处理所有 data-i18n 属性（文本内容）
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const key = el.getAttribute('data-i18n');
-      // 跳过全局字段（nav.XXX, footer.XXX, modal.XXX, sidebar.XXX），这些由专门的函数处理
-      if (key.startsWith('nav.') || key.startsWith('footer.') || key.startsWith('modal.') || key.startsWith('sidebar.')) return;
+      // 跳过全局字段（nav.XXX, footer.XXX, modal.XXX），这些由专门的函数处理
+      // 但 sidebar.qr.* 是图片字段，需要直接更新 img.src，不跳过
+      if ((key.startsWith('nav.') || key.startsWith('footer.') || key.startsWith('modal.') || key.startsWith('sidebar.')) && !key.startsWith('sidebar.qr.')) return;
 
       const val = getVal(data, key);
       const str = toString(val);
