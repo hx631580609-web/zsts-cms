@@ -45,11 +45,133 @@
       // 语言切换后，用已缓存的 CMS 数据重新渲染（toString 会根据新语言取值）
       console.log('[CMS] 语言切换为:', lang, '，重新渲染 CMS 内容');
       if (window.CMS_PAGE_DATA) {
-        setTimeout(function() { applyPageContent(window.CMS_PAGE_DATA); }, 50);
+        setTimeout(function() {
+          applyPageContent(window.CMS_PAGE_DATA);
+          // 切英文时自动翻译缺失字段（云端 LLM）
+          if (lang === 'en') {
+            autoTranslateMissingEn(pageKey, window.CMS_PAGE_DATA);
+          }
+        }, 50);
       }
     };
   }
   console.log('[CMS] ✅ 已拦截 applyTranslations，setLang 已包装支持语言切换');
+
+  // ── 自动翻译缺失字段（云端 LLM）────────────
+  // 切英文时调用，扫描 visa.json 中所有 {zh,en} 字段，en 为空时调 /api/ai-channels/call
+  async function autoTranslateMissingEn(pageKey, data) {
+    if (!data || typeof data !== 'object') return;
+    const missingFields = [];
+    function collect(obj, path) {
+      if (!obj || typeof obj !== 'object') return;
+      if (Array.isArray(obj)) {
+        obj.forEach((item, i) => collect(item, `${path}[${i}]`));
+        return;
+      }
+      if ('zh' in obj && 'en' in obj) {
+        const zh = obj.zh;
+        const en = obj.en;
+        if ((zh || typeof zh === 'string') && (!en || en === '')) {
+          missingFields.push({ path, zh });
+        }
+        return;
+      }
+      // 裸字符串字段：检测中文且不是 URL/电话/邮箱
+      Object.entries(obj).forEach(([k, v]) => {
+        if (typeof v === 'string' && /[\u4e00-\u9fa5]/.test(v)) {
+          if (k === 'src' || k === 'url' || k === 'href' || k === 'qr' || k === 'image' || k === 'icon') return;
+          if (path.endsWith('.src') || path.endsWith('.url') || path.endsWith('.href') || path.endsWith('.icon')) return;
+          if (/^(https?:|\/|\.\/|\.\.\/)/.test(v) || /\.(png|jpg|jpeg|gif|webp|svg)$/i.test(v)) return;
+          if (/^[\d\-\+\s\(\)]+$/.test(v) && v.length < 30) return;
+          if (/@/.test(v) && v.length < 50) return;
+          missingFields.push({ path: path ? `${path}.${k}` : k, zh: v });
+        } else if (typeof v === 'object' && v !== null) {
+          collect(v, path ? `${path}.${k}` : k);
+        }
+      });
+    }
+    collect(data, '');
+
+    if (missingFields.length === 0) {
+      console.log('[CMS Auto-Translate] 没有需要翻译的字段');
+      return;
+    }
+    console.log(`[CMS Auto-Translate] 发现 ${missingFields.length} 个待翻译字段`);
+
+    // toast
+    showTranslateToast(`🔄 正在 AI 翻译 ${missingFields.length} 个字段...`);
+
+    try {
+      const fieldsToTranslate = missingFields.slice(0, 50);
+      const r = await fetch('/api/ai-channels/call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            { role: 'system', content: 'You are a professional translator specializing in Simplified Chinese to English translation for business websites. Maintain the original tone, technical terms, and formatting. Output a JSON array with the same order as input, each element has the English translation only (no extra text, no markdown).' },
+            { role: 'user', content: 'Translate the following texts to English. Output a JSON array, one translation per element, in the same order:\n\n' + JSON.stringify(fieldsToTranslate.map((f, i) => ({ id: i, zh: f.zh }))) + '\n\nOutput format: [{"id": 0, "en": "..."}, {"id": 1, "en": "..."}, ...]' }
+          ],
+          temperature: 0.3,
+        }),
+      });
+      const result = await r.json();
+      if (!r.ok) {
+        console.error('[CMS Auto-Translate] 后端失败', result);
+        showTranslateToast('⚠️ 翻译失败：' + (result.error || '未知'), 'error');
+        return;
+      }
+      // 解析 LLM 返回
+      let translations = [];
+      try {
+        const content = (result.content || '').trim();
+        const m = content.match(/\[[\s\S]*\]/);
+        translations = JSON.parse(m ? m[0] : content);
+        if (!Array.isArray(translations)) throw new Error('返回不是数组');
+      } catch (e) {
+        console.error('[CMS Auto-Translate] 解析失败', e, result.content);
+        showTranslateToast('⚠️ 翻译结果解析失败', 'error');
+        return;
+      }
+      const updates = {};
+      fieldsToTranslate.forEach((f, i) => {
+        const t = translations[i];
+        if (t && t.en && t.en.trim()) updates[f.path] = t.en.trim();
+      });
+      if (Object.keys(updates).length === 0) {
+        showTranslateToast('⚠️ 翻译结果为空', 'error');
+        return;
+      }
+      // 落库
+      const saveR = await fetch(`/api/content/${pageKey}/translate-bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updates }),
+      });
+      if (saveR.ok) {
+        console.log(`[CMS Auto-Translate] ✅ 落库 ${Object.keys(updates).length} 个`);
+        showTranslateToast(`✅ 已翻译 ${Object.keys(updates).length} 个字段`);
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        const err = await saveR.json();
+        showTranslateToast('⚠️ 落库失败：' + (err.error || '未知'), 'error');
+      }
+    } catch (e) {
+      console.error('[CMS Auto-Translate] 异常', e);
+      showTranslateToast('⚠️ 异常：' + e.message, 'error');
+    }
+  }
+
+  function showTranslateToast(message, type) {
+    let t = document.getElementById('cms-translate-toast');
+    if (t) t.remove();
+    t = document.createElement('div');
+    t.id = 'cms-translate-toast';
+    t.style.cssText = 'position:fixed;top:20px;right:20px;padding:12px 20px;background:rgba(0,0,0,0.9);color:white;border-radius:8px;font-size:14px;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,0.3);max-width:400px;';
+    if (type === 'error') t.style.background = 'rgba(220,38,38,0.95)';
+    t.textContent = message;
+    document.body.appendChild(t);
+    setTimeout(() => { if (t && t.parentNode) t.remove(); }, 4000);
+  }
 
   // ── 工具：从嵌套对象取值 ──────────────────
   function getVal(obj, path) {

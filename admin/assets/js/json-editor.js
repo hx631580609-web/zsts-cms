@@ -134,21 +134,35 @@ function renderBilingual(value, path, onchange) {
 // 渲染对象
 function renderObject(obj, path, onchange) {
   const wrapper = createElement('div', { className: 'space-y-4' });
-  
+
   for (const [key, val] of Object.entries(obj)) {
     const item = createElement('div', { className: 'border-b border-gray-100 pb-4' });
-    
+
     const label = createElement('label', {
       className: 'block text-sm font-semibold text-gray-700 mb-2'
     }, key);
+
+    // icon 类字段：只读显示（运营不可改）
+    if (key === 'icon') {
+      const iconPreview = createElement('div', {
+        className: 'flex items-center space-x-2 px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-600'
+      });
+      iconPreview.appendChild(createElement('span', { className: 'text-lg' }, '🔒'));
+      iconPreview.appendChild(createElement('span', {}, `只读：${val || '（未设置）'}（由前端自动选择，运营不可改）`));
+      item.appendChild(label);
+      item.appendChild(iconPreview);
+      wrapper.appendChild(item);
+      continue;
+    }
+
     item.appendChild(label);
-    
+
     const editor = renderValue(val, `${path}.${key}`, onchange);
     if (editor) item.appendChild(editor);
-    
+
     wrapper.appendChild(item);
   }
-  
+
   return wrapper;
 }
 
@@ -191,20 +205,31 @@ function renderArray(arr, path, onchange) {
     wrapper.appendChild(itemWrapper);
   });
   
-  // 添加按钮
-  const addBtn = createElement('button', {
-    className: 'w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-zsts-green hover:text-zsts-green transition-colors',
-    onclick: () => {
-      arr.push(getDefaultValueForArray(arr));
-      onchange && onchange(path, arr);
-      const parent = wrapper.parentNode;
-      if (parent) {
-        parent.innerHTML = '';
-        parent.appendChild(renderArray(arr, path, onchange));
-      }
+  // 添加按钮（当容器标记了 data-readonly-add="1" 时隐藏——禁止运营添加条目）
+  // 容器结构：.json-field-container[data-readonly-add="1"] > .space-y-3 > items + addBtn
+  function findReadonlyAncestor(node) {
+    while (node) {
+      if (node.nodeType === 1 && node.getAttribute && node.getAttribute('data-readonly-add') === '1') return true;
+      node = node.parentNode;
     }
-  }, '+ 添加项目');
-  wrapper.appendChild(addBtn);
+    return false;
+  }
+  const isReadonly = findReadonlyAncestor(wrapper.parentNode);
+  if (!isReadonly) {
+    const addBtn = createElement('button', {
+      className: 'w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-zsts-green hover:text-zsts-green transition-colors',
+      onclick: () => {
+        arr.push(getDefaultValueForArray(arr));
+        onchange && onchange(path, arr);
+        const parent = wrapper.parentNode;
+        if (parent) {
+          parent.innerHTML = '';
+          parent.appendChild(renderArray(arr, path, onchange));
+        }
+      }
+    }, '+ 添加项目');
+    wrapper.appendChild(addBtn);
+  }
   
   return wrapper;
 }

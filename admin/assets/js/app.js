@@ -1205,25 +1205,32 @@ async function renderPageEditor(container, pageKey) {
           <input type="url" id="field-${f.key}" value="${esc(val)}" placeholder="https:// 或 /page.html 或 tel:..." class="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green">
         </div>`;
       } else if (f.type === 'textarea') {
+        // 隐藏 en 字段：只渲染 zh（en 由前端自动翻译落库，运营不需改）
+        const enVal = (typeof val === 'object' && val?.en) ? val.en : '';
+        const zhVal = (typeof val === 'object' && val?.zh !== undefined) ? val.zh : (typeof val === 'string' ? val : '');
         return `
         <div class="mb-3">
           <label class="block text-xs font-semibold text-gray-500 mb-1.5">${f.label}</label>
-          <textarea id="field-${f.key}" rows="3" class="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green">${esc(val)}</textarea>
+          <textarea id="field-${f.key}" data-bilingual="1" data-en="${esc(enVal)}" rows="3" class="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green">${esc(zhVal)}</textarea>
         </div>`;
       } else if (f.type === 'json' || f.type === 'repeater') {
         // 结构化数组字段（如：材料清单的分组+材料项）
         // val 形如 {zh: [...], en: [...]}，如不存在则初始化为空数组
         const jsonVal = (val && typeof val === 'object') ? val : { zh: [], en: [] };
+        // 只读模式：禁止运营增删条目（只允许编辑已有内容）
         return `
         <div class="mb-3 json-field-wrap" data-field-key="${f.key}">
-          <label class="block text-xs font-semibold text-gray-500 mb-1.5">${f.label} <span class="text-gray-400 font-normal">（结构化数组，可增/删/拖拽）</span></label>
-          <div id="field-${f.key}" class="json-field-container bg-gray-50 border border-gray-200 rounded-lg p-3"></div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1.5">${f.label} <span class="text-gray-400 font-normal">（结构化数组，条目数量已锁定）</span></label>
+          <div id="field-${f.key}" class="json-field-container bg-gray-50 border border-gray-200 rounded-lg p-3" data-readonly-add="1"></div>
         </div>`;
       } else {
+        // 隐藏 en 字段：只渲染 zh
+        const enVal = (typeof val === 'object' && val?.en) ? val.en : '';
+        const zhVal = (typeof val === 'object' && val?.zh !== undefined) ? val.zh : (typeof val === 'string' ? val : '');
         return `
         <div class="mb-3">
           <label class="block text-xs font-semibold text-gray-500 mb-1.5">${f.label}</label>
-          <input type="text" id="field-${f.key}" value="${esc(val)}" class="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green">
+          <input type="text" id="field-${f.key}" data-bilingual="1" data-en="${esc(enVal)}" value="${esc(zhVal)}" class="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-zsts-green/30 focus:border-zsts-green">
         </div>`;
       }
     }).join('');
@@ -1348,7 +1355,11 @@ async function savePageContent(pageKey) {
           cur[keys[i]] = stored;
         } else {
           // 文本字段：存储为 {zh, en} 对象
-          cur[keys[i]] = { zh: document.getElementById(`field-${f.key}`)?.value || '', en: '' };
+          // 保留原 en 值（如果存在），en 不再可编辑——只允许前端 Translator API 写入
+          const el = document.getElementById(`field-${f.key}`);
+          const zhVal = el?.value || '';
+          const enVal = el?.getAttribute('data-en') || '';
+          cur[keys[i]] = { zh: zhVal, en: enVal };
         }
       } else {
         cur[keys[i]] = cur[keys[i]] || {};

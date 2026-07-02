@@ -70,34 +70,96 @@
     "services": {
       "items": {
         "zh": [
-          { "title": "商务考察团", "desc": "定制化沙特商务考察行程，参访龙头企业，对接本地商业资源", "icon": "building-2" },
-          { "title": "展会参展", "desc": "沙特国际展会参展服务，含展位预订、布展、行程安排", "icon": "presentation" },
-          { "title": "政府/机构拜访", "desc": "安排拜访沙特政府部门、商会、行业协会等机构", "icon": "landmark" },
-          { "title": "项目调研", "desc": "沙特市场调研、行业分析、合作伙伴筛选等专项服务", "icon": "search" }
+          {
+            "title": "商务考察团",
+            "desc": "定制化沙特商务考察行程，参访龙头企业，对接本地商业资源",
+            "icon": "building-2"
+          },
+          {
+            "title": "展会参展",
+            "desc": "沙特国际展会参展服务，含展位预订、布展、行程安排",
+            "icon": "presentation"
+          },
+          {
+            "title": "政府/机构拜访",
+            "desc": "安排拜访沙特政府部门、商会、行业协会等机构",
+            "icon": "landmark"
+          },
+          {
+            "title": "项目调研",
+            "desc": "沙特市场调研、行业分析、合作伙伴筛选等专项服务",
+            "icon": "search"
+          }
         ],
         "en": [
-          { "title": "Business Delegation", "desc": "Customized Saudi business itinerary, visiting leading enterprises and matching local resources", "icon": "building-2" },
-          { "title": "Exhibition Participation", "desc": "Saudi international exhibition services including booth booking, setup, and itinerary", "icon": "presentation" },
-          { "title": "Government/Institution Visit", "desc": "Arrange visits to Saudi government departments, chambers of commerce, and industry associations", "icon": "landmark" },
-          { "title": "Project Research", "desc": "Saudi market research, industry analysis, and partner screening services", "icon": "search" }
+          {
+            "title": "Business Delegation",
+            "desc": "Customized Saudi business itinerary, visiting leading enterprises and matching local resources",
+            "icon": "building-2"
+          },
+          {
+            "title": "Exhibition Participation",
+            "desc": "Saudi international exhibition services including booth booking, setup, and itinerary",
+            "icon": "presentation"
+          },
+          {
+            "title": "Government/Institution Visit",
+            "desc": "Arrange visits to Saudi government departments, chambers of commerce, and industry associations",
+            "icon": "landmark"
+          },
+          {
+            "title": "Project Research",
+            "desc": "Saudi market research, industry analysis, and partner screening services",
+            "icon": "search"
+          }
         ]
       }
     },
     "faq": {
       "items": {
         "zh": [
-          { "q": "考察行程可以定制吗？", "a": "可以。我们根据您的行业、考察目的、时间和预算定制专属行程，包括参访企业、会议安排、交通住宿等。" },
-          { "q": "可以安排哪些类型的参访企业？", "a": "我们可以安排参访沙特各行业龙头企业，包括能源、建筑、金融、科技、制造业等领域的知名企业。" },
-          { "q": "考察费用包含哪些？", "a": "费用包含行程定制、企业对接、商务会议安排、翻译服务、交通住宿等，透明报价无隐形费用。" },
-          { "q": "需要多久前开始准备？", "a": "建议至少提前30-45天开始准备，以便充分对接企业、安排会议和预订行程。旺季建议更早。" },
-          { "q": "可以配翻译/商务陪同吗？", "a": "可以。我们提供专业中文/阿拉伯语翻译及商务陪同人员，协助沟通交流，确保考察顺利进行。" }
+          {
+            "q": "考察行程可以定制吗？",
+            "a": "可以。我们根据您的行业、考察目的、时间和预算定制专属行程，包括参访企业、会议安排、交通住宿等。"
+          },
+          {
+            "q": "可以安排哪些类型的参访企业？",
+            "a": "我们可以安排参访沙特各行业龙头企业，包括能源、建筑、金融、科技、制造业等领域的知名企业。"
+          },
+          {
+            "q": "考察费用包含哪些？",
+            "a": "费用包含行程定制、企业对接、商务会议安排、翻译服务、交通住宿等，透明报价无隐形费用。"
+          },
+          {
+            "q": "需要多久前开始准备？",
+            "a": "建议至少提前30-45天开始准备，以便充分对接企业、安排会议和预订行程。旺季建议更早。"
+          },
+          {
+            "q": "可以配翻译/商务陪同吗？",
+            "a": "可以。我们提供专业中文/阿拉伯语翻译及商务陪同人员，协助沟通交流，确保考察顺利进行。"
+          }
         ],
         "en": [
-          { "q": "Can the inspection itinerary be customized?", "a": "Yes. We customize itineraries based on your industry, purpose, timeline, and budget, including enterprise visits, meetings, transport, and accommodation." },
-          { "q": "What types of enterprises can be visited?", "a": "We can arrange visits to leading Saudi enterprises in energy, construction, finance, technology, manufacturing, and more." },
-          { "q": "What does the inspection fee include?", "a": "Fees cover itinerary customization, enterprise liaison, business meeting arrangement, translation, transport, and accommodation—transparent pricing." },
-          { "q": "How far in advance should I start preparing?", "a": "We recommend starting at least 30-45 days in advance for sufficient enterprise coordination and booking. Earlier for peak seasons." },
-          { "q": "Can I get a translator/business escort?", "a": "Yes. We provide professional Chinese/Arabic translators and business escorts to facilitate communication and ensure a smooth inspection." }
+          {
+            "q": "Can the inspection itinerary be customized?",
+            "a": "Yes. We customize itineraries based on your industry, purpose, timeline, and budget, including enterprise visits, meetings, transport, and accommodation."
+          },
+          {
+            "q": "What types of enterprises can be visited?",
+            "a": "We can arrange visits to leading Saudi enterprises in energy, construction, finance, technology, manufacturing, and more."
+          },
+          {
+            "q": "What does the inspection fee include?",
+            "a": "Fees cover itinerary customization, enterprise liaison, business meeting arrangement, translation, transport, and accommodation—transparent pricing."
+          },
+          {
+            "q": "How far in advance should I start preparing?",
+            "a": "We recommend starting at least 30-45 days in advance for sufficient enterprise coordination and booking. Earlier for peak seasons."
+          },
+          {
+            "q": "Can I get a translator/business escort?",
+            "a": "Yes. We provide professional Chinese/Arabic translators and business escorts to facilitate communication and ensure a smooth inspection."
+          }
         ]
       }
     },
@@ -271,12 +333,20 @@
       "label": {
         "en": "",
         "zh": "邮件咨询"
+      },
+      "value": {
+        "zh": "info@zsts.group",
+        "en": ""
       }
     },
     "phone": {
       "label": {
         "en": "",
         "zh": "电话咨询"
+      },
+      "value": {
+        "zh": "010-85656995 / 010-53670397 / 17190016075",
+        "en": ""
       }
     },
     "qr": {

@@ -139,18 +139,48 @@
       },
       "items": {
         "zh": [
-          { "q": "办理签证需要多长时间？", "a": "不同国家签证时间不同，一般旅游签证5-10个工作日，商务签证7-15个工作日，加急服务可缩短至3-5个工作日。" },
-          { "q": "出签率有多高？", "a": "我们整体出签率保持在98%以上，专业顾问会在提交前严格审核材料，确保符合使馆要求。" },
-          { "q": "可以代办哪些国家的签证？", "a": "我们覆盖全球200+国家和地区，包括沙特、阿联酋、土耳其、埃及、摩洛哥、欧洲申根国、美国、加拿大、澳大利亚、新西兰等。" },
-          { "q": "需要准备哪些材料？", "a": "基本材料包括护照、照片、在职证明、银行流水等，具体材料清单根据目的地国家和签证类型而定，顾问会提供详细清单。" },
-          { "q": "费用包含哪些服务？", "a": "费用包含签证费、服务费、材料审核、代为递交、进度跟踪等全套服务，透明收费无隐形费用。" }
+          {
+            "q": "办理签证需要多长时间？",
+            "a": "不同国家签证时间不同，一般旅游签证5-10个工作日，商务签证7-15个工作日，加急服务可缩短至3-5个工作日。"
+          },
+          {
+            "q": "出签率有多高？",
+            "a": "我们整体出签率保持在98%以上，专业顾问会在提交前严格审核材料，确保符合使馆要求。"
+          },
+          {
+            "q": "可以代办哪些国家的签证？",
+            "a": "我们覆盖全球200+国家和地区，包括沙特、阿联酋、土耳其、埃及、摩洛哥、欧洲申根国、美国、加拿大、澳大利亚、新西兰等。"
+          },
+          {
+            "q": "需要准备哪些材料？",
+            "a": "基本材料包括护照、照片、在职证明、银行流水等，具体材料清单根据目的地国家和签证类型而定，顾问会提供详细清单。"
+          },
+          {
+            "q": "费用包含哪些服务？",
+            "a": "费用包含签证费、服务费、材料审核、代为递交、进度跟踪等全套服务，透明收费无隐形费用。"
+          }
         ],
         "en": [
-          { "q": "How long does visa processing take?", "a": "Processing times vary by country. Tourist visas typically take 5-10 business days, business visas 7-15 business days. Expedited service can reduce to 3-5 days." },
-          { "q": "What is the approval rate?", "a": "Our overall approval rate exceeds 98%. Professional consultants strictly review materials before submission to ensure embassy compliance." },
-          { "q": "Which countries can you process visas for?", "a": "We cover 200+ countries including Saudi Arabia, UAE, Turkey, Egypt, Morocco, Schengen countries, USA, Canada, Australia, New Zealand, and more." },
-          { "q": "What documents are required?", "a": "Basic documents include passport, photos, employment certificate, bank statements. Specific requirements vary by destination and visa type; consultants provide detailed checklists." },
-          { "q": "What services are included in the fee?", "a": "Fees cover visa fees, service charges, document review, embassy submission, and progress tracking—transparent pricing with no hidden costs." }
+          {
+            "q": "How long does visa processing take?",
+            "a": "Processing times vary by country. Tourist visas typically take 5-10 business days, business visas 7-15 business days. Expedited service can reduce to 3-5 days."
+          },
+          {
+            "q": "What is the approval rate?",
+            "a": "Our overall approval rate exceeds 98%. Professional consultants strictly review materials before submission to ensure embassy compliance."
+          },
+          {
+            "q": "Which countries can you process visas for?",
+            "a": "We cover 200+ countries including Saudi Arabia, UAE, Turkey, Egypt, Morocco, Schengen countries, USA, Canada, Australia, New Zealand, and more."
+          },
+          {
+            "q": "What documents are required?",
+            "a": "Basic documents include passport, photos, employment certificate, bank statements. Specific requirements vary by destination and visa type; consultants provide detailed checklists."
+          },
+          {
+            "q": "What services are included in the fee?",
+            "a": "Fees cover visa fees, service charges, document review, embassy submission, and progress tracking—transparent pricing with no hidden costs."
+          }
         ]
       }
     },
@@ -169,18 +199,48 @@
       },
       "items": {
         "zh": [
-          { "title": "在线咨询", "desc": "联系专属顾问，告知出行目的和国家，获取个性化签证方案" },
-          { "title": "准备材料", "desc": "按目标国家清单准备申请材料，顾问免费审核，确保材料合规完整" },
-          { "title": "提交申请", "desc": "材料审核通过后，代为向对应国家大使馆/签证中心提交正式申请" },
-          { "title": "审核跟进", "desc": "全程跟进使馆/签证中心审核进度，第一时间反馈最新状态" },
-          { "title": "出签寄回", "desc": "出签成功后通知取签或快递寄回，顺利踏上旅程" }
+          {
+            "title": "在线咨询",
+            "desc": "联系专属顾问，告知出行目的和国家，获取个性化签证方案"
+          },
+          {
+            "title": "准备材料",
+            "desc": "按目标国家清单准备申请材料，顾问免费审核，确保材料合规完整"
+          },
+          {
+            "title": "提交申请",
+            "desc": "材料审核通过后，代为向对应国家大使馆/签证中心提交正式申请"
+          },
+          {
+            "title": "审核跟进",
+            "desc": "全程跟进使馆/签证中心审核进度，第一时间反馈最新状态"
+          },
+          {
+            "title": "出签寄回",
+            "desc": "出签成功后通知取签或快递寄回，顺利踏上旅程"
+          }
         ],
         "en": [
-          { "title": "Online Consultation", "desc": "Contact your dedicated consultant, share your travel purpose and destination, and receive a personalized visa plan" },
-          { "title": "Prepare Documents", "desc": "Prepare application materials according to the destination country checklist, with free consultant review" },
-          { "title": "Submit Application", "desc": "After document approval, submit the formal application to the corresponding embassy or visa center" },
-          { "title": "Follow-up", "desc": "Track the embassy/visa center review progress and provide timely status updates" },
-          { "title": "Visa Issued", "desc": "Once approved, collect your visa or have it couriered to you—ready for your journey" }
+          {
+            "title": "Online Consultation",
+            "desc": "Contact your dedicated consultant, share your travel purpose and destination, and receive a personalized visa plan"
+          },
+          {
+            "title": "Prepare Documents",
+            "desc": "Prepare application materials according to the destination country checklist, with free consultant review"
+          },
+          {
+            "title": "Submit Application",
+            "desc": "After document approval, submit the formal application to the corresponding embassy or visa center"
+          },
+          {
+            "title": "Follow-up",
+            "desc": "Track the embassy/visa center review progress and provide timely status updates"
+          },
+          {
+            "title": "Visa Issued",
+            "desc": "Once approved, collect your visa or have it couriered to you—ready for your journey"
+          }
         ]
       }
     },
@@ -214,12 +274,20 @@
       "label": {
         "en": "Email Us",
         "zh": "邮件咨询"
+      },
+      "value": {
+        "zh": "info@zsts.group",
+        "en": ""
       }
     },
     "phone": {
       "label": {
         "en": "Call Us",
         "zh": "电话咨询"
+      },
+      "value": {
+        "zh": "010-85656995 / 010-53670397 / 17190016075",
+        "en": ""
       }
     },
     "qr": {

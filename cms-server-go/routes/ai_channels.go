@@ -25,6 +25,7 @@ func RegisterAIChannelRoutes(r *gin.RouterGroup) {
 		channels.PUT("/:id/set-default", middleware.RequireSuperAdmin(), setDefaultChannel)
 		channels.DELETE("/:id", middleware.RequireSuperAdmin(), deleteChannel)
 		channels.POST("/test-connection", middleware.RequireSuperAdmin(), testChannelConnection)
+		channels.POST("/call", callChannel) // 调用 LLM（无需认证，preview 触发用）
 	}
 }
 
@@ -237,5 +238,124 @@ func testChannelConnection(c *gin.Context) {
 		"success": true,
 		"message": fmt.Sprintf("连接成功，发现 %d 个模型", len(modelIDs)),
 		"models":  modelIDs,
+	})
+}
+
+// callChannel POST /api/ai-channels/call
+// 调用默认 AI 渠道的 chat/completions（OpenAI 兼容）
+// 用于：自动翻译、内容生成等需要 LLM 的场景
+// body: { messages: [{role, content}], model?: string, temperature?: number }
+// 不需要认证（preview 页面用户访问时也会触发）
+func callChannel(c *gin.Context) {
+	var req struct {
+		Messages   []map[string]string `json:"messages" binding:"required"`
+		Model      string              `json:"model"`
+		Temperature float64            `json:"temperature"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "messages 不能为空"})
+		return
+	}
+	if req.Temperature == 0 {
+		req.Temperature = 0.3
+	}
+
+	// 查默认渠道
+	var ch models.AIChannelRow
+	var modelListJSON string
+	err := db.DB.QueryRow(
+		"SELECT id, name, api_url, api_key, model_list, default_model FROM ai_channels WHERE is_default = 1 LIMIT 1",
+	).Scan(&ch.ID, &ch.Name, &ch.ApiURL, &ch.ApiKey, &modelListJSON, &ch.DefaultModel)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "未配置默认 AI 渠道，请先在后台「AI 渠道」中添加并设为默认"})
+		return
+	}
+
+	// 选模型：传入 model → 用传入的；否则用 default_model；最后 fallback model_list[0]
+	selectedModel := req.Model
+	if selectedModel == "" {
+		selectedModel = ch.DefaultModel
+	}
+	if selectedModel == "" {
+		var modelList []string
+		if modelListJSON != "" {
+			json.Unmarshal([]byte(modelListJSON), &modelList)
+		}
+		if len(modelList) > 0 {
+			selectedModel = modelList[0]
+		}
+	}
+	if selectedModel == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "渠道未配置模型，请编辑渠道时添加模型名（如 moonshot-v1-8k）"})
+		return
+	}
+
+	// 调 OpenAI 兼容 chat/completions
+	baseURL := strings.TrimRight(ch.ApiURL, "/")
+	// 如果 URL 已包含 /chat/completions，去掉；否则直接拼
+	if strings.HasSuffix(baseURL, "/chat/completions") {
+		baseURL = baseURL[:len(baseURL)-len("/chat/completions")]
+	}
+	url := baseURL + "/chat/completions"
+
+	payload := map[string]interface{}{
+		"model":       selectedModel,
+		"messages":    req.Messages,
+		"temperature": req.Temperature,
+	}
+	body, _ := json.Marshal(payload)
+
+	httpReq, err := http.NewRequest("POST", url, strings.NewReader(string(body)))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "构建请求失败: " + err.Error()})
+		return
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	if ch.ApiKey != "" {
+		httpReq.Header.Set("Authorization", "Bearer "+ch.ApiKey)
+	}
+
+	client := &http.Client{Timeout: 60 * time.Second}
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "AI 调用失败: " + err.Error()})
+		return
+	}
+	defer resp.Body.Close()
+
+	respBody, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":  fmt.Sprintf("AI 返回 HTTP %d", resp.StatusCode),
+			"detail": string(respBody),
+		})
+		return
+	}
+
+	// 解析 OpenAI 兼容响应
+	var result struct {
+		Choices []struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		} `json:"choices"`
+		Usage map[string]interface{} `json:"usage"`
+	}
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "解析响应失败: " + err.Error()})
+		return
+	}
+
+	content := ""
+	if len(result.Choices) > 0 {
+		content = result.Choices[0].Message.Content
+	}
+
+	middleware.Audit(c, "call_ai_channel", "channel:"+ch.Name, fmt.Sprintf("model=%s, tokens=%v", selectedModel, result.Usage))
+	c.JSON(http.StatusOK, gin.H{
+		"content": content,
+		"model":   selectedModel,
+		"usage":   result.Usage,
 	})
 }

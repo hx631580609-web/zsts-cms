@@ -131,16 +131,96 @@
     "types": {
       "items": {
         "zh": [
-          { "title": "旅行保险", "desc": "全球旅行意外伤害、医疗保障、行李丢失、航班延误等全面保障", "icon": "plane", "features": ["意外伤害医疗", "行李丢失赔偿", "航班延误补偿", "24小时紧急救援"] },
-          { "title": "商务保险", "desc": "商务出行专属保障，覆盖差旅意外、商务设备、会议取消等风险", "icon": "briefcase", "features": ["商务差旅意外", "设备丢失保障", "会议取消补偿", "紧急医疗转运"] },
-          { "title": "健康保险", "desc": "境外医疗健康保障，覆盖门诊、住院、紧急医疗等费用", "icon": "heart-pulse", "features": ["门诊医疗费用", "住院费用保障", "紧急医疗转运", "回国继续治疗"] },
-          { "title": "意外伤害险", "desc": "全球意外伤害保障，涵盖意外身故、伤残、医疗等赔偿", "icon": "shield-check", "features": ["意外身故赔偿", "伤残保障金", "意外医疗费用", "高风险运动可选"] }
+          {
+            "title": "旅行保险",
+            "desc": "全球旅行意外伤害、医疗保障、行李丢失、航班延误等全面保障",
+            "icon": "plane",
+            "features": [
+              "意外伤害医疗",
+              "行李丢失赔偿",
+              "航班延误补偿",
+              "24小时紧急救援"
+            ]
+          },
+          {
+            "title": "商务保险",
+            "desc": "商务出行专属保障，覆盖差旅意外、商务设备、会议取消等风险",
+            "icon": "briefcase",
+            "features": [
+              "商务差旅意外",
+              "设备丢失保障",
+              "会议取消补偿",
+              "紧急医疗转运"
+            ]
+          },
+          {
+            "title": "健康保险",
+            "desc": "境外医疗健康保障，覆盖门诊、住院、紧急医疗等费用",
+            "icon": "heart-pulse",
+            "features": [
+              "门诊医疗费用",
+              "住院费用保障",
+              "紧急医疗转运",
+              "回国继续治疗"
+            ]
+          },
+          {
+            "title": "意外伤害险",
+            "desc": "全球意外伤害保障，涵盖意外身故、伤残、医疗等赔偿",
+            "icon": "shield-check",
+            "features": [
+              "意外身故赔偿",
+              "伤残保障金",
+              "意外医疗费用",
+              "高风险运动可选"
+            ]
+          }
         ],
         "en": [
-          { "title": "Travel Insurance", "desc": "Comprehensive coverage for accidents, medical, baggage loss, flight delays worldwide", "icon": "plane", "features": ["Accident & Medical", "Baggage Loss", "Flight Delay", "24/7 Emergency"] },
-          { "title": "Business Insurance", "desc": "Business travel coverage for accidents, equipment, meeting cancellations", "icon": "briefcase", "features": ["Business Travel", "Equipment Loss", "Meeting Cancellation", "Medical Evacuation"] },
-          { "title": "Health Insurance", "desc": "Overseas health coverage for outpatient, inpatient, and emergency medical", "icon": "heart-pulse", "features": ["Outpatient", "Inpatient", "Medical Evacuation", "Follow-up at Home"] },
-          { "title": "Accident Insurance", "desc": "Global accident coverage for death, disability, and medical expenses", "icon": "shield-check", "features": ["Accidental Death", "Disability", "Medical Expenses", "Extreme Sports"] }
+          {
+            "title": "Travel Insurance",
+            "desc": "Comprehensive coverage for accidents, medical, baggage loss, flight delays worldwide",
+            "icon": "plane",
+            "features": [
+              "Accident & Medical",
+              "Baggage Loss",
+              "Flight Delay",
+              "24/7 Emergency"
+            ]
+          },
+          {
+            "title": "Business Insurance",
+            "desc": "Business travel coverage for accidents, equipment, meeting cancellations",
+            "icon": "briefcase",
+            "features": [
+              "Business Travel",
+              "Equipment Loss",
+              "Meeting Cancellation",
+              "Medical Evacuation"
+            ]
+          },
+          {
+            "title": "Health Insurance",
+            "desc": "Overseas health coverage for outpatient, inpatient, and emergency medical",
+            "icon": "heart-pulse",
+            "features": [
+              "Outpatient",
+              "Inpatient",
+              "Medical Evacuation",
+              "Follow-up at Home"
+            ]
+          },
+          {
+            "title": "Accident Insurance",
+            "desc": "Global accident coverage for death, disability, and medical expenses",
+            "icon": "shield-check",
+            "features": [
+              "Accidental Death",
+              "Disability",
+              "Medical Expenses",
+              "Extreme Sports"
+            ]
+          }
         ]
       }
     }
@@ -148,20 +228,56 @@
   "faq": {
     "items": {
       "zh": [
-        { "q": "境外保险什么时候买最合适？", "a": "建议在确定出行计划后立即投保，尤其是申根签证要求必须持有保险才能递签。提前投保可确保保障覆盖完整行程。" },
-        { "q": "保险覆盖哪些地区？", "a": "我们的保险产品覆盖全球200+国家和地区，包括中东、东南亚、欧洲、北美、日韩等。可根据目的地选择对应区域保障方案。" },
-        { "q": "出险后如何理赔？", "a": "出险后请及时拨打保险公司紧急救援电话报案。我们的顾问会协助您整理理赔材料、跟进理赔进度，确保快速获赔。" },
-        { "q": "可以保高风险运动吗？", "a": "可以。部分保险产品支持附加高风险运动保障，涵盖潜水、滑雪、跳伞、攀岩等活动。请在投保时告知需求。" },
-        { "q": "保险可以用于签证申请吗？", "a": "可以。我们提供的保险证明符合申根签证、沙特签证等多国使馆要求，支持中英文/中阿文保单。" },
-        { "q": "保费多少钱？", "a": "保费根据目的地、保障天数、保障范围和投保人年龄而定。经济型方案每天低至十几元，顾问会根据您的需求推荐最优性价比方案。" }
+        {
+          "q": "境外保险什么时候买最合适？",
+          "a": "建议在确定出行计划后立即投保，尤其是申根签证要求必须持有保险才能递签。提前投保可确保保障覆盖完整行程。"
+        },
+        {
+          "q": "保险覆盖哪些地区？",
+          "a": "我们的保险产品覆盖全球200+国家和地区，包括中东、东南亚、欧洲、北美、日韩等。可根据目的地选择对应区域保障方案。"
+        },
+        {
+          "q": "出险后如何理赔？",
+          "a": "出险后请及时拨打保险公司紧急救援电话报案。我们的顾问会协助您整理理赔材料、跟进理赔进度，确保快速获赔。"
+        },
+        {
+          "q": "可以保高风险运动吗？",
+          "a": "可以。部分保险产品支持附加高风险运动保障，涵盖潜水、滑雪、跳伞、攀岩等活动。请在投保时告知需求。"
+        },
+        {
+          "q": "保险可以用于签证申请吗？",
+          "a": "可以。我们提供的保险证明符合申根签证、沙特签证等多国使馆要求，支持中英文/中阿文保单。"
+        },
+        {
+          "q": "保费多少钱？",
+          "a": "保费根据目的地、保障天数、保障范围和投保人年龄而定。经济型方案每天低至十几元，顾问会根据您的需求推荐最优性价比方案。"
+        }
       ],
       "en": [
-        { "q": "When is the best time to buy overseas insurance?", "a": "We recommend purchasing insurance as soon as your travel plan is confirmed. For Schengen visas, insurance is required before applying." },
-        { "q": "Which regions are covered?", "a": "Our insurance covers 200+ countries including Middle East, Southeast Asia, Europe, North America, Japan, and Korea." },
-        { "q": "How do I file a claim?", "a": "Call the insurer's emergency hotline immediately. Our advisor will assist with documentation and follow up on your claim." },
-        { "q": "Can I get coverage for extreme sports?", "a": "Yes. Some plans offer add-on coverage for high-risk activities like diving, skiing, skydiving, and rock climbing." },
-        { "q": "Can the insurance be used for visa applications?", "a": "Yes. Our insurance certificates meet requirements for Schengen, Saudi, and other embassy visa applications, with bilingual policies available." },
-        { "q": "How much does insurance cost?", "a": "Premiums depend on destination, duration, coverage scope, and age. Economy plans start from as low as a few dollars per day." }
+        {
+          "q": "When is the best time to buy overseas insurance?",
+          "a": "We recommend purchasing insurance as soon as your travel plan is confirmed. For Schengen visas, insurance is required before applying."
+        },
+        {
+          "q": "Which regions are covered?",
+          "a": "Our insurance covers 200+ countries including Middle East, Southeast Asia, Europe, North America, Japan, and Korea."
+        },
+        {
+          "q": "How do I file a claim?",
+          "a": "Call the insurer's emergency hotline immediately. Our advisor will assist with documentation and follow up on your claim."
+        },
+        {
+          "q": "Can I get coverage for extreme sports?",
+          "a": "Yes. Some plans offer add-on coverage for high-risk activities like diving, skiing, skydiving, and rock climbing."
+        },
+        {
+          "q": "Can the insurance be used for visa applications?",
+          "a": "Yes. Our insurance certificates meet requirements for Schengen, Saudi, and other embassy visa applications, with bilingual policies available."
+        },
+        {
+          "q": "How much does insurance cost?",
+          "a": "Premiums depend on destination, duration, coverage scope, and age. Economy plans start from as low as a few dollars per day."
+        }
       ]
     }
   },
@@ -220,12 +336,20 @@
       "label": {
         "en": "",
         "zh": "邮件咨询"
+      },
+      "value": {
+        "zh": "info@zsts.group",
+        "en": ""
       }
     },
     "phone": {
       "label": {
         "en": "",
         "zh": "电话咨询"
+      },
+      "value": {
+        "zh": "010-85656995 / 010-53670397 / 17190016075",
+        "en": ""
       }
     },
     "qr": {

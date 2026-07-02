@@ -5,6 +5,7 @@ import (
 	"cms-server-go/handlers"
 	"cms-server-go/middleware"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -46,8 +47,132 @@ func RegisterContentRoutes(r *gin.RouterGroup) {
 	{
 		content.GET("/:pageKey", getContent)
 		content.PUT("/:pageKey", middleware.RequireAuth(), updateContent)
+		// 自动翻译落库：preview 用户访问页面时，前端 fetch 翻译结果后批量写入
+		// 无需认证（防止用户卡登录态导致翻译失败）
+		content.POST("/:pageKey/translate-bulk", translateBulk)
 	}
 }
+
+// translateBulk POST /api/content/:pageKey/translate-bulk
+// body: { updates: { "path.0.sub": "English text", ... } }
+// 合并到对应 pageKey 的 JSON 文件
+func translateBulk(c *gin.Context) {
+	pageKey := c.Param("pageKey")
+
+	var body struct {
+		Updates map[string]string `json:"updates"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的请求体"})
+		return
+	}
+	if body.Updates == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "updates 字段缺失"})
+		return
+	}
+
+	// 全局配置
+	if globalKeys[pageKey] {
+		filePath := filepath.Join(globalDir, pageKey+".json")
+		data := map[string]interface{}{}
+		if existing, err := os.ReadFile(filePath); err == nil {
+			json.Unmarshal(existing, &data)
+		}
+		for k, v := range body.Updates {
+			data[k] = v
+		}
+		out, _ := json.MarshalIndent(data, "", "  ")
+		if err := os.WriteFile(filePath, out, 0644); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "写入失败: " + err.Error()})
+			return
+		}
+		middleware.Audit(c, "translate_bulk_global", pageKey, "")
+		c.JSON(http.StatusOK, gin.H{"success": true, "updated": len(body.Updates)})
+		return
+	}
+
+	if !validPageKeys[pageKey] {
+		c.JSON(statusBadRequest, gin.H{"error": "无效的页面 key: " + pageKey})
+		return
+	}
+
+	filePath := filepath.Join(contentDir, pageKey+".json")
+	data := map[string]interface{}{}
+	if existing, err := os.ReadFile(filePath); err == nil {
+		json.Unmarshal(existing, &data)
+	}
+
+	// 递归 set path：支持 a.b.c 形式 + 数组下标 a[0].b
+	for path, value := range body.Updates {
+		setNestedValue(data, path, value)
+	}
+
+	out, _ := json.MarshalIndent(data, "", "  ")
+	if err := os.WriteFile(filePath, out, 0644); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "写入失败: " + err.Error()})
+		return
+	}
+	middleware.Audit(c, "translate_bulk", pageKey, fmt.Sprintf("updated=%d", len(body.Updates)))
+	c.JSON(http.StatusOK, gin.H{"success": true, "updated": len(body.Updates)})
+}
+
+// setNestedValue 在嵌套 map 中按 path 设置 value
+// 支持 a.b.c 和 a[0].b 形式
+// 自动识别目标是 {zh,en} 模式（只更新 en）还是裸字段（包装成 {zh,en}）
+func setNestedValue(obj map[string]interface{}, path string, value string) {
+	// 解析路径，将 [0] 转换为 .0
+	normalized := path
+	for strings.Contains(normalized, "[") {
+		start := strings.Index(normalized, "[")
+		end := strings.Index(normalized, "]")
+		if end < start {
+			break
+		}
+		normalized = normalized[:start] + "." + normalized[start+1:end] + normalized[end+1:]
+	}
+
+	keys := strings.Split(normalized, ".")
+	cur := obj
+
+	for i, k := range keys {
+		if i == len(keys)-1 {
+			// 最后一层：设置值
+			if existing, ok := cur[k]; ok {
+				if m, isMap := existing.(map[string]interface{}); isMap {
+					if _, hasZh := m["zh"]; hasZh {
+						// 已是 {zh,en} 模式，只更新 en
+						m["en"] = value
+						return
+					}
+				}
+			}
+			// 否则包装成 {zh,en}
+			cur[k] = map[string]interface{}{"zh": "", "en": value}
+			return
+		}
+		// 中间层：确保下一层是 map
+		next, ok := cur[k]
+		if !ok {
+			next = map[string]interface{}{}
+			cur[k] = next
+		}
+		nextMap, isMap := next.(map[string]interface{})
+		if !isMap {
+			// 如果不是 map（可能是数组或字符串），覆盖
+			newMap := map[string]interface{}{}
+			if arr, isArr := next.([]interface{}); isArr {
+				newMap["_items"] = arr
+			} else if s, isStr := next.(string); isStr {
+				newMap["zh"] = s
+			}
+			cur[k] = newMap
+			nextMap = newMap
+		}
+		cur = nextMap
+	}
+}
+
+const statusBadRequest = 400
 
 // getContent GET /api/content/:pageKey
 func getContent(c *gin.Context) {

@@ -412,11 +412,11 @@
                     <div class="space-y-4">
                         <div class="flex items-center space-x-3">
                             <i data-lucide="phone" class="w-5 h-5 text-zsts-sand flex-shrink-0"></i>
-                            <span class="text-white/60 text-sm">010-85656995 / 010-53670397 / 17190016075</span>
+                            <span class="text-white/60 text-sm" data-i18n="sidebar.phone.value">010-85656995 / 010-53670397 / 17190016075</span>
                         </div>
                         <div class="flex items-center space-x-3">
                             <i data-lucide="mail" class="w-5 h-5 text-zsts-sand flex-shrink-0"></i>
-                            <span class="text-white/60 text-sm">info@zsts.group</span>
+                            <span class="text-white/60 text-sm" data-i18n="sidebar.email.value">info@zsts.group</span>
                         </div>
                         <div class="mt-4 grid grid-cols-3 gap-3">
                             <div class="bg-white/10 rounded-xl p-3 text-center">
@@ -576,6 +576,7 @@
                 const key = el.getAttribute('data-i18n');
                 if (dict[key]) {
                     if (el.tagName === 'TITLE') document.title = dict[key];
+                    else if (el.tagName === 'IMG') el.src = dict[key];
                     else el.textContent = dict[key];
                 }
             });

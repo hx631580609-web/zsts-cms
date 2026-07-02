@@ -381,11 +381,11 @@
                         
                         <li class="flex items-start space-x-3">
                             <i data-lucide="phone" class="w-5 h-5 text-zsts-sand flex-shrink-0 mt-0.5"></i>
-                            <span>010-85656995 / 010-53670397 / 17190016075</span>
+                            <span data-i18n="sidebar.phone.value">010-85656995 / 010-53670397 / 17190016075</span>
                         </li>
                         <li class="flex items-start space-x-3">
                             <i data-lucide="mail" class="w-5 h-5 text-zsts-sand flex-shrink-0 mt-0.5"></i>
-                            <span>info@zsts.group</span>
+                            <span data-i18n="sidebar.email.value">info@zsts.group</span>
                         </li>
                         <li class="flex items-start space-x-3">
                             <i data-lucide="clock" class="w-5 h-5 text-zsts-sand flex-shrink-0 mt-0.5"></i>
@@ -558,6 +558,8 @@
                 if (translations[currentLang] && translations[currentLang][key]) {
                     if (el.tagName === 'TITLE') {
                         document.title = translations[currentLang][key];
+                    } else if (el.tagName === 'IMG') {
+                        el.src = translations[currentLang][key]; // 二维码等图片字段同步 src
                     } else if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
                         el.placeholder = translations[currentLang][key];
                     } else {

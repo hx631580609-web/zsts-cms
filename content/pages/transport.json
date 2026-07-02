@@ -142,12 +142,20 @@
       "label": {
         "en": "Email Us",
         "zh": "邮件咨询"
+      },
+      "value": {
+        "zh": "info@zsts.group",
+        "en": ""
       }
     },
     "phone": {
       "label": {
         "en": "Call Us",
         "zh": "电话咨询"
+      },
+      "value": {
+        "zh": "010-85656995 / 010-53670397 / 17190016075",
+        "en": ""
       }
     },
     "qr": {
@@ -172,16 +180,40 @@
       "points": {
         "items": {
           "zh": [
-            { "text": "全球航线资源，最优价格保障", "icon": "globe" },
-            { "text": "中文司机/导游，沟通无障碍", "icon": "users" },
-            { "text": "24小时客服，紧急响应", "icon": "clock" },
-            { "text": "多家企业服务经验", "icon": "award" }
+            {
+              "text": "全球航线资源，最优价格保障",
+              "icon": "globe"
+            },
+            {
+              "text": "中文司机/导游，沟通无障碍",
+              "icon": "users"
+            },
+            {
+              "text": "24小时客服，紧急响应",
+              "icon": "clock"
+            },
+            {
+              "text": "多家企业服务经验",
+              "icon": "award"
+            }
           ],
           "en": [
-            { "text": "Global flight resources, best price guarantee", "icon": "globe" },
-            { "text": "Chinese-speaking drivers/guides, no communication barriers", "icon": "users" },
-            { "text": "24/7 customer service, emergency response", "icon": "clock" },
-            { "text": "Experienced in serving multiple enterprises", "icon": "award" }
+            {
+              "text": "Global flight resources, best price guarantee",
+              "icon": "globe"
+            },
+            {
+              "text": "Chinese-speaking drivers/guides, no communication barriers",
+              "icon": "users"
+            },
+            {
+              "text": "24/7 customer service, emergency response",
+              "icon": "clock"
+            },
+            {
+              "text": "Experienced in serving multiple enterprises",
+              "icon": "award"
+            }
           ]
         }
       }
@@ -199,22 +231,64 @@
       },
       "items": {
         "zh": [
-          { "q": "境外机票预订需要提前多久？", "a": "建议国际机票提前30-60天预订，可获得更优价格。旺季（寒暑假、春节、国庆）建议提前2-3个月。我们提供实时票价监控，帮您锁定最优价格。" },
-          { "q": "机场接送服务覆盖哪些地区？", "a": "我们的机场接送服务覆盖全球主要城市和热门旅游目的地，包括东南亚、中东、欧洲、北美、日韩等。具体覆盖城市请咨询顾问。" },
-          { "q": "境外包车可以配中文司机/导游吗？", "a": "可以。我们在东南亚、中东、欧洲等多地提供配中文司机/导游的包车服务。中文司机可协助沟通、推荐线路，让您的境外出行更轻松顺畅。" },
-          { "q": "机票改签和退票怎么处理？", "a": "机票改签和退票政策因航司和票价类型而异。我们会在您预订前明确告知退改规则。如需变更行程，请联系顾问协助处理。" },
-          { "q": "境外火车票/高铁票如何取票乘车？", "a": "欧洲高铁、日本新干线、东南亚火车等多支持电子票，预订成功后发送电子确认单/二维码，凭护照和电子票即可乘车，无需取纸质票。" },
-          { "q": "如果遇到航班延误或取消怎么办？", "a": "如遇到航班延误或取消，请第一时间联系我们的24小时客服热线。我们将协助您与航司沟通，办理改签、退票或住宿安排等后续事宜。" },
-          { "q": "境外酒店住宿可以代订哪些城市和品牌？", "a": "我们提供全球主要城市的酒店代订，覆盖经济型至高端国际品牌（万豪、希尔顿、洲际、雅高、华住等），并支持中东、东南亚、欧洲、日韩等热门目的地。" }
+          {
+            "q": "境外机票预订需要提前多久？",
+            "a": "建议国际机票提前30-60天预订，可获得更优价格。旺季（寒暑假、春节、国庆）建议提前2-3个月。我们提供实时票价监控，帮您锁定最优价格。"
+          },
+          {
+            "q": "机场接送服务覆盖哪些地区？",
+            "a": "我们的机场接送服务覆盖全球主要城市和热门旅游目的地，包括东南亚、中东、欧洲、北美、日韩等。具体覆盖城市请咨询顾问。"
+          },
+          {
+            "q": "境外包车可以配中文司机/导游吗？",
+            "a": "可以。我们在东南亚、中东、欧洲等多地提供配中文司机/导游的包车服务。中文司机可协助沟通、推荐线路，让您的境外出行更轻松顺畅。"
+          },
+          {
+            "q": "机票改签和退票怎么处理？",
+            "a": "机票改签和退票政策因航司和票价类型而异。我们会在您预订前明确告知退改规则。如需变更行程，请联系顾问协助处理。"
+          },
+          {
+            "q": "境外火车票/高铁票如何取票乘车？",
+            "a": "欧洲高铁、日本新干线、东南亚火车等多支持电子票，预订成功后发送电子确认单/二维码，凭护照和电子票即可乘车，无需取纸质票。"
+          },
+          {
+            "q": "如果遇到航班延误或取消怎么办？",
+            "a": "如遇到航班延误或取消，请第一时间联系我们的24小时客服热线。我们将协助您与航司沟通，办理改签、退票或住宿安排等后续事宜。"
+          },
+          {
+            "q": "境外酒店住宿可以代订哪些城市和品牌？",
+            "a": "我们提供全球主要城市的酒店代订，覆盖经济型至高端国际品牌（万豪、希尔顿、洲际、雅高、华住等），并支持中东、东南亚、欧洲、日韩等热门目的地。"
+          }
         ],
         "en": [
-          { "q": "How far in advance should I book international flights?", "a": "We recommend booking 30-60 days in advance for better prices. For peak seasons, book 2-3 months ahead. We provide real-time fare monitoring." },
-          { "q": "Which regions are covered by airport transfer services?", "a": "Our airport transfer service covers major global cities and popular destinations, including Southeast Asia, Middle East, Europe, North America, Japan, and Korea." },
-          { "q": "Can I get a Chinese-speaking driver/guide for local car rental?", "a": "Yes. We provide local car rental with Chinese-speaking drivers/guides in Southeast Asia, Middle East, Europe, and more." },
-          { "q": "How are flight rebooking and refunds handled?", "a": "Rebooking and refund policies vary by airline and fare type. We will clearly inform you of the rules before booking." },
-          { "q": "How do I collect train tickets abroad?", "a": "Most high-speed trains in Europe, Japan, and Southeast Asia support e-tickets. After booking, you'll receive an e-confirmation — just travel with your passport and e-ticket." },
-          { "q": "What if my flight is delayed or cancelled?", "a": "Please contact our 24/7 customer service hotline immediately. We will assist you in communicating with the airline and handling rebooking, refunds, or accommodation." },
-          { "q": "Which cities and brands are covered for hotel booking?", "a": "We provide hotel booking in major cities worldwide, covering economy to premium brands (Marriott, Hilton, IHG, Accor, etc.) across the Middle East, Southeast Asia, Europe, Japan, and Korea." }
+          {
+            "q": "How far in advance should I book international flights?",
+            "a": "We recommend booking 30-60 days in advance for better prices. For peak seasons, book 2-3 months ahead. We provide real-time fare monitoring."
+          },
+          {
+            "q": "Which regions are covered by airport transfer services?",
+            "a": "Our airport transfer service covers major global cities and popular destinations, including Southeast Asia, Middle East, Europe, North America, Japan, and Korea."
+          },
+          {
+            "q": "Can I get a Chinese-speaking driver/guide for local car rental?",
+            "a": "Yes. We provide local car rental with Chinese-speaking drivers/guides in Southeast Asia, Middle East, Europe, and more."
+          },
+          {
+            "q": "How are flight rebooking and refunds handled?",
+            "a": "Rebooking and refund policies vary by airline and fare type. We will clearly inform you of the rules before booking."
+          },
+          {
+            "q": "How do I collect train tickets abroad?",
+            "a": "Most high-speed trains in Europe, Japan, and Southeast Asia support e-tickets. After booking, you'll receive an e-confirmation — just travel with your passport and e-ticket."
+          },
+          {
+            "q": "What if my flight is delayed or cancelled?",
+            "a": "Please contact our 24/7 customer service hotline immediately. We will assist you in communicating with the airline and handling rebooking, refunds, or accommodation."
+          },
+          {
+            "q": "Which cities and brands are covered for hotel booking?",
+            "a": "We provide hotel booking in major cities worldwide, covering economy to premium brands (Marriott, Hilton, IHG, Accor, etc.) across the Middle East, Southeast Asia, Europe, Japan, and Korea."
+          }
         ]
       }
     },
@@ -233,18 +307,58 @@
       },
       "items": {
         "zh": [
-          { "title": "国际机票", "desc": "全球国际航线机票预订，最优价格保障，支持改签退票服务", "icon": "plane" },
-          { "title": "机场接送", "desc": "专车接送机服务，中文司机，安全舒适，准时准点，无需等待", "icon": "car" },
-          { "title": "当地包车", "desc": "境外当地包车服务，多种车型可选，配中文司机/导游，行程自由", "icon": "map-pin" },
-          { "title": "高铁/火车票", "desc": "欧洲/日本/东南亚等高铁火车票代订，电子票便捷出行", "icon": "train" },
-          { "title": "酒店住宿", "desc": "全球主要城市酒店预订，经济型至高端品牌可选，支持代订与修改", "icon": "hotel" }
+          {
+            "title": "国际机票",
+            "desc": "全球国际航线机票预订，最优价格保障，支持改签退票服务",
+            "icon": "plane"
+          },
+          {
+            "title": "机场接送",
+            "desc": "专车接送机服务，中文司机，安全舒适，准时准点，无需等待",
+            "icon": "car"
+          },
+          {
+            "title": "当地包车",
+            "desc": "境外当地包车服务，多种车型可选，配中文司机/导游，行程自由",
+            "icon": "map-pin"
+          },
+          {
+            "title": "高铁/火车票",
+            "desc": "欧洲/日本/东南亚等高铁火车票代订，电子票便捷出行",
+            "icon": "train"
+          },
+          {
+            "title": "酒店住宿",
+            "desc": "全球主要城市酒店预订，经济型至高端品牌可选，支持代订与修改",
+            "icon": "hotel"
+          }
         ],
         "en": [
-          { "title": "International Flights", "desc": "Global flight booking with best price guarantee, support for rebooking & refund", "icon": "plane" },
-          { "title": "Airport Transfer", "desc": "Private airport pickup/dropoff, Chinese-speaking drivers, safe & punctual", "icon": "car" },
-          { "title": "Local Car Rental", "desc": "Local car charter with various vehicle options, Chinese driver/guide available", "icon": "map-pin" },
-          { "title": "Train Tickets", "desc": "High-speed rail & train tickets for Europe/Japan/Southeast Asia, e-tickets available", "icon": "train" },
-          { "title": "Hotel Accommodation", "desc": "Hotel booking in major cities worldwide, from economy to premium brands", "icon": "hotel" }
+          {
+            "title": "International Flights",
+            "desc": "Global flight booking with best price guarantee, support for rebooking & refund",
+            "icon": "plane"
+          },
+          {
+            "title": "Airport Transfer",
+            "desc": "Private airport pickup/dropoff, Chinese-speaking drivers, safe & punctual",
+            "icon": "car"
+          },
+          {
+            "title": "Local Car Rental",
+            "desc": "Local car charter with various vehicle options, Chinese driver/guide available",
+            "icon": "map-pin"
+          },
+          {
+            "title": "Train Tickets",
+            "desc": "High-speed rail & train tickets for Europe/Japan/Southeast Asia, e-tickets available",
+            "icon": "train"
+          },
+          {
+            "title": "Hotel Accommodation",
+            "desc": "Hotel booking in major cities worldwide, from economy to premium brands",
+            "icon": "hotel"
+          }
         ]
       }
     },
@@ -263,18 +377,48 @@
       },
       "items": {
         "zh": [
-          { "title": "提交需求", "desc": "联系专属顾问，告知出行目的地、日期、人数及服务类型" },
-          { "title": "获取方案", "desc": "顾问根据需求提供最优价格方案和多种出行选择" },
-          { "title": "确认预订", "desc": "确认行程方案后支付预订费用，顾问代为完成预订" },
-          { "title": "出票确认", "desc": "预订成功后发送电子票/确认单，全程进度可追踪" },
-          { "title": "顺利出行", "desc": "持电子票/确认单顺利出行，24小时客服全程待命" }
+          {
+            "title": "提交需求",
+            "desc": "联系专属顾问，告知出行目的地、日期、人数及服务类型"
+          },
+          {
+            "title": "获取方案",
+            "desc": "顾问根据需求提供最优价格方案和多种出行选择"
+          },
+          {
+            "title": "确认预订",
+            "desc": "确认行程方案后支付预订费用，顾问代为完成预订"
+          },
+          {
+            "title": "出票确认",
+            "desc": "预订成功后发送电子票/确认单，全程进度可追踪"
+          },
+          {
+            "title": "顺利出行",
+            "desc": "持电子票/确认单顺利出行，24小时客服全程待命"
+          }
         ],
         "en": [
-          { "title": "Submit Request", "desc": "Contact your dedicated advisor with destination, dates, group size & service type" },
-          { "title": "Get Quote", "desc": "Advisor provides optimal pricing and multiple travel options" },
-          { "title": "Confirm Booking", "desc": "Pay after confirming the itinerary; advisor completes the booking for you" },
-          { "title": "Ticket Confirmed", "desc": "E-ticket/confirmation sent after successful booking, full progress tracking" },
-          { "title": "Happy Travels", "desc": "Travel with e-ticket/confirmation, 24/7 customer service on standby" }
+          {
+            "title": "Submit Request",
+            "desc": "Contact your dedicated advisor with destination, dates, group size & service type"
+          },
+          {
+            "title": "Get Quote",
+            "desc": "Advisor provides optimal pricing and multiple travel options"
+          },
+          {
+            "title": "Confirm Booking",
+            "desc": "Pay after confirming the itinerary; advisor completes the booking for you"
+          },
+          {
+            "title": "Ticket Confirmed",
+            "desc": "E-ticket/confirmation sent after successful booking, full progress tracking"
+          },
+          {
+            "title": "Happy Travels",
+            "desc": "Travel with e-ticket/confirmation, 24/7 customer service on standby"
+          }
         ]
       }
     }

@@ -862,6 +862,8 @@
                 if (dict[key]) {
                     if (el.tagName === 'TITLE') {
                         document.title = dict[key];
+                    } else if (el.tagName === 'IMG') {
+                        el.src = dict[key]; // 二维码等图片字段同步 src
                     } else if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
                         el.placeholder = dict[key];
                     } else {
